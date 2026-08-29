@@ -1,5 +1,14 @@
 # HRMate — reverse proxy with automatic HTTPS (Let's Encrypt)
 gdfoods.duckdns.org {
+	tls {
+		issuer acme {
+			# Prefer Let's Encrypt's cross-signed chain (ISRG Root X1), which
+			# every Android device trusts since 2016. The default Generation Y
+			# chain (YE2 -> ISRG Root YE) breaks Android clients.
+			preferred_chains ISRG Root X1
+		}
+	}
+
 	encode gzip
 
 	# Proxy all traffic to the Next.js app
