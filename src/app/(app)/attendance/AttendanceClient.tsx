@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CalendarDays, Clock, Send, History, Info } from "lucide-react";
+import { CalendarDays, Clock, Send, History, Info, LogIn, LogOut } from "lucide-react";
 import { Spinner, StatusBadge, EmptyState } from "@/components/ui";
 import { formatDate, formatTime, istParts } from "@/lib/utils";
 import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
@@ -38,6 +38,7 @@ export default function AttendanceClient({
 
   // Manual form
   const [mDate, setMDate] = useState(() => istParts().dateKey);
+  const [mKind, setMKind] = useState<"in" | "out" | "both">("in");
   const [mIn, setMIn] = useState("09:00");
   const [mOut, setMOut] = useState("18:00");
   const [mReason, setMReason] = useState("");
@@ -74,8 +75,8 @@ export default function AttendanceClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: mDate,
-          punch_in: mIn || undefined,
-          punch_out: mOut || undefined,
+          punch_in: mKind === "out" ? undefined : mIn || undefined,
+          punch_out: mKind === "in" ? undefined : mOut || undefined,
           reason: mReason,
         }),
       });
