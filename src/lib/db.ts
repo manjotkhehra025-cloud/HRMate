@@ -1,30 +1,58 @@
-import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import { createRequire } from "node:module";
 import { hashPassword, randomId } from "./crypto";
 
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+// ---------------------------------------------------------------------------
+// IMPORTANT: better-sqlite3 is a native C++ addon. It is loaded LAZILY (only
+// when the first real DB query runs) so that `next build` — which imports our
+// pages to collect page data — never loads the native module in the build
+// worker. Loading better-sqlite3 at module scope caused a native SIGSEGV in
+// the "Collecting page data" build phase.
+// ---------------------------------------------------------------------------
+const require = createRequire(import.meta.url);
 
-const dbPath = process.env.HRMATE_DB || path.join(dataDir, "hrmate.db");
+type DatabaseLike = {
+  prepare: (sql: string) => any;
+  pragma: (sql: string) => any;
+  exec: (sql: string) => any;
+  transaction: (fn: (...args: any[]) => any) => any;
+  [key: string]: any;
+};
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __hrmateDb: Database.Database | undefined;
-}
+let _db: DatabaseLike | null = null;
 
-const db: Database.Database =
-  global.__hrmateDb || new Database(dbPath);
-
-if (!global.__hrmateDb) {
-  global.__hrmateDb = db;
+function getDb(): DatabaseLike {
+  if (_db) return _db;
+  const Database = require("better-sqlite3");
+  const dataDir = path.join(process.cwd(), "data");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  const dbPath = process.env.HRMATE_DB || path.join(dataDir, "hrmate.db");
+  const db = new Database(dbPath) as DatabaseLike;
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   migrate(db);
   seed(db);
+  _db = db;
+  return db;
 }
 
-function migrate(d: Database.Database) {
+// Default export is a Proxy so all existing `db.prepare(...)` call sites keep
+// working, while the underlying database is created on first use.
+const db = new Proxy({} as DatabaseLike, {
+  get(_target, prop: string | symbol) {
+    const real = getDb();
+    const val = real[prop as any];
+    return typeof val === "function" ? val.bind(real) : val;
+  },
+  set(_target, prop: string | symbol, value) {
+    const real = getDb();
+    real[prop as any] = value;
+    return true;
+  },
+});
+
+function migrate(d: DatabaseLike) {
   d.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -158,9 +186,9 @@ function migrate(d: Database.Database) {
   `);
 }
 
-function seed(d: Database.Database) {
-  const count = (d.prepare("SELECT COUNT(*) AS c FROM users").get() as any).c;
-  if (count > 0) return;
+function seed(d: DatabaseLike) {
+  const count = d.prepare("SELECT COUNT(*) AS c FROM users").get() as any;
+  if (count.c > 0) return;
 
   const now = Date.now();
   const insertUser = d.prepare(
@@ -228,7 +256,6 @@ function seed(d: Database.Database) {
   });
   insert();
 
-  // Leave types
   const insertLeave = d.prepare(
     `INSERT INTO leave_types (id, name, days_per_year, color, sort) VALUES (?, ?, ?, ?, ?)`
   );
@@ -237,19 +264,17 @@ function seed(d: Database.Database) {
   insertLeave.run("lt_earned", "Earned Leave", 15, "#10b981", 3);
   insertLeave.run("lt_optional", "Optional Holiday", 3, "#f59e0b", 4);
 
-  // Default factory settings (geofence)
   const setSetting = d.prepare(
     `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`
   );
   setSetting.run("factory_name", "HRMate Manufacturing Unit");
-  setSetting.run("factory_lat", "28.6139"); // New Delhi (demo)
+  setSetting.run("factory_lat", "28.6139");
   setSetting.run("factory_lng", "77.2090");
-  setSetting.run("factory_radius", "200"); // meters
+  setSetting.run("factory_radius", "200");
   setSetting.run("factory_address", "Plot 12, Industrial Area, New Delhi");
   setSetting.run("work_start", "09:00");
   setSetting.run("work_end", "18:00");
 
-  // Sample wall posts
   const insertPost = d.prepare(
     `INSERT INTO wall_posts (id, user_id, content, created_at) VALUES (?, ?, ?, ?)`
   );

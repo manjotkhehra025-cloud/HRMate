@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import LoginForm from "./LoginForm";
 
 export const metadata = { title: "Login — HRMate" };
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
   const user = getSessionUser();

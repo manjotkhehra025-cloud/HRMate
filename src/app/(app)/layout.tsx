@@ -4,6 +4,8 @@ import { getPermissions } from "@/lib/permissions";
 import db from "@/lib/db";
 import AppShell from "@/components/AppShell";
 
+export const dynamic = "force-dynamic";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const user = getSessionUser();
   if (!user) redirect("/login");
