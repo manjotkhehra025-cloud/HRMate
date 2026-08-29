@@ -208,7 +208,7 @@ function seed(d: DatabaseLike) {
     role: "super_admin",
     department: "Management",
     designation: "Super Admin",
-    color: "#6366f1",
+    color: "#1E6FE0",
   };
   insertUser.run({ ...admin, created_at: now });
 

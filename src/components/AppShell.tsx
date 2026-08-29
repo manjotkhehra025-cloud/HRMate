@@ -119,16 +119,16 @@ export default function AppShell({
 
       <div className="lg:pl-72">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200/70 bg-white/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl sm:h-16 sm:px-6">
+        <header className="sticky top-0 z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 pt-[env(safe-area-inset-top)] sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB] lg:hidden"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-[22px] w-[22px]" />
           </button>
 
-          <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-800 lg:hidden">
+          <p className="min-w-0 flex-1 truncate text-[17px] font-bold text-ink lg:hidden">
             {currentLabel}
           </p>
           <div className="hidden flex-1 lg:block" />

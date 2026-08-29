@@ -186,7 +186,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               ? "btn-danger mt-5 h-14 w-full text-base"
               : punchedOut
                 ? "btn-success mt-5 h-14 w-full text-base"
-                : "btn-primary mt-5 h-14 w-full text-base shadow-glow"
+                : "flow-gradient mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-btn text-base font-semibold text-white shadow-flow"
           }
         >
           {punching ? (

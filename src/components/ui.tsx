@@ -9,11 +9,11 @@ export function Badge({
 }) {
   const tones: Record<string, string> = {
     slate: "bg-slate-100 text-slate-600",
-    green: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20",
-    amber: "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20",
-    red: "bg-rose-50 text-rose-700 ring-1 ring-rose-600/20",
-    blue: "bg-sky-50 text-sky-700 ring-1 ring-sky-600/20",
-    brand: "bg-brand-50 text-brand-700 ring-1 ring-brand-600/20",
+    green: "bg-[#E1F8EF] text-[#06613E] ring-1 ring-[#07945D]/20",
+    amber: "bg-[#FFF4E0] text-[#D98200] ring-1 ring-[#D98200]/20",
+    red: "bg-[#FDECEC] text-[#C52B35] ring-1 ring-[#C52B35]/20",
+    blue: "bg-brand-50 text-brand-700 ring-1 ring-brand-500/20",
+    brand: "bg-brand-50 text-brand-700 ring-1 ring-brand-500/20",
   };
   return <span className={classNames("badge", tones[tone])}>{children}</span>;
 }

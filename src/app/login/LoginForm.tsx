@@ -87,9 +87,9 @@ export default function LoginForm() {
   return (
     <div className="flex min-h-[100dvh]">
       {/* Desktop brand panel */}
-      <div className="relative hidden w-[48%] overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-violet-600 lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="flow-gradient relative hidden w-[48%] overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-violet-300/20 blur-3xl" />
+        <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-flow/20 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 shadow-glow backdrop-blur">
@@ -137,7 +137,7 @@ export default function LoginForm() {
       {/* Form column */}
       <div className="flex w-full flex-col bg-transparent lg:w-[52%]">
         {/* Mobile hero */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-violet-600 px-6 pb-14 pt-10 lg:hidden">
+        <div className="flow-gradient relative overflow-hidden px-6 pb-14 pt-10 lg:hidden">
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           <div className="relative flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">

@@ -80,24 +80,24 @@ export default function DashboardPage() {
       label: "Leave balance",
       value: `${totalBalance}`,
       hint: "days remaining",
-      icon: <CalendarDays className="h-5 w-5" />,
-      tone: "text-brand-600 bg-brand-50",
+      icon: <CalendarDays className="h-[17px] w-[17px]" />,
+      tint: "#1E6FE0",
       href: "/leaves",
     },
     {
       label: "Punch in",
       value: todayIn || "—",
       hint: todayIn ? "today" : "not yet",
-      icon: <MapPin className="h-5 w-5" />,
-      tone: "text-emerald-600 bg-emerald-50",
+      icon: <MapPin className="h-[17px] w-[17px]" />,
+      tint: "#07945D",
       href: "/attendance",
     },
     {
       label: "Pending",
       value: String(pendingCount),
       hint: "approvals",
-      icon: <CheckSquare className="h-5 w-5" />,
-      tone: "text-amber-600 bg-amber-50",
+      icon: <CheckSquare className="h-[17px] w-[17px]" />,
+      tint: "#D98200",
       href: "/approvals",
     },
   ];
@@ -109,7 +109,7 @@ export default function DashboardPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600">
             {todayLabel}
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.7rem]">
+          <h1 className="page-title mt-1">
             Good {getGreeting()}, {user.name.split(" ")[0]}
           </h1>
           <p className="page-sub">Here&apos;s what&apos;s happening at {factory.name} today.</p>
@@ -122,21 +122,22 @@ export default function DashboardPage() {
           <Link
             key={s.label}
             href={s.href}
-            className="card group flex flex-col gap-2 p-3 transition hover:shadow-pop sm:flex-row sm:items-center sm:gap-4 sm:p-5"
+            className="kpi-card transition hover:shadow-pop"
+            style={{ ["--kpi" as any]: s.tint }}
           >
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${s.tone}`}
-            >
-              {s.icon}
+            <div className="flex items-start justify-between gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-kicker text-muted">{s.label}</p>
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
+                style={{ backgroundColor: `${s.tint}1c`, color: s.tint }}
+              >
+                {s.icon}
+              </span>
             </div>
-            <div className="min-w-0">
-              <p className="hidden text-xs font-medium text-slate-500 sm:block">{s.label}</p>
-              <p className="truncate text-lg font-bold tabular-nums text-slate-900 sm:text-xl">
-                {s.value}
-              </p>
-              <p className="text-[10px] font-medium text-slate-400 sm:text-xs">{s.hint}</p>
-            </div>
-            <ArrowRight className="ml-auto hidden h-4 w-4 text-slate-300 transition group-hover:translate-x-1 group-hover:text-brand-500 sm:block" />
+            <p className="mt-1 truncate text-[22px] font-bold tabular tracking-kpi text-ink sm:text-[24px]">
+              {s.value}
+            </p>
+            <p className="text-[11px] text-muted">{s.hint}</p>
           </Link>
         ))}
       </div>

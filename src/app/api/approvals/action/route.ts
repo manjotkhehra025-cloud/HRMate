@@ -40,10 +40,6 @@ export async function POST(req: NextRequest) {
     if (!row) return error("Manual punch request not found", 404);
     if (row.status !== "pending") return error("Already processed");
 
-    db.prepare(
-      "UPDATE manual_punch_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewed_note = ? WHERE id = ?"
-    ).run(status, user.id, Date.now(), note || "", id);
-
     if (status === "approved") {
       try {
         applyApprovedManualPunch(row);
@@ -51,6 +47,10 @@ export async function POST(req: NextRequest) {
         return error(e?.message || "Failed to apply manual punch", 500);
       }
     }
+
+    db.prepare(
+      "UPDATE manual_punch_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewed_note = ? WHERE id = ?"
+    ).run(status, user.id, Date.now(), note || "", id);
 
     notify(
       row.user_id,
