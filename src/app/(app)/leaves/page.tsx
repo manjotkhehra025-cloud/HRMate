@@ -11,9 +11,9 @@ export default function LeavesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Leaves</h1>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="hidden lg:block">
+        <h1 className="page-title">Leaves</h1>
+        <p className="page-sub">
           View your balances, apply for leave and track approvals.
         </p>
       </div>

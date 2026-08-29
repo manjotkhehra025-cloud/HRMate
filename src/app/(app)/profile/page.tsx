@@ -7,9 +7,9 @@ export default function ProfilePage() {
   const user = getSessionUser()!;
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Profile & Security</h1>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="hidden lg:block">
+        <h1 className="page-title">Profile & Security</h1>
+        <p className="page-sub">
           Manage your account details and passkeys.
         </p>
       </div>

@@ -77,40 +77,50 @@ export default function LoginForm() {
     }
   }
 
+  const features = [
+    { icon: <MapPin className="h-4 w-4" />, label: "Geofenced GPS punch in & out" },
+    { icon: <CalendarDays className="h-4 w-4" />, label: "Leave balances & applications" },
+    { icon: <MessageSquare className="h-4 w-4" />, label: "Social wall for your team" },
+    { icon: <Bell className="h-4 w-4" />, label: "Real-time push notifications" },
+  ];
+
   return (
-    <div className="flex min-h-screen">
-      {/* Left brand panel */}
-      <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-violet-700 lg:flex lg:flex-col lg:justify-between lg:p-12">
+    <div className="flex min-h-[100dvh]">
+      {/* Desktop brand panel */}
+      <div className="relative hidden w-[48%] overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-violet-600 lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl" />
+        <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-violet-300/20 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 shadow-glow backdrop-blur">
             <Fingerprint className="h-6 w-6 text-white" />
           </div>
-          <span className="text-xl font-bold text-white">
-            HR<span className="text-brand-200">Mate</span>
-          </span>
+          <div>
+            <span className="block text-xl font-bold tracking-tight text-white">
+              HR<span className="text-brand-200">Mate</span>
+            </span>
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">
+              Smart HRMS
+            </span>
+          </div>
         </div>
 
-        <div className="relative">
-          <h1 className="max-w-md text-4xl font-bold leading-tight text-white">
+        <div className="relative animate-fade-in">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">
+            Your workplace, in one tap
+          </p>
+          <h1 className="mt-3 max-w-md text-4xl font-bold leading-tight text-white text-balance">
             One platform for your entire workforce.
           </h1>
-          <p className="mt-4 max-w-md text-brand-100">
+          <p className="mt-4 max-w-md text-base text-white/80">
             GPS attendance, leave management, a social wall and approval workflows — all in one
             beautiful place.
           </p>
 
-          <div className="mt-8 space-y-3">
-            {[
-              { icon: <MapPin className="h-4 w-4" />, label: "Geofenced GPS punch in & out" },
-              { icon: <CalendarDays className="h-4 w-4" />, label: "Leave balances & applications" },
-              { icon: <MessageSquare className="h-4 w-4" />, label: "Social wall for your team" },
-              { icon: <Bell className="h-4 w-4" />, label: "Real-time push notifications" },
-            ].map((f) => (
-              <div key={f.label} className="flex items-center gap-3 text-sm text-white/90">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10">
+          <div className="mt-10 space-y-3">
+            {features.map((f) => (
+              <div key={f.label} className="flex items-center gap-3 text-sm text-white/95">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/12 ring-1 ring-white/15">
                   {f.icon}
                 </span>
                 {f.label}
@@ -119,120 +129,165 @@ export default function LoginForm() {
           </div>
         </div>
 
-        <p className="relative text-xs text-brand-200">
-          © {new Date().getFullYear()} HRMate. Smart HRMS.
+        <p className="relative text-xs text-white/50">
+          © {new Date().getFullYear()} HRMate · Built for the shop floor and the office
         </p>
       </div>
 
-      {/* Right form */}
-      <div className="flex w-full items-center justify-center bg-white px-4 py-12 lg:w-1/2">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700">
-              <Fingerprint className="h-5 w-5 text-white" />
+      {/* Form column */}
+      <div className="flex w-full flex-col bg-transparent lg:w-[52%]">
+        {/* Mobile hero */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-600 to-violet-600 px-6 pb-14 pt-10 lg:hidden">
+          <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+              <Fingerprint className="h-6 w-6 text-white" />
             </div>
-            <span className="text-lg font-bold text-slate-900">
-              HR<span className="text-brand-600">Mate</span>
-            </span>
-          </div>
-
-          <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-          <p className="mt-1 text-sm text-slate-500">Sign in to your workspace</p>
-
-          {/* Tabs */}
-          <div className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-            <button
-              onClick={() => setMode("password")}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
-                mode === "password" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5" /> Password
+            <div>
+              <span className="block text-lg font-bold text-white">
+                HR<span className="text-brand-200">Mate</span>
               </span>
-            </button>
-            <button
-              onClick={() => setMode("passkey")}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
-                mode === "passkey" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-              }`}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <Fingerprint className="h-3.5 w-3.5" /> Passkey
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">
+                Smart HRMS
               </span>
-            </button>
+            </div>
           </div>
+          <h1 className="relative mt-8 text-3xl font-bold leading-tight text-white">
+            Welcome back
+          </h1>
+          <p className="relative mt-1.5 text-sm text-white/75">Sign in to punch in and get to work.</p>
+        </div>
 
-          {mode === "password" ? (
-            <form onSubmit={handlePasswordLogin} className="mt-6 space-y-4">
-              <div>
-                <label className="label" htmlFor="email">Email</label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="input pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="label" htmlFor="password">Password</label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="input pl-10"
-                  />
-                </div>
-              </div>
+        <div className="flex flex-1 items-start justify-center px-4 pb-10 lg:items-center lg:px-8 lg:py-12">
+          <div className="card -mt-8 w-full max-w-sm p-6 shadow-pop animate-fade-in lg:mt-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
+            <div className="hidden lg:block">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
+              <p className="mt-1 text-sm text-slate-500">Sign in to your workspace</p>
+            </div>
 
-              {error && (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>
-              )}
-
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? <Spinner className="h-4 w-4" /> : <>Sign in <ArrowRight className="h-4 w-4" /></>}
+            <div className="mt-1 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1 lg:mt-6">
+              <button
+                type="button"
+                onClick={() => setMode("password")}
+                className={`rounded-xl py-2.5 text-sm font-semibold transition ${
+                  mode === "password" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5" /> Password
+                </span>
               </button>
-            </form>
-          ) : (
-            <div className="mt-6 space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100">
-                  <Fingerprint className="h-7 w-7 text-brand-600" />
+              <button
+                type="button"
+                onClick={() => setMode("passkey")}
+                className={`rounded-xl py-2.5 text-sm font-semibold transition ${
+                  mode === "passkey" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Fingerprint className="h-3.5 w-3.5" /> Passkey
+                </span>
+              </button>
+            </div>
+
+            {mode === "password" ? (
+              <form onSubmit={handlePasswordLogin} className="mt-6 space-y-4">
+                <div>
+                  <label className="label" htmlFor="email">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      autoComplete="username"
+                      inputMode="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      className="input pl-10"
+                    />
+                  </div>
                 </div>
-                <p className="text-sm font-medium text-slate-700">Use your device passkey</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Face ID, Touch ID, Windows Hello or a security key
+                <div>
+                  <label className="label" htmlFor="password">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id="password"
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="input pl-10"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-600">{error}</p>
+                )}
+
+                <button type="submit" disabled={loading} className="btn-primary h-12 w-full text-base">
+                  {loading ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <>
+                      Sign in <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div className="mt-6 space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100">
+                    <Fingerprint className="h-7 w-7 text-brand-600" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">Use your device passkey</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Face ID, fingerprint, Windows Hello or a security key
+                  </p>
+                </div>
+
+                {error && (
+                  <p className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-600">{error}</p>
+                )}
+
+                <button
+                  onClick={handlePasskeyLogin}
+                  disabled={loading}
+                  className="btn-primary h-12 w-full text-base"
+                >
+                  {loading ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <>
+                      Authenticate with passkey <Fingerprint className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
+              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <ShieldCheck className="h-3.5 w-3.5" /> First-time login
+              </p>
+              <div className="mt-2 space-y-1 text-xs text-slate-600">
+                <p>
+                  <span className="font-semibold">Super Admin:</span> admin@hrmate.com / admin123
+                </p>
+                <p className="text-slate-400">
+                  Change the password after first login, then add your team in Admin → Users.
                 </p>
               </div>
-
-              {error && (
-                <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>
-              )}
-
-              <button onClick={handlePasskeyLogin} disabled={loading} className="btn-primary w-full">
-                {loading ? <Spinner className="h-4 w-4" /> : <>Authenticate with passkey <Fingerprint className="h-4 w-4" /></>}
-              </button>
-            </div>
-          )}
-
-          <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <ShieldCheck className="h-3.5 w-3.5" /> Initial admin login
-            </p>
-            <div className="mt-2 space-y-1 text-xs text-slate-600">
-              <p><span className="font-semibold">Super Admin:</span> admin@hrmate.com / admin123</p>
-              <p className="text-slate-400">Change the password after first login, then create your team in Admin → Users.</p>
             </div>
           </div>
         </div>

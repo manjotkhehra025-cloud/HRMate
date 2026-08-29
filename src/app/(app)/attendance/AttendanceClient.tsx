@@ -136,32 +136,59 @@ export default function AttendanceClient({
               />
             </div>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <th className="pb-2 pr-4">Date</th>
-                    <th className="pb-2 pr-4">Punch In</th>
-                    <th className="pb-2 pr-4">Punch Out</th>
-                    <th className="pb-2">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-50">
-                      <td className="py-2.5 pr-4 font-medium text-slate-700">{formatDate(r.date)}</td>
-                      <td className="py-2.5 pr-4 text-slate-600">
-                        {r.punch_in_at ? formatTime(r.punch_in_at) : "—"}
-                      </td>
-                      <td className="py-2.5 pr-4 text-slate-600">
-                        {r.punch_out_at ? formatTime(r.punch_out_at) : "—"}
-                      </td>
-                      <td className="py-2.5 text-xs text-slate-400">{r.notes || "—"}</td>
+            <>
+              <div className="mt-4 space-y-2 sm:hidden">
+                {records.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl border border-slate-100 bg-slate-50/50 px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-slate-800">{formatDate(r.date)}</p>
+                    <div className="mt-1.5 flex items-center gap-4 text-sm text-slate-600">
+                      <span>
+                        In{" "}
+                        <span className="font-semibold tabular-nums">
+                          {r.punch_in_at ? formatTime(r.punch_in_at) : "—"}
+                        </span>
+                      </span>
+                      <span>
+                        Out{" "}
+                        <span className="font-semibold tabular-nums">
+                          {r.punch_out_at ? formatTime(r.punch_out_at) : "—"}
+                        </span>
+                      </span>
+                    </div>
+                    {r.notes ? <p className="mt-1 text-xs text-slate-400">{r.notes}</p> : null}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 hidden overflow-x-auto sm:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <th className="pb-2 pr-4">Date</th>
+                      <th className="pb-2 pr-4">Punch In</th>
+                      <th className="pb-2 pr-4">Punch Out</th>
+                      <th className="pb-2">Notes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {records.map((r) => (
+                      <tr key={r.id} className="border-b border-slate-50">
+                        <td className="py-2.5 pr-4 font-medium text-slate-700">{formatDate(r.date)}</td>
+                        <td className="py-2.5 pr-4 tabular-nums text-slate-600">
+                          {r.punch_in_at ? formatTime(r.punch_in_at) : "—"}
+                        </td>
+                        <td className="py-2.5 pr-4 tabular-nums text-slate-600">
+                          {r.punch_out_at ? formatTime(r.punch_out_at) : "—"}
+                        </td>
+                        <td className="py-2.5 text-xs text-slate-400">{r.notes || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {manualReqs.length > 0 && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   MapPin,
@@ -18,6 +18,7 @@ import {
   BellOff,
 } from "lucide-react";
 import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
+import MobileNav from "./MobileNav";
 import Avatar from "./Avatar";
 import { timeAgo } from "@/lib/utils";
 import { classNames } from "@/lib/utils";
@@ -48,6 +49,7 @@ export default function AppShell({
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(unread);
   const router = useRouter();
+  const pathname = usePathname();
 
   const has = (p: string) => permissions.includes(p) || user.role === "super_admin";
 
@@ -101,8 +103,13 @@ export default function AppShell({
     router.refresh();
   }
 
+  const currentLabel =
+    nav.find((n) =>
+      n.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(n.href)
+    )?.label ?? "HRMate";
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <Sidebar
         user={user}
         nav={nav}
@@ -112,15 +119,19 @@ export default function AppShell({
 
       <div className="lg:pl-72">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-lg sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200/70 bg-white/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl sm:h-16 sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="flex-1" />
+          <p className="min-w-0 flex-1 truncate text-[15px] font-semibold text-slate-800 lg:hidden">
+            {currentLabel}
+          </p>
+          <div className="hidden flex-1 lg:block" />
 
           {/* Notifications */}
           <div className="relative">
@@ -142,7 +153,7 @@ export default function AppShell({
             {notifOpen && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 z-30 mt-2 w-80 animate-slide-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-pop sm:w-96">
+                <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-pop">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-800">Notifications</p>
                     {unreadCount > 0 && (
@@ -212,8 +223,12 @@ export default function AppShell({
           </button>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 py-5 pb-28 sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
+          {children}
+        </main>
       </div>
+
+      <MobileNav nav={nav} onMore={() => setSidebarOpen(true)} />
     </div>
   );
 }

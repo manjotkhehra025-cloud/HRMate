@@ -13,7 +13,7 @@ export default function Avatar({
 }) {
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ring-2 ring-white/80 shadow-sm ${className}`}
       style={{
         width: size,
         height: size,

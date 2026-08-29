@@ -42,7 +42,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
@@ -52,13 +51,13 @@ export default function Sidebar({
 
       <aside
         className={classNames(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200/80 bg-white transition-transform duration-300 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200/80 bg-white/95 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between px-5">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-600/30">
+          <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-glow">
               <Fingerprint className="h-5 w-5 text-white" />
             </div>
             <div className="leading-tight">
@@ -70,12 +69,15 @@ export default function Sidebar({
               </span>
             </div>
           </Link>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 lg:hidden">
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 lg:hidden"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
           {nav.map((item) => (
             <Link
               key={item.href}
@@ -84,7 +86,7 @@ export default function Sidebar({
               className={classNames(
                 "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 isActive(item.href)
-                  ? "bg-brand-50 text-brand-700"
+                  ? "bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-100"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
@@ -105,7 +107,7 @@ export default function Sidebar({
         </nav>
 
         <div className="border-t border-slate-100 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+          <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
             <Avatar name={user.name} color={user.color} size={40} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-slate-800">{user.name}</p>

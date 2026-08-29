@@ -82,7 +82,7 @@ export default function PushRegistration({ vapidPublicKey }: { vapidPublicKey: s
     <button
       onClick={enable}
       disabled={state === "loading"}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
     >
       <Bell className="h-3.5 w-3.5" />
       {state === "loading" ? "Enabling…" : "Enable notifications"}
