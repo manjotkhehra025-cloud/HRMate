@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import db from "@/lib/db";
-import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { notify } from "@/lib/notify";
+import { applyApprovedManualPunch } from "@/lib/attendance";
 
 export async function POST(req: NextRequest) {
   const user = requireUser();
@@ -45,37 +45,10 @@ export async function POST(req: NextRequest) {
     ).run(status, user.id, Date.now(), note || "", id);
 
     if (status === "approved") {
-      // Apply the manual punch
-      const ts = new Date(`${row.date}T${row.time}:00`).getTime();
-      const record = db
-        .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
-        .get(row.user_id, row.date) as any;
-      if (row.type === "punch_in") {
-        if (!record) {
-          db.prepare(
-            `INSERT INTO attendance (id, user_id, date, punch_in_at, punch_in_geofence, notes)
-             VALUES (?, ?, ?, ?, 0, ?)`
-          ).run(randomId("a_"), row.user_id, row.date, ts, "Manual (approved)");
-        } else if (!record.punch_in_at) {
-          db.prepare("UPDATE attendance SET punch_in_at = ?, notes = ? WHERE id = ?").run(
-            ts,
-            "Manual (approved)",
-            record.id
-          );
-        }
-      } else {
-        if (record && !record.punch_out_at) {
-          db.prepare("UPDATE attendance SET punch_out_at = ?, notes = ? WHERE id = ?").run(
-            ts,
-            "Manual (approved)",
-            record.id
-          );
-        } else if (!record) {
-          db.prepare(
-            `INSERT INTO attendance (id, user_id, date, punch_out_at, punch_out_geofence, notes)
-             VALUES (?, ?, ?, ?, 0, ?)`
-          ).run(randomId("a_"), row.user_id, row.date, ts, "Manual (approved)");
-        }
+      try {
+        applyApprovedManualPunch(row);
+      } catch (e: any) {
+        return error(e?.message || "Failed to apply manual punch", 500);
       }
     }
 

@@ -38,8 +38,8 @@ export default function AttendanceClient({
 
   // Manual form
   const [mDate, setMDate] = useState(() => istParts().dateKey);
-  const [mType, setMType] = useState("punch_in");
-  const [mTime, setMTime] = useState("09:00");
+  const [mIn, setMIn] = useState("09:00");
+  const [mOut, setMOut] = useState("18:00");
   const [mReason, setMReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
@@ -70,8 +70,14 @@ export default function AttendanceClient({
     try {
       const res = await fetch("/api/attendance/manual", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: mDate, type: mType, time: mTime, reason: mReason }),
+        body: JSON.stringify({
+          date: mDate,
+          punch_in: mIn || undefined,
+          punch_out: mOut || undefined,
+          reason: mReason,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -79,7 +85,12 @@ export default function AttendanceClient({
         return;
       }
       setMReason("");
-      setSubmitMsg("Request submitted for approval ✓");
+      const n = data.count || 1;
+      setSubmitMsg(
+        n > 1
+          ? "Punch in & out sent for approval. After approve, today's times will update."
+          : "Request submitted for approval. After approve, today's time will update."
+      );
       load();
     } finally {
       setSubmitting(false);
@@ -223,8 +234,8 @@ export default function AttendanceClient({
           <div className="rounded-xl bg-brand-50/60 p-3 text-xs text-brand-700">
             <span className="flex items-start gap-1.5">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Forgot to punch, or had a GPS issue? Submit a manual punch request — it needs
-              approval from your manager/admin.
+              Arrived and left on time but forgot to punch? Enter both times. After
+              approval they replace that day's punch in / punch out.
             </span>
           </div>
 
@@ -240,27 +251,27 @@ export default function AttendanceClient({
               />
             </div>
             <div>
-              <label className="label">Type</label>
-              <select
-                value={mType}
-                onChange={(e) => setMType(e.target.value)}
-                className="input"
-              >
-                <option value="punch_in">Punch In</option>
-                <option value="punch_out">Punch Out</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Time</label>
+              <label className="label">Punch in time</label>
               <input
                 type="time"
-                value={mTime}
-                onChange={(e) => setMTime(e.target.value)}
+                value={mIn}
+                onChange={(e) => setMIn(e.target.value)}
                 className="input"
-                required
+              />
+            </div>
+            <div>
+              <label className="label">Punch out time</label>
+              <input
+                type="time"
+                value={mOut}
+                onChange={(e) => setMOut(e.target.value)}
+                className="input"
               />
             </div>
           </div>
+          <p className="text-[11px] text-slate-400">
+            Leave a time blank if you only need punch in or only punch out.
+          </p>
 
           <div>
             <label className="label">Reason</label>
@@ -278,7 +289,15 @@ export default function AttendanceClient({
           </button>
 
           {submitMsg && (
-            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{submitMsg}</p>
+            <p
+              className={`rounded-lg px-3 py-2 text-sm ${
+                /fail|must|invalid|required|enter/i.test(submitMsg)
+                  ? "bg-rose-50 text-rose-600"
+                  : "bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {submitMsg}
+            </p>
           )}
         </form>
       )}
