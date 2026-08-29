@@ -11,7 +11,7 @@
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "12.11.1",
     "lucide-react": "^1.35.0",
     "next": "14.2.35",
     "react": "^18",
