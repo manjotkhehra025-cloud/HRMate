@@ -20,10 +20,10 @@ type DatabaseLike = {
   [key: string]: any;
 };
 
-let _db: DatabaseLike | null = null;
+const globalForDb = globalThis as typeof globalThis & { __hrmateDb?: DatabaseLike };
 
 function getDb(): DatabaseLike {
-  if (_db) return _db;
+  if (globalForDb.__hrmateDb) return globalForDb.__hrmateDb;
   const Database = require("better-sqlite3");
   const dataDir = path.join(process.cwd(), "data");
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
@@ -31,9 +31,11 @@ function getDb(): DatabaseLike {
   const db = new Database(dbPath) as DatabaseLike;
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
+  db.pragma("busy_timeout = 5000");
   migrate(db);
   seed(db);
-  _db = db;
+  seedFactoryDefaults(db);
+  globalForDb.__hrmateDb = db;
   return db;
 }
 
@@ -217,10 +219,11 @@ function seed(d: DatabaseLike) {
   insertLeave.run("lt_sick", "Sick Leave", 10, "#ef4444", 2);
   insertLeave.run("lt_earned", "Earned Leave", 15, "#10b981", 3);
   insertLeave.run("lt_optional", "Optional Holiday", 3, "#f59e0b", 4);
+}
 
-  const setSetting = d.prepare(
-    `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`
-  );
+/** Fill missing keys only — never overwrite a saved factory location. */
+function seedFactoryDefaults(d: DatabaseLike) {
+  const setSetting = d.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`);
   setSetting.run("factory_name", "My Factory");
   setSetting.run("factory_lat", "28.6139");
   setSetting.run("factory_lng", "77.2090");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Save, Navigation, Factory } from "lucide-react";
+import { Save, Navigation, Factory } from "lucide-react";
 import { Spinner } from "@/components/ui";
 
 interface LeaveType {
@@ -28,50 +28,80 @@ export default function SettingsTab() {
   const [message, setMessage] = useState("");
   const [locating, setLocating] = useState(false);
 
+  function applyFactory(d: any) {
+    setFactory({
+      name: d.factory.name,
+      lat: String(d.factory.lat),
+      lng: String(d.factory.lng),
+      radius: String(d.factory.radius),
+      address: d.factory.address || "",
+      workStart: d.factory.workStart,
+      workEnd: d.factory.workEnd,
+    });
+    if (d.leaveTypes) setLeaveTypes(d.leaveTypes);
+  }
+
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/admin/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        setFactory({
-          name: d.factory.name,
-          lat: String(d.factory.lat),
-          lng: String(d.factory.lng),
-          radius: String(d.factory.radius),
-          address: d.factory.address,
-          workStart: d.factory.workStart,
-          workEnd: d.factory.workEnd,
-        });
-        setLeaveTypes(d.leaveTypes);
+        applyFactory(d);
+        setLoading(false);
+      })
+      .catch(() => {
+        setMessage("Could not load settings");
         setLoading(false);
       });
   }, []);
 
-  async function save() {
+  async function save(nextFactory?: typeof factory) {
+    const payload = nextFactory ?? factory;
     setSaving(true);
     setMessage("");
-    await fetch("/api/admin/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ factory, leaveTypes }),
-    });
-    setSaving(false);
-    setMessage("Settings saved ✓");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ factory: payload, leaveTypes }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Save failed");
+        return;
+      }
+      if (data.factory) applyFactory({ factory: data.factory, leaveTypes });
+      setMessage("Settings saved ✓");
+    } catch {
+      setMessage("Save failed — check your connection");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function useMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setMessage("GPS not available on this device");
+      return;
+    }
     setLocating(true);
+    setMessage("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setFactory((f) => ({
-          ...f,
+        const next = {
+          ...factory,
           lat: pos.coords.latitude.toFixed(6),
           lng: pos.coords.longitude.toFixed(6),
-        }));
+        };
+        setFactory(next);
         setLocating(false);
+        save(next);
       },
-      () => setLocating(false),
-      { enableHighAccuracy: true }
+      () => {
+        setLocating(false);
+        setMessage("Location permission denied. Enable GPS and try again.");
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
     );
   }
 
@@ -161,9 +191,9 @@ export default function SettingsTab() {
           </div>
         </div>
 
-        <button onClick={useMyLocation} disabled={locating} className="btn-secondary mt-4 text-xs">
+        <button onClick={useMyLocation} disabled={locating || saving} className="btn-secondary mt-4 text-xs">
           <Navigation className="h-3.5 w-3.5" />
-          {locating ? "Locating…" : "Use my current location"}
+          {locating ? "Locating…" : "Use my current location (saves immediately)"}
         </button>
       </div>
 
@@ -209,10 +239,20 @@ export default function SettingsTab() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="btn-primary">
+        <button onClick={() => save()} disabled={saving} className="btn-primary">
           {saving ? <Spinner className="h-4 w-4" /> : <><Save className="h-4 w-4" /> Save all settings</>}
         </button>
-        {message && <span className="text-sm font-medium text-emerald-600">{message}</span>}
+        {message && (
+          <span
+            className={`text-sm font-medium ${
+              message.includes("fail") || message.includes("denied") || message.includes("not")
+                ? "text-rose-600"
+                : "text-emerald-600"
+            }`}
+          >
+            {message}
+          </span>
+        )}
       </div>
     </div>
   );

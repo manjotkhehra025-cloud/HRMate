@@ -41,9 +41,15 @@ export default function AdminClient({
         ))}
       </div>
 
-      {tab === "users" && <UsersTab isSuperAdmin={isSuperAdmin} canPermissions={canPermissions} />}
-      {tab === "permissions" && <PermissionsTab />}
-      {tab === "settings" && <SettingsTab />}
+      <div className={tab === "users" ? "" : "hidden"}>
+        <UsersTab isSuperAdmin={isSuperAdmin} canPermissions={canPermissions} />
+      </div>
+      <div className={tab === "permissions" ? "" : "hidden"}>
+        <PermissionsTab />
+      </div>
+      <div className={tab === "settings" ? "" : "hidden"}>
+        <SettingsTab />
+      </div>
     </div>
   );
 }

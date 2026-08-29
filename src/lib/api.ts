@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "./auth";
 
 export function json(data: unknown, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 }
 
 export function error(message: string, status = 400) {

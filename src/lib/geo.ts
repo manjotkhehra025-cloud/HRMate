@@ -15,11 +15,22 @@ export interface FactoryConfig {
   workEnd: string;
 }
 
+const FACTORY_KEYS = [
+  "factory_name",
+  "factory_lat",
+  "factory_lng",
+  "factory_radius",
+  "factory_address",
+  "work_start",
+  "work_end",
+] as const;
+
 export function getFactoryConfig(): FactoryConfig {
-  const rows = db.prepare("SELECT key, value FROM settings WHERE key LIKE 'factory_%'").all() as {
-    key: string;
-    value: string;
-  }[];
+  const rows = db
+    .prepare(
+      `SELECT key, value FROM settings WHERE key IN (${FACTORY_KEYS.map(() => "?").join(",")})`
+    )
+    .all(...FACTORY_KEYS) as { key: string; value: string }[];
   const map: Record<string, string> = {};
   for (const r of rows) map[r.key] = r.value;
   return {
@@ -35,13 +46,23 @@ export function getFactoryConfig(): FactoryConfig {
 
 export function setFactoryConfig(cfg: Partial<FactoryConfig>) {
   const set = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
-  if (cfg.name !== undefined) set.run("factory_name", cfg.name);
-  if (cfg.lat !== undefined) set.run("factory_lat", String(cfg.lat));
-  if (cfg.lng !== undefined) set.run("factory_lng", String(cfg.lng));
-  if (cfg.radius !== undefined) set.run("factory_radius", String(cfg.radius));
-  if (cfg.address !== undefined) set.run("factory_address", cfg.address);
-  if (cfg.workStart !== undefined) set.run("work_start", cfg.workStart);
-  if (cfg.workEnd !== undefined) set.run("work_end", cfg.workEnd);
+  const apply = db.transaction(() => {
+    if (cfg.name !== undefined) set.run("factory_name", cfg.name);
+    if (cfg.lat !== undefined && Number.isFinite(cfg.lat)) set.run("factory_lat", String(cfg.lat));
+    if (cfg.lng !== undefined && Number.isFinite(cfg.lng)) set.run("factory_lng", String(cfg.lng));
+    if (cfg.radius !== undefined && Number.isFinite(cfg.radius)) {
+      set.run("factory_radius", String(cfg.radius));
+    }
+    if (cfg.address !== undefined) set.run("factory_address", cfg.address);
+    if (cfg.workStart !== undefined) set.run("work_start", cfg.workStart);
+    if (cfg.workEnd !== undefined) set.run("work_end", cfg.workEnd);
+  });
+  apply();
+  try {
+    db.pragma("wal_checkpoint(PASSIVE)");
+  } catch {
+    /* ignore */
+  }
 }
 
 export function haversineMeters(a: Coords, b: Coords): number {
