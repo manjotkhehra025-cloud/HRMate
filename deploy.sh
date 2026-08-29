@@ -38,6 +38,21 @@ apt-get autoremove -y >/dev/null 2>&1 || true
 apt-get autoclean -y >/dev/null 2>&1 || true
 info "Nginx removed."
 
+info "Step 1b/4 — Ensuring swap memory (build needs RAM)"
+SWAP_SIZE="${SWAP_SIZE:-2G}"
+if ! swapon --show | grep -q swap; then
+  if [ ! -f /swapfile ]; then
+    fallocate -l "$SWAP_SIZE" /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+    chmod 600 /swapfile
+    mkswap /swapfile >/dev/null
+  fi
+  swapon /swapfile
+  grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  info "Swap enabled ($SWAP_SIZE)."
+else
+  info "Swap already enabled."
+fi
+
 info "Step 2/4 — Installing Docker + Compose"
 if ! command -v docker >/dev/null 2>&1; then
   apt-get update -y

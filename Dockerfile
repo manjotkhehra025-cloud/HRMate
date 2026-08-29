@@ -10,6 +10,9 @@ RUN apt-get update \
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Cap Node heap so the build worker does not exhaust a small VPS's memory
+ENV NODE_OPTIONS="--max-old-space-size=768"
+
 COPY . .
 RUN npm run build
 
