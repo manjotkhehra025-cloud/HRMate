@@ -2,10 +2,13 @@
 gdfoods.duckdns.org {
 	tls {
 		issuer acme {
-			# Prefer Let's Encrypt's cross-signed chain (ISRG Root X1), which
-			# every Android device trusts since 2016. The default Generation Y
-			# chain (YE2 -> ISRG Root YE) breaks Android clients.
-			preferred_chains ISRG Root X1
+			# Let's Encrypt's new "Generation Y" chain (root ISRG Root YE) is not
+			# yet trusted by Android devices, causing certificate errors there.
+			# Prefer the cross-signed chain rooted at ISRG Root X1 (trusted on
+			# Android since 2016).
+			preferred_chains {
+				root_common_name "ISRG Root X1"
+			}
 		}
 	}
 
