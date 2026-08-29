@@ -89,8 +89,10 @@ export default function AttendanceClient({
       const n = data.count || 1;
       setSubmitMsg(
         n > 1
-          ? "Punch in & out sent for approval. After approve, today's times will update."
-          : "Request submitted for approval. After approve, today's time will update."
+          ? "Punch in & out sent for approval. After approve, those times replace today's record."
+          : mKind === "out"
+            ? "Punch out sent for approval. After approve, only punch out will update."
+            : "Punch in sent for approval. After approve, only punch in will update."
       );
       load();
     } finally {
@@ -235,13 +237,46 @@ export default function AttendanceClient({
           <div className="rounded-xl bg-brand-50/60 p-3 text-xs text-brand-700">
             <span className="flex items-start gap-1.5">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Arrived and left on time but forgot to punch? Enter both times. After
-              approval they replace that day's punch in / punch out.
+              Forgot morning punch-in, evening punch-out, or both? Pick one option.
+              After approval those times replace the day&apos;s record.
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
+          <div>
+            <label className="label">What do you want to add?</label>
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setMKind("in")}
+                className={`flex items-center justify-center gap-1 rounded-lg py-2.5 text-xs font-semibold transition sm:text-sm ${
+                  mKind === "in" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                <LogIn className="h-3.5 w-3.5" /> Punch in
+              </button>
+              <button
+                type="button"
+                onClick={() => setMKind("out")}
+                className={`flex items-center justify-center gap-1 rounded-lg py-2.5 text-xs font-semibold transition sm:text-sm ${
+                  mKind === "out" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                <LogOut className="h-3.5 w-3.5" /> Punch out
+              </button>
+              <button
+                type="button"
+                onClick={() => setMKind("both")}
+                className={`flex items-center justify-center gap-1 rounded-lg py-2.5 text-xs font-semibold transition sm:text-sm ${
+                  mKind === "both" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5" /> Both
+              </button>
+            </div>
+          </div>
+
+          <div className={`grid grid-cols-1 gap-4 ${mKind === "both" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            <div className={mKind === "both" ? "" : "sm:col-span-2"}>
               <label className="label">Date</label>
               <input
                 type="date"
@@ -251,28 +286,31 @@ export default function AttendanceClient({
                 required
               />
             </div>
-            <div>
-              <label className="label">Punch in time</label>
-              <input
-                type="time"
-                value={mIn}
-                onChange={(e) => setMIn(e.target.value)}
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Punch out time</label>
-              <input
-                type="time"
-                value={mOut}
-                onChange={(e) => setMOut(e.target.value)}
-                className="input"
-              />
-            </div>
+            {mKind !== "out" && (
+              <div>
+                <label className="label">Punch in time</label>
+                <input
+                  type="time"
+                  value={mIn}
+                  onChange={(e) => setMIn(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
+            )}
+            {mKind !== "in" && (
+              <div>
+                <label className="label">Punch out time</label>
+                <input
+                  type="time"
+                  value={mOut}
+                  onChange={(e) => setMOut(e.target.value)}
+                  className="input"
+                  required
+                />
+              </div>
+            )}
           </div>
-          <p className="text-[11px] text-slate-400">
-            Leave a time blank if you only need punch in or only punch out.
-          </p>
 
           <div>
             <label className="label">Reason</label>
