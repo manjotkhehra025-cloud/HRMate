@@ -1,0 +1,14 @@
+# HRMate — reverse proxy with automatic HTTPS (Let's Encrypt)
+gdfoods.duckdns.org {
+	encode gzip
+
+	# Proxy all traffic to the Next.js app
+	reverse_proxy hrmate:3000
+
+	# WebSocket support (for future live features)
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}

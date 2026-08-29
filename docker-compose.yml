@@ -1,0 +1,43 @@
+services:
+  hrmate:
+    build: .
+    container_name: hrmate
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HRMATE_DOMAIN: gdfoods.duckdns.org
+      HRMATE_RP_ID: gdfoods.duckdns.org
+      HRMATE_ORIGIN: https://gdfoods.duckdns.org
+      # Generate your own VAPID keys for push notifications (see DEPLOY.md) and set:
+      # NEXT_PUBLIC_VAPID_PUBLIC_KEY: ""
+      # VAPID_PRIVATE_KEY: ""
+    volumes:
+      - hrmate_data:/app/data
+    expose:
+      - "3000"
+    networks:
+      - web
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: hrmate-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - hrmate
+    networks:
+      - web
+
+networks:
+  web:
+
+volumes:
+  hrmate_data:
+  caddy_data:
+  caddy_config:
