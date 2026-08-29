@@ -1,17 +1,21 @@
 import { getSessionUser } from "@/lib/auth";
+import { getPermissions } from "@/lib/permissions";
+import { getFactoryConfig } from "@/lib/geo";
+import { getVapidPublicKey } from "@/lib/push";
 import ProfileClient from "./ProfileClient";
 
-export const metadata = { title: "Profile — HRMate" };
+export const metadata = { title: "Settings — HRMate" };
 
 export default function ProfilePage() {
   const user = getSessionUser()!;
+  const perms = getPermissions(user.id);
+  const factory = getFactoryConfig();
+
   return (
     <div className="space-y-6">
       <div className="hidden lg:block">
-        <h1 className="page-title">Profile & Security</h1>
-        <p className="page-sub">
-          Manage your account details and passkeys.
-        </p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-sub">Your profile, display preferences, and factory setup.</p>
       </div>
       <ProfileClient
         user={{
@@ -21,8 +25,12 @@ export default function ProfilePage() {
           role: user.role,
           department: user.department,
           designation: user.designation,
+          phone: user.phone || "",
           color: user.color,
         }}
+        canSettings={perms.isSuperAdmin || perms.has("admin.settings")}
+        vapidPublicKey={getVapidPublicKey()}
+        factoryName={factory.name}
       />
     </div>
   );

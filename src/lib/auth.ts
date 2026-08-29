@@ -21,6 +21,7 @@ export interface SessionUser {
   role: string;
   department: string;
   designation: string;
+  phone: string;
   color: string;
   active: number;
 }

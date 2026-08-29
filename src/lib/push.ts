@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import db from "./db";
+import { isNotifyEnabled } from "./prefs";
 
 const VAPID_PUBLIC =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||

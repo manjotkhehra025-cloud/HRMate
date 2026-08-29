@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import PrefsProvider from "@/components/PrefsProvider";
 
 export const metadata: Metadata = {
   title: "HRMate — Smart HRMS",
@@ -14,14 +15,19 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const PREFS_BOOT = `(function(){try{var t=localStorage.getItem("hrmate_appearance")||"system";var s=localStorage.getItem("hrmate_text_size")||"medium";var l=localStorage.getItem("hrmate_language")||"en";var theme=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",theme);document.documentElement.setAttribute("data-text",s);document.documentElement.lang=l==="pa"?"pa":"en";}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} />
+        <PrefsProvider>{children}</PrefsProvider>
+      </body>
     </html>
   );
 }

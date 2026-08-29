@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Save, Navigation, Factory } from "lucide-react";
 import { Spinner } from "@/components/ui";
+import GeofenceMap from "@/components/GeofenceMap";
+import { parseCoordsFromText } from "@/lib/maps";
 
 interface LeaveType {
   id: string;
@@ -27,6 +29,7 @@ export default function SettingsTab() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [locating, setLocating] = useState(false);
+  const [mapsLink, setMapsLink] = useState("");
 
   function applyFactory(d: any) {
     setFactory({
@@ -79,6 +82,28 @@ export default function SettingsTab() {
     }
   }
 
+  async function applyMapsLink() {
+    const local = parseCoordsFromText(mapsLink);
+    if (local) {
+      const next = { ...factory, lat: String(local.lat), lng: String(local.lng) };
+      setFactory(next);
+      setMessage("Pin moved to that location");
+      return;
+    }
+    const res = await fetch("/api/admin/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: mapsLink }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      setMessage(d.error || "Could not read that link");
+      return;
+    }
+    setFactory({ ...factory, lat: String(d.lat), lng: String(d.lng) });
+    setMessage("Pin moved to that location");
+  }
+
   function useMyLocation() {
     if (!navigator.geolocation) {
       setMessage("GPS not available on this device");
@@ -126,6 +151,35 @@ export default function SettingsTab() {
             <p className="text-xs text-slate-500">
               Employees must be within this radius to punch in/out.
             </p>
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <GeofenceMap
+            lat={parseFloat(factory.lat) || 0}
+            lng={parseFloat(factory.lng) || 0}
+            radius={parseFloat(factory.radius) || 100}
+            onChange={({ lat, lng }) =>
+              setFactory((f) => ({ ...f, lat: String(lat), lng: String(lng) }))
+            }
+          />
+          <p className="mt-2 text-xs text-muted">
+            Drag the pin or tap the map. Blue circle is the punch radius.
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <label className="label">Paste Google Maps or OSM link</label>
+          <div className="flex gap-2">
+            <input
+              className="input"
+              placeholder="https://maps.google.com/… or 31.63, 74.87"
+              value={mapsLink}
+              onChange={(e) => setMapsLink(e.target.value)}
+            />
+            <button type="button" className="btn-secondary shrink-0" onClick={applyMapsLink}>
+              Go
+            </button>
           </div>
         </div>
 

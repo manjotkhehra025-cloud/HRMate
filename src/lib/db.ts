@@ -33,8 +33,10 @@ function getDb(): DatabaseLike {
   db.pragma("foreign_keys = ON");
   db.pragma("busy_timeout = 5000");
   migrate(db);
+  ensureSchema(db);
   seed(db);
   seedFactoryDefaults(db);
+  seedShiftsAndLeave(db);
   globalForDb.__hrmateDb = db;
   return db;
 }
@@ -188,6 +190,36 @@ function migrate(d: DatabaseLike) {
   `);
 }
 
+function hasColumn(d: DatabaseLike, table: string, column: string): boolean {
+  const cols = d.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  return cols.some((c) => c.name === column);
+}
+
+/** Additive tables/columns for existing production DBs. Never drops data. */
+function ensureSchema(d: DatabaseLike) {
+  d.exec(`
+  CREATE TABLE IF NOT EXISTS user_prefs (
+    user_id TEXT PRIMARY KEY,
+    language TEXT NOT NULL DEFAULT 'en',
+    appearance TEXT NOT NULL DEFAULT 'system',
+    text_size TEXT NOT NULL DEFAULT 'medium',
+    notify_enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS shifts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    hours REAL NOT NULL DEFAULT 8,
+    auto_pick TEXT NOT NULL DEFAULT 'none',
+    sort INTEGER DEFAULT 0
+  );
+  `);
+  if (!hasColumn(d, "attendance", "shift_id")) {
+    d.exec(`ALTER TABLE attendance ADD COLUMN shift_id TEXT`);
+  }
+}
+
 function seed(d: DatabaseLike) {
   const count = d.prepare("SELECT COUNT(*) AS c FROM users").get() as any;
   if (count.c > 0) return;
@@ -231,6 +263,25 @@ function seedFactoryDefaults(d: DatabaseLike) {
   setSetting.run("factory_address", "");
   setSetting.run("work_start", "09:00");
   setSetting.run("work_end", "18:00");
+}
+
+function seedShiftsAndLeave(d: DatabaseLike) {
+  const leave = d.prepare(
+    `INSERT OR IGNORE INTO leave_types (id, name, days_per_year, color, sort) VALUES (?, ?, ?, ?, ?)`
+  );
+  leave.run("lt_casual", "Casual Leave", 12, "#6366f1", 1);
+  leave.run("lt_sick", "Sick Leave", 10, "#ef4444", 2);
+  leave.run("lt_earned", "Earned Leave", 15, "#10b981", 3);
+  leave.run("lt_optional", "Optional Holiday", 3, "#f59e0b", 4);
+  leave.run("lt_comp", "Compensatory off", 0, "#8b5cf6", 5);
+  leave.run("lt_short", "Short leave", 6, "#06b6d4", 6);
+
+  const shift = d.prepare(
+    `INSERT OR IGNORE INTO shifts (id, name, start_time, hours, auto_pick, sort) VALUES (?, ?, ?, ?, ?, ?)`
+  );
+  shift.run("sh_day", "Day", "08:00", 8, "morning", 1);
+  shift.run("sh_season", "Season day", "07:00", 8, "none", 2);
+  shift.run("sh_night", "Night", "19:00", 8, "evening", 3);
 }
 
 export default db;

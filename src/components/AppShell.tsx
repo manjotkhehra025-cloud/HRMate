@@ -22,6 +22,8 @@ import MobileNav from "./MobileNav";
 import Avatar from "./Avatar";
 import { timeAgo } from "@/lib/utils";
 import { classNames } from "@/lib/utils";
+import { usePrefs } from "./PrefsProvider";
+import { navLabel } from "@/lib/i18n";
 
 interface Notif {
   id: string;
@@ -44,12 +46,22 @@ export default function AppShell({
   unread: number;
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(unread);
   const router = useRouter();
   const pathname = usePathname();
+  const { t, prefs } = usePrefs();
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopOpen(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopOpen(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const has = (p: string) => permissions.includes(p) || user.role === "super_admin";
 
@@ -73,8 +85,13 @@ export default function AppShell({
     ...(has("admin.view")
       ? [{ href: "/admin", label: "Admin", icon: <ShieldCheck className="h-5 w-5" /> }]
       : []),
-    { href: "/profile", label: "Profile & Security", icon: <Settings className="h-5 w-5" /> },
+    { href: "/profile", label: t("settings"), icon: <Settings className="h-5 w-5" /> },
   ];
+
+  const labeledNav = nav.map((n) => ({
+    ...n,
+    label: navLabel(prefs.language, n.href, n.label),
+  }));
 
   async function loadNotifs() {
     const res = await fetch("/api/notifications");
@@ -104,34 +121,46 @@ export default function AppShell({
   }
 
   const currentLabel =
-    nav.find((n) =>
+    labeledNav.find((n) =>
       n.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(n.href)
     )?.label ?? "HRMate";
+
+  function toggleMenu() {
+    if (window.matchMedia("(min-width: 1024px)").matches) {
+      setDesktopOpen((o) => !o);
+    } else {
+      setMobileOpen((o) => !o);
+    }
+  }
 
   return (
     <div className="min-h-[100dvh]">
       <Sidebar
         user={user}
-        nav={nav}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        nav={labeledNav}
+        open={mobileOpen || desktopOpen}
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        onDismiss={() => {
+          setMobileOpen(false);
+          setDesktopOpen(false);
+        }}
       />
 
-      <div className="lg:pl-72">
+      <div className={desktopOpen ? "lg:pl-72" : ""}>
         {/* Topbar */}
         <header className="sticky top-0 z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 pt-[env(safe-area-inset-top)] sm:px-6">
           <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB] lg:hidden"
+            onClick={toggleMenu}
+            className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB]"
             aria-label="Open menu"
           >
             <Menu className="h-[22px] w-[22px]" />
           </button>
 
-          <p className="min-w-0 flex-1 truncate text-[17px] font-bold text-ink lg:hidden">
+          <p className="min-w-0 flex-1 truncate text-[17px] font-bold text-ink">
             {currentLabel}
           </p>
-          <div className="hidden flex-1 lg:block" />
 
           {/* Notifications */}
           <div className="relative">
@@ -155,13 +184,13 @@ export default function AppShell({
                 <div className="fixed inset-0 z-20" onClick={() => setNotifOpen(false)} />
                 <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-pop">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-800">Notifications</p>
+                    <p className="text-sm font-semibold text-slate-800">{t("notifications")}</p>
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllRead}
                         className="text-xs font-medium text-brand-600 hover:text-brand-700"
                       >
-                        Mark all read
+                        {t("markAllRead")}
                       </button>
                     )}
                   </div>
@@ -169,7 +198,7 @@ export default function AppShell({
                     {notifs.length === 0 ? (
                       <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
                         <BellOff className="h-6 w-6" />
-                        <p className="text-sm">No notifications yet</p>
+                        <p className="text-sm">{t("noNotifications")}</p>
                       </div>
                     ) : (
                       notifs.slice(0, 20).map((n) => (
@@ -206,17 +235,21 @@ export default function AppShell({
             )}
           </div>
 
-          <div className="hidden items-center gap-3 border-l border-slate-200 pl-3 sm:flex">
+          <Link
+            href="/profile"
+            title={t("profileSettings")}
+            className="flex items-center gap-2 rounded-xl border-l border-slate-200 py-1 pl-3 pr-1 transition hover:bg-[#F3F7FB]"
+          >
             <Avatar name={user.name} color={user.color} size={36} />
-            <div className="hidden leading-tight lg:block">
+            <div className="hidden leading-tight sm:block">
               <p className="text-sm font-semibold text-slate-800">{user.name}</p>
               <p className="text-xs capitalize text-slate-500">{user.role.replace("_", " ")}</p>
             </div>
-          </div>
+          </Link>
 
           <button
             onClick={logout}
-            title="Logout"
+            title={t("logout")}
             className="rounded-xl p-2.5 text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
           >
             <LogOut className="h-5 w-5" />
@@ -228,7 +261,7 @@ export default function AppShell({
         </main>
       </div>
 
-      <MobileNav nav={nav} onMore={() => setSidebarOpen(true)} />
+      <MobileNav nav={labeledNav} onMore={() => setMobileOpen(true)} />
     </div>
   );
 }

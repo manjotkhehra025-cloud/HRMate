@@ -26,12 +26,16 @@ export default function Sidebar({
   user,
   nav,
   open,
+  mobileOpen,
   onClose,
+  onDismiss,
 }: {
   user: SessionUserShape;
   nav: NavItem[];
   open: boolean;
+  mobileOpen?: boolean;
   onClose: () => void;
+  onDismiss?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -42,7 +46,7 @@ export default function Sidebar({
 
   return (
     <>
-      {open && (
+      {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-navy/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
@@ -51,7 +55,7 @@ export default function Sidebar({
 
       <aside
         className={classNames(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#1A3A55] transition-transform duration-300 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#1A3A55] transition-transform duration-300",
           open ? "translate-x-0" : "-translate-x-full"
         )}
         style={{ background: "linear-gradient(180deg, #0B2743 0%, #081C31 100%)" }}
@@ -71,8 +75,9 @@ export default function Sidebar({
             </div>
           </Link>
           <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-[#7892AA] hover:bg-white/10 lg:hidden"
+            onClick={onDismiss || onClose}
+            className="rounded-lg p-1.5 text-[#7892AA] hover:bg-white/10"
+            aria-label="Close menu"
           >
             <X className="h-5 w-5" />
           </button>
@@ -110,13 +115,17 @@ export default function Sidebar({
         </nav>
 
         <div className="border-t border-[#1A3A55] p-4">
-          <div className="flex items-center gap-3 rounded-tile bg-[#071827] p-3">
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-tile bg-[#071827] p-3 transition hover:bg-white/[0.06]"
+          >
             <Avatar name={user.name} color={user.color} size={40} />
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
               <p className="truncate text-[11.5px] text-[#7892AA]">{user.designation || user.role}</p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>
