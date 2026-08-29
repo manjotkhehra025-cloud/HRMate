@@ -37,3 +37,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Google Search Console HTML tokens (live on the VPS only)
+/verify/google*.html

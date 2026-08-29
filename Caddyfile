@@ -14,8 +14,18 @@ gdfoods.duckdns.org {
 
 	encode gzip
 
-	# Proxy all traffic to the Next.js app
-	reverse_proxy hrmate:3000
+	# Google Search Console (and similar) HTML verification files.
+	# Drop google*.html into ./verify/ — no app rebuild needed.
+	handle /google*.html {
+		root * /srv/verify
+		header Content-Type "text/html; charset=utf-8"
+		file_server
+	}
+
+	# Proxy all other traffic to the Next.js app
+	handle {
+		reverse_proxy hrmate:3000
+	}
 
 	# WebSocket support (for future live features)
 	header {
