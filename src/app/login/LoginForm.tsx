@@ -228,12 +228,11 @@ export default function LoginForm() {
 
           <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <ShieldCheck className="h-3.5 w-3.5" /> Demo accounts
+              <ShieldCheck className="h-3.5 w-3.5" /> Initial admin login
             </p>
             <div className="mt-2 space-y-1 text-xs text-slate-600">
               <p><span className="font-semibold">Super Admin:</span> admin@hrmate.com / admin123</p>
-              <p><span className="font-semibold">Manager:</span> manager@hrmate.com / manager123</p>
-              <p><span className="font-semibold">Employee:</span> employee@hrmate.com / employee123</p>
+              <p className="text-slate-400">Change the password after first login, then create your team in Admin → Users.</p>
             </div>
           </div>
         </div>

@@ -196,65 +196,19 @@ function seed(d: DatabaseLike) {
      VALUES (@id, @email, @password_hash, @name, @role, @department, @designation, @color, @created_at)`
   );
 
-  const users = [
-    {
-      id: randomId("u_"),
-      email: "admin@hrmate.com",
-      password_hash: hashPassword("admin123"),
-      name: "Aarav Sharma",
-      role: "super_admin",
-      department: "Management",
-      designation: "Super Admin",
-      color: "#6366f1",
-    },
-    {
-      id: randomId("u_"),
-      email: "manager@hrmate.com",
-      password_hash: hashPassword("manager123"),
-      name: "Priya Verma",
-      role: "manager",
-      department: "Production",
-      designation: "Plant Manager",
-      color: "#0ea5e9",
-    },
-    {
-      id: randomId("u_"),
-      email: "employee@hrmate.com",
-      password_hash: hashPassword("employee123"),
-      name: "Rahul Singh",
-      role: "employee",
-      department: "Production",
-      designation: "Machine Operator",
-      color: "#10b981",
-    },
-    {
-      id: randomId("u_"),
-      email: "sneha@hrmate.com",
-      password_hash: hashPassword("sneha123"),
-      name: "Sneha Kaur",
-      role: "employee",
-      department: "Quality",
-      designation: "QC Inspector",
-      color: "#f59e0b",
-    },
-    {
-      id: randomId("u_"),
-      email: "vikram@hrmate.com",
-      password_hash: hashPassword("vikram123"),
-      name: "Vikram Patel",
-      role: "employee",
-      department: "Logistics",
-      designation: "Warehouse Staff",
-      color: "#ef4444",
-    },
-  ];
-
-  const insert = d.transaction(() => {
-    for (const u of users) {
-      insertUser.run({ ...u, created_at: now });
-    }
-  });
-  insert();
+  // Only the bootstrap super-admin account is seeded. No demo users, wall
+  // posts, comments or likes are created — the workspace starts clean.
+  const admin = {
+    id: randomId("u_"),
+    email: "admin@hrmate.com",
+    password_hash: hashPassword("admin123"),
+    name: "Super Admin",
+    role: "super_admin",
+    department: "Management",
+    designation: "Super Admin",
+    color: "#6366f1",
+  };
+  insertUser.run({ ...admin, created_at: now });
 
   const insertLeave = d.prepare(
     `INSERT INTO leave_types (id, name, days_per_year, color, sort) VALUES (?, ?, ?, ?, ?)`
@@ -267,55 +221,13 @@ function seed(d: DatabaseLike) {
   const setSetting = d.prepare(
     `INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`
   );
-  setSetting.run("factory_name", "HRMate Manufacturing Unit");
+  setSetting.run("factory_name", "My Factory");
   setSetting.run("factory_lat", "28.6139");
   setSetting.run("factory_lng", "77.2090");
   setSetting.run("factory_radius", "200");
-  setSetting.run("factory_address", "Plot 12, Industrial Area, New Delhi");
+  setSetting.run("factory_address", "");
   setSetting.run("work_start", "09:00");
   setSetting.run("work_end", "18:00");
-
-  const insertPost = d.prepare(
-    `INSERT INTO wall_posts (id, user_id, content, created_at) VALUES (?, ?, ?, ?)`
-  );
-  insertPost.run(
-    randomId("p_"),
-    users[0].id,
-    "Welcome to HRMate! 🎉 This is our social wall — share announcements, shout-outs and updates with the team.",
-    now - 1000 * 60 * 60 * 5
-  );
-  insertPost.run(
-    randomId("p_"),
-    users[1].id,
-    "Reminder: Monthly production review meeting tomorrow at 10 AM in the conference room. Please be on time. 📋",
-    now - 1000 * 60 * 60 * 3
-  );
-  insertPost.run(
-    randomId("p_"),
-    users[2].id,
-    "Great teamwork on the new line setup this week! Proud of everyone. 💪",
-    now - 1000 * 60 * 60 * 1
-  );
-
-  const insertLike = d.prepare(
-    `INSERT INTO wall_likes (post_id, user_id) VALUES (?, ?)`
-  );
-  insertLike.run(
-    (d.prepare("SELECT id FROM wall_posts ORDER BY created_at DESC LIMIT 1").get() as any).id,
-    users[1].id
-  );
-
-  const insertComment = d.prepare(
-    `INSERT INTO wall_comments (id, post_id, user_id, content, created_at) VALUES (?, ?, ?, ?, ?)`
-  );
-  const firstPost = d.prepare("SELECT id FROM wall_posts ORDER BY created_at ASC LIMIT 1").get() as any;
-  insertComment.run(
-    randomId("c_"),
-    firstPost.id,
-    users[3].id,
-    "Looking forward to using this! 🙌",
-    now - 1000 * 60 * 60 * 4
-  );
 }
 
 export default db;

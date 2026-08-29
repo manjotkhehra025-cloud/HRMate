@@ -71,13 +71,15 @@ Google Cloud VPS (Docker install, firewall, launch, updates and backups).
 
 The SQLite database is auto-created and seeded on first run (in `data/`).
 
-### Demo accounts
+### Initial login
 
 | Role | Email | Password |
 |------|-------|----------|
 | Super Admin | `admin@hrmate.com` | `admin123` |
-| Manager | `manager@hrmate.com` | `manager123` |
-| Employee | `employee@hrmate.com` | `employee123` |
+
+> On first run only the bootstrap **super admin** account is created (no demo
+> users or sample wall posts). Log in, change the password, then add your real
+> team from **Admin → Users**.
 
 > The default factory geofence is set to **New Delhi (28.6139, 77.2090, 200m)**.
 > To test GPS punching, change it in **Admin → Factory Settings** to your real location
