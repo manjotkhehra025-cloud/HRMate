@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getPermissions } from "@/lib/permissions";
 import { getFactoryConfig } from "@/lib/geo";
 import { dateKey } from "@/lib/api";
-import { formatTime } from "@/lib/utils";
+import { formatTime, IST, istParts } from "@/lib/utils";
 import db from "@/lib/db";
 import PunchWidget from "@/components/PunchWidget";
 import Avatar from "@/components/Avatar";
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 export const metadata = { title: "Dashboard — HRMate" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function DashboardPage() {
   const user = getSessionUser()!;
@@ -70,6 +72,7 @@ export default function DashboardPage() {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: IST,
   });
 
   const stats = [
@@ -221,7 +224,7 @@ export default function DashboardPage() {
 }
 
 function getGreeting(): string {
-  const h = new Date().getHours();
+  const h = istParts().hour;
   if (h < 12) return "morning";
   if (h < 17) return "afternoon";
   return "evening";

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { CalendarDays, Clock, Send, History, Info } from "lucide-react";
 import { Spinner, StatusBadge, EmptyState } from "@/components/ui";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, istParts } from "@/lib/utils";
+import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
 
 interface Record {
   id: string;
@@ -33,10 +34,10 @@ export default function AttendanceClient({
   const [records, setRecords] = useState<Record[]>([]);
   const [manualReqs, setManualReqs] = useState<ManualReq[]>([]);
   const [loading, setLoading] = useState(false);
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(() => istParts().monthKey);
 
   // Manual form
-  const [mDate, setMDate] = useState(new Date().toISOString().slice(0, 10));
+  const [mDate, setMDate] = useState(() => istParts().dateKey);
   const [mType, setMType] = useState("punch_in");
   const [mTime, setMTime] = useState("09:00");
   const [mReason, setMReason] = useState("");
@@ -57,6 +58,9 @@ export default function AttendanceClient({
 
   useEffect(() => {
     load();
+    const onChange = () => load();
+    window.addEventListener(ATTENDANCE_EVENT, onChange);
+    return () => window.removeEventListener(ATTENDANCE_EVENT, onChange);
   }, [month]);
 
   async function submitManual(e: React.FormEvent) {

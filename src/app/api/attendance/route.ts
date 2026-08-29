@@ -5,6 +5,9 @@ import { requireUser, unauthorized, error, json, dateKey } from "@/lib/api";
 import { isWithinGeofence, getFactoryConfig } from "@/lib/geo";
 import { hasPermission } from "@/lib/permissions";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const user = requireUser();
   if (!user) return unauthorized();

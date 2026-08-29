@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "./auth";
+import { istParts } from "./utils";
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -21,8 +22,5 @@ export function requireUser() {
 }
 
 export function dateKey(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return istParts(d).dateKey;
 }

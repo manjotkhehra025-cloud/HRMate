@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { MapPin, Clock, Navigation, AlertTriangle, CheckCircle2, LogIn, LogOut } from "lucide-react";
 import { Spinner } from "./ui";
-import { formatTime } from "@/lib/utils";
+import { formatTime, IST } from "@/lib/utils";
+
+export const ATTENDANCE_EVENT = "hrmate:attendance";
 
 interface PunchWidgetProps {
   canPunch: boolean;
@@ -12,12 +15,30 @@ interface PunchWidgetProps {
 }
 
 export default function PunchWidget({ canPunch, today, factory }: PunchWidgetProps) {
+  const router = useRouter();
   const [record, setRecord] = useState(today);
   const [punching, setPunching] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "locating" | "outside" | "error">("idle");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    setRecord(today);
+  }, [today]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/attendance", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d.today !== undefined) setRecord(d.today);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -50,6 +71,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       const pos = await getLocation();
       const res = await fetch("/api/attendance", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat: pos.lat, lng: pos.lng }),
       });
@@ -63,6 +85,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       setGeoState("idle");
       const action = data.record.punch_out_at ? "Punched out" : "Punched in";
       setMessage(`${action} at ${formatTime(Date.now())} ✓`);
+      window.dispatchEvent(new Event(ATTENDANCE_EVENT));
+      router.refresh();
     } catch (e: any) {
       setGeoState("error");
       setError(e.message || "Failed to get location");
@@ -97,6 +121,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                 weekday: "long",
                 day: "numeric",
                 month: "long",
+                timeZone: IST,
               })}
             </p>
           </div>
@@ -119,7 +144,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               {new Date(now).toLocaleTimeString("en-IN", {
                 hour: "2-digit",
                 minute: "2-digit",
-                hour12: false,
+                hour12: true,
+                timeZone: IST,
               })}
             </p>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">

@@ -1,3 +1,30 @@
+export const IST = "Asia/Kolkata";
+
+export function istParts(d = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: IST,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value])
+  ) as Record<string, string>;
+  const hour = parseInt(parts.hour, 10) % 24;
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour,
+    dateKey: `${parts.year}-${parts.month}-${parts.day}`,
+    monthKey: `${parts.year}-${parts.month}`,
+  };
+}
+
 export function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
   const m = Math.floor(diff / 60000);
@@ -5,9 +32,13 @@ export function timeAgo(ts: number): string {
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  const day = Math.floor(h / 24);
+  if (day < 7) return `${day}d ago`;
+  return new Date(ts).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    timeZone: IST,
+  });
 }
 
 export function formatTime(ts: number): string {
@@ -15,12 +46,18 @@ export function formatTime(ts: number): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone: IST,
   });
 }
 
 export function formatDate(d: string): string {
-  const date = new Date(d + "T00:00:00");
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const date = new Date(d + "T00:00:00+05:30");
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: IST,
+  });
 }
 
 export function formatDateTime(ts: number): string {
@@ -29,6 +66,7 @@ export function formatDateTime(ts: number): string {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: IST,
   });
 }
 

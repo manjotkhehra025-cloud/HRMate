@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      TZ: Asia/Kolkata
       HRMATE_DB: /app/data/hrmate.db
       HRMATE_DOMAIN: gdfoods.duckdns.org
       HRMATE_RP_ID: gdfoods.duckdns.org

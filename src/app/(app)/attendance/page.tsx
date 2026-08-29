@@ -7,6 +7,8 @@ import PunchWidget from "@/components/PunchWidget";
 import AttendanceClient from "./AttendanceClient";
 
 export const metadata = { title: "Attendance — HRMate" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function AttendancePage() {
   const user = getSessionUser()!;
