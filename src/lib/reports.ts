@@ -61,7 +61,7 @@ export function monthReport(month: string) {
   const dates = monthDates(month);
   const users = db
     .prepare(
-      `SELECT id, name, department, staff_type, color, weekly_off FROM users WHERE active = 1 AND role != 'super_admin' ORDER BY name`
+      `SELECT id, name, department, staff_type, color, weekly_off, role FROM users WHERE active = 1 ORDER BY name`
     )
     .all() as any[];
 
@@ -129,6 +129,7 @@ export function monthReport(month: string) {
       name: u.name,
       department: u.department || "—",
       staff_type: u.staff_type || "official",
+      role: u.role,
       present,
       late,
       half,

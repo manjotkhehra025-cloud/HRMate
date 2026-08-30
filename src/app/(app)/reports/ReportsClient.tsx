@@ -153,7 +153,12 @@ export default function ReportsClient() {
                   <td className="px-5 py-2.5">
                     <p className="font-medium">{e.name}</p>
                     <p className="text-[11px] text-muted">
-                      {e.department} · {e.staff_type === "yellow_card" ? "Yellow card" : "Official"}
+                      {e.department} ·{" "}
+                      {e.role === "super_admin"
+                        ? "Super Admin"
+                        : e.staff_type === "yellow_card"
+                          ? "Yellow card"
+                          : "Official"}
                     </p>
                   </td>
                   <td className="px-3 py-2.5">{e.present}</td>
