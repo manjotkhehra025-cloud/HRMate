@@ -64,6 +64,9 @@ const en = {
   saveArea: "Save area",
   insideFence: "Inside the factory area",
   outsideFence: "Outside the factory area",
+  takePhoto: "Take photo",
+  chooseGallery: "Choose from gallery",
+  addPhoto: "Add photo",
 };
 
 const pa: Record<keyof typeof en, string> = {
@@ -130,6 +133,9 @@ const pa: Record<keyof typeof en, string> = {
   saveArea: "ਖੇਤਰ ਸੇਵ ਕਰੋ",
   insideFence: "ਫੈਕਟਰੀ ਖੇਤਰ ਵਿੱਚ",
   outsideFence: "ਫੈਕਟਰੀ ਖੇਤਰ ਤੋਂ ਬਾਹਰ",
+  takePhoto: "ਫੋਟੋ ਲਓ",
+  chooseGallery: "ਗੈਲਰੀ ਤੋਂ ਚੁਣੋ",
+  addPhoto: "ਫੋਟੋ ਜੋੜੋ",
 };
 
 const dict: Record<Lang, Record<keyof typeof en, string>> = { en, pa };

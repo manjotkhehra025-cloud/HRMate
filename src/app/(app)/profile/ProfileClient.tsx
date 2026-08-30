@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Camera, Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
+import {
+  Camera,
+  Fingerprint,
+  Image as ImageIcon,
+  KeyRound,
+  Plus,
+  Save,
+  ShieldCheck,
+  Smartphone,
+  Trash2,
+} from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner } from "@/components/ui";
 import { timeAgo } from "@/lib/utils";
@@ -46,6 +56,7 @@ export default function ProfileClient({
   const [confirmPw, setConfirmPw] = useState("");
   const [savingPw, setSavingPw] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   function flash(msg: string, isErr = false) {
     setToast(isErr ? "" : msg);
@@ -75,7 +86,9 @@ export default function ProfileClient({
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
+    setPickerOpen(false);
     setUploading(true);
     try {
       const blob = await compressImage(file);
@@ -190,9 +203,43 @@ export default function ProfileClient({
         <div className="flex flex-col items-center text-center">
           <div className="relative">
             <Avatar name={user.name} color={user.color} size={96} src={photo} className="ring-2 ring-white/40" />
-            <label className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white text-brand-600 shadow">
+            <button
+              type="button"
+              onClick={() => !uploading && setPickerOpen(true)}
+              disabled={uploading}
+              aria-label={t("addPhoto")}
+              className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-600 shadow"
+            >
               {uploading ? <Spinner className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-              <input type="file" accept="image/*" className="hidden" onChange={onPhoto} />
+            </button>
+            <input
+              id="avatar-camera"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={onPhoto}
+            />
+            <input
+              id="avatar-gallery"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onPhoto}
+            />
+          </div>
+          <div className="mt-4 grid w-full grid-cols-2 gap-2">
+            <label
+              htmlFor="avatar-camera"
+              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-btn bg-white/15 px-2 py-2 text-[12px] font-semibold text-white ring-1 ring-white/25"
+            >
+              <Camera className="h-3.5 w-3.5" /> {t("takePhoto")}
+            </label>
+            <label
+              htmlFor="avatar-gallery"
+              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-btn bg-white/15 px-2 py-2 text-[12px] font-semibold text-white ring-1 ring-white/25"
+            >
+              <ImageIcon className="h-3.5 w-3.5" /> {t("chooseGallery")}
             </label>
           </div>
           <p className="mt-4 text-lg font-bold">{user.name}</p>
@@ -277,6 +324,43 @@ export default function ProfileClient({
           ))
         )}
       </div>
+
+      {pickerOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-navy/40"
+            onClick={() => setPickerOpen(false)}
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg rounded-t-[18px] border-t border-line bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-pop">
+            <p className="mb-3 text-sm font-semibold text-ink">{t("addPhoto")}</p>
+            <label
+              htmlFor="avatar-camera"
+              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
+                <Camera className="h-5 w-5" />
+              </span>
+              {t("takePhoto")}
+            </label>
+            <label
+              htmlFor="avatar-gallery"
+              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-flow-deep">
+                <ImageIcon className="h-5 w-5" />
+              </span>
+              {t("chooseGallery")}
+            </label>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(false)}
+              className="mt-2 w-full rounded-btn py-3 text-sm font-semibold text-muted hover:bg-[#F3F7FB]"
+            >
+              {t("cancel")}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
