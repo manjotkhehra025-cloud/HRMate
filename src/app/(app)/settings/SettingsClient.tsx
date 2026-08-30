@@ -811,7 +811,7 @@ export default function SettingsClient({
             <button onClick={checkLocation} disabled={geoChecking} className="btn-secondary text-xs">
               {geoChecking ? <Spinner /> : <Navigation className="h-3.5 w-3.5" />} Check my GPS
             </button>
-            {geoMsg && <p className="text-sm text-ink">{geoMsg}</p>}
+            {geoMsg && <p className="break-words text-sm text-ink">{geoMsg}</p>}
           </div>
         )}
       </section>
@@ -916,9 +916,9 @@ export default function SettingsClient({
                 )}
               </div>
             ))}
-            <div className="flex gap-2 border-t border-line px-4 py-3">
+            <div className="flex min-w-0 flex-wrap gap-2 border-t border-line px-4 py-3">
               <input
-                className="input h-9 min-h-0 flex-1 py-1"
+                className="input h-9 min-h-0 min-w-0 flex-1 py-1"
                 placeholder="New leave type"
                 value={newLeaveName}
                 onChange={(e) => setNewLeaveName(e.target.value)}
@@ -952,8 +952,8 @@ export default function SettingsClient({
                     cancelLabel={t("cancel")}
                   />
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
                       <Clock3 className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -1057,9 +1057,9 @@ export default function SettingsClient({
             </div>
             <div className="mt-3">
               <label className="label">{t("pasteMaps")}</label>
-              <div className="flex gap-2">
+              <div className="flex min-w-0 gap-2">
                 <input
-                  className="input"
+                  className="input min-w-0 flex-1"
                   placeholder="https://maps.google.com/… or 31.63, 74.87"
                   value={mapsLink}
                   onChange={(e) => setMapsLink(e.target.value)}

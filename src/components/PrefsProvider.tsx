@@ -137,5 +137,9 @@ export default function PrefsProvider({ children }: { children: React.ReactNode 
     [prefs, savePrefs]
   );
 
-  return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>;
+  return (
+    <PrefsContext.Provider value={value}>
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
+    </PrefsContext.Provider>
+  );
 }

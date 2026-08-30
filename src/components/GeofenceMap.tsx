@@ -28,8 +28,8 @@ export default function GeofenceMap({
           allowFullScreen
         />
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2">
-        <p className="text-[11px] text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2">
+        <p className="min-w-0 break-all text-[11px] text-muted">
           {safeLat.toFixed(5)}, {safeLng.toFixed(5)} · {radius}m circle
         </p>
         <a href={maps} target="_blank" rel="noreferrer" className="shrink-0 text-[12px] font-semibold text-brand-600">

@@ -52,8 +52,8 @@ export default function ReportsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2 rounded-xl border border-line bg-white px-2 py-1">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex min-w-0 items-center gap-2 rounded-xl border border-line bg-white px-2 py-1">
           <button onClick={() => shift(-1)} className="p-1">
             <ChevronLeft className="h-4 w-4" />
           </button>

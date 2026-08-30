@@ -118,12 +118,12 @@ export default function LeavesClient({
       {/* Left: balances */}
       <div className="space-y-6 lg:col-span-1">
         <div className="card p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-800">All types</h2>
             {canApply && (
               <button
                 onClick={() => setShowForm((s) => !s)}
-                className="btn-primary px-3 py-2 text-xs"
+                className="btn-primary shrink-0 px-3 py-2 text-xs"
               >
                 <Plus className="h-3.5 w-3.5" /> Apply
               </button>
@@ -135,8 +135,8 @@ export default function LeavesClient({
               const pct = b.days_per_year > 0 ? Math.round((b.balance / b.days_per_year) * 100) : 0;
               return (
                 <div key={b.id} className="rounded-2xl border border-slate-100 p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700">{b.name}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-1">
+                    <span className="min-w-0 text-sm font-medium text-slate-700">{b.name}</span>
                     <span className="text-xs text-slate-400">
                       {b.used}/{b.days_per_year} used
                       {b.reset_period === "month" ? " this month" : ""}
@@ -268,14 +268,14 @@ export default function LeavesClient({
                   <span className="text-[9px] uppercase">days</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-slate-800">{r.leave_type_name}</p>
                     <StatusBadge status={r.status} />
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {formatDate(r.start_date)} → {formatDate(r.end_date)}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600">{r.reason}</p>
+                  <p className="mt-1 break-words text-sm text-slate-600">{r.reason}</p>
                 </div>
               </div>
             ))}

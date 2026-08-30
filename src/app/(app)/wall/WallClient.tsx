@@ -143,9 +143,9 @@ export default function WallClient({
               <div className="flex items-start gap-3">
                 <Avatar name={p.author_name} color={p.author_color} size={42} src={avatarSrc(p.user_id, p.author_avatar)} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{p.author_name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-800">{p.author_name}</p>
                       <p className="text-xs text-slate-400">
                         {p.author_designation || "Team member"} · {timeAgo(p.created_at)}
                       </p>
@@ -159,7 +159,7 @@ export default function WallClient({
                       </button>
                     )}
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                     {p.content}
                   </p>
 

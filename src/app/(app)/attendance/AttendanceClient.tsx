@@ -193,7 +193,7 @@ export default function AttendanceClient({
                 key={c.date}
                 onClick={() => setSelected(c.date!)}
                 className={classNames(
-                  "mx-auto flex h-10 w-10 flex-col items-center justify-center rounded-full text-sm font-semibold",
+                  "mx-auto flex h-[36px] w-[36px] flex-col items-center justify-center rounded-full text-sm font-semibold",
                   sel ? "bg-brand-500 text-white" : "text-ink hover:bg-[#F3F7FB]"
                 )}
               >
@@ -237,10 +237,10 @@ export default function AttendanceClient({
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
           <h3 className="text-sm font-semibold text-ink">History</h3>
           {canManual && (
-            <button onClick={() => setShowManual((s) => !s)} className="btn-secondary px-3 py-1.5 text-xs">
+            <button onClick={() => setShowManual((s) => !s)} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
               <Clock className="h-3.5 w-3.5" /> Manual punch
             </button>
           )}
@@ -337,8 +337,8 @@ export default function AttendanceClient({
         {manualReqs.length > 0 && (
           <div className="space-y-2 border-t border-line px-5 py-4">
             {manualReqs.map((m) => (
-              <div key={m.id} className="flex items-center justify-between text-sm">
-                <span>
+              <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 break-words">
                   {m.type === "punch_in" ? "In" : "Out"} {m.date} · {m.time}
                   {m.stage === "manager" ? " · manager" : m.stage === "final" && m.status === "pending" ? " · Super Admin" : ""}
                 </span>

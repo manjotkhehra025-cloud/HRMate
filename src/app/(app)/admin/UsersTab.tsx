@@ -180,11 +180,11 @@ export default function UsersTab({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 text-sm font-semibold text-slate-800">
           Team members <span className="text-slate-400">({users.length})</span>
         </h2>
-        <button onClick={() => { setShowForm(true); setPendingPhoto(null); resetForm(); }} className="btn-primary px-3 py-2 text-xs">
+        <button onClick={() => { setShowForm(true); setPendingPhoto(null); resetForm(); }} className="btn-primary shrink-0 px-3 py-2 text-xs">
           <Plus className="h-3.5 w-3.5" /> Add user
         </button>
       </div>
@@ -199,6 +199,13 @@ export default function UsersTab({
             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
               <X className="h-4 w-4" />
             </button>
+          </div>
+          <div>
+            <label className="label">Profile photo</label>
+            <PhotoPicker prefix="new-user" onPicked={setPendingPhoto} />
+            {pendingPhoto && (
+              <p className="mt-1 text-xs text-muted">Photo selected — saved after create</p>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -281,10 +288,10 @@ export default function UsersTab({
       ) : (
         <div className="card divide-y divide-slate-50">
           {users.map((u) => (
-            <div key={u.id} className="flex items-center gap-4 p-4">
+            <div key={u.id} className="flex flex-wrap items-center gap-2 p-4 sm:gap-3">
               <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={40} src={avatarSrc(u.id, u.avatar)} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1 basis-36">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-semibold text-slate-800">{u.name}</p>
                   <span className="badge text-[10px]" style={{ backgroundColor: `${ROLE_COLORS[u.role]}18`, color: ROLE_COLORS[u.role] }}>
                     {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS]}
@@ -295,6 +302,7 @@ export default function UsersTab({
                 </div>
                 <p className="truncate text-xs text-slate-400">{u.email}</p>
               </div>
+              <div className="flex flex-wrap items-center gap-1.5">
               <div className="hidden items-center gap-1.5 text-xs text-slate-400 sm:flex">
                 <Fingerprint className="h-3.5 w-3.5" />
                 {u.passkey_count}
@@ -339,14 +347,15 @@ export default function UsersTab({
                   Delete
                 </button>
               )}
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <form onSubmit={updateUser} className="card max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <form onSubmit={updateUser} className="card max-h-[100dvh] w-full max-w-lg space-y-4 overflow-y-auto rounded-b-none p-5 animate-fade-in sm:max-h-[90vh] sm:rounded-card sm:p-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">Edit user</h3>
               <button type="button" onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600">
@@ -379,7 +388,7 @@ export default function UsersTab({
                 }}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="label">Name</label>
                 <input className="input" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
@@ -435,7 +444,7 @@ export default function UsersTab({
                 </select>
               </div>
               {editing.role === "manager" && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="label">Manages (by designation)</label>
                   <select
                     className="input"

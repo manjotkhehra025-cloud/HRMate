@@ -285,9 +285,9 @@ export default function DashboardPage() {
 
       <div className={`grid gap-4 ${teamView ? "lg:grid-cols-2" : ""}`}>
         <div className="card p-5">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-ink">Last 13 days</h2>
-            <div className="flex gap-3 text-[11px] text-muted">
+            <div className="flex flex-wrap gap-3 text-[11px] text-muted">
               <span className="flex items-center gap-1">
                 <i className="h-2 w-2 rounded-full bg-flow" /> Present
               </span>
@@ -321,8 +321,8 @@ export default function DashboardPage() {
 
         {teamView && (
           <div className="card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">Department attendance</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="min-w-0 text-sm font-semibold text-ink">Department attendance</h2>
               <span className="text-[11px] text-muted">Today</span>
             </div>
             {deptToday.length === 0 ? (
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                   return (
                     <div key={d.name}>
                       <div className="mb-1 flex items-center justify-between text-[12px]">
-                        <span className="font-medium text-ink">{d.name}</span>
+                        <span className="min-w-0 truncate font-medium text-ink">{d.name}</span>
                         <span className="tabular-nums text-muted">
                           {d.present}/{d.total}
                         </span>
@@ -374,7 +374,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="card p-5 sm:p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-ink">Leave balances</h2>
           <Link href="/leaves" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
             Apply →
@@ -434,7 +434,7 @@ function Kpi({
         </span>
       </div>
       <p className="mt-1 truncate text-[22px] font-bold tabular tracking-kpi text-ink sm:text-[24px]">{value}</p>
-      <p className="text-[11px] text-muted">{hint}</p>
+      <p className="text-[10px] leading-tight text-muted sm:text-[11px]">{hint}</p>
     </>
   );
   const cls = "kpi-card transition hover:shadow-pop";

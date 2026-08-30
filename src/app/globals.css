@@ -164,7 +164,7 @@ body {
     @apply mt-1 text-[13px] leading-[1.35] text-muted;
   }
   .kpi-card {
-    @apply card relative overflow-hidden pl-[17px] pr-3.5 pb-[13px] pt-[14px];
+    @apply card relative min-w-0 pl-[17px] pr-3.5 pb-[13px] pt-[14px];
   }
   .kpi-card::before {
     content: "";

@@ -71,7 +71,7 @@ export default function TeamClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-96">
+      <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-96">
         {canViewAttendance && (
           <button
             onClick={() => setTab("today")}
@@ -111,11 +111,11 @@ export default function TeamClient({
               const present = m.today_in && !m.today_out;
               const done = m.today_in && m.today_out;
               return (
-                <div key={m.id} className="flex items-center gap-4 p-4">
+                <div key={m.id} className="flex flex-wrap items-center gap-2 p-4 sm:gap-3">
                   <Avatar name={m.name} color={m.color} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{m.name}</p>
-                    <p className="text-xs text-slate-400">
+                  <div className="min-w-0 flex-1 basis-36">
+                    <p className="truncate text-sm font-semibold text-slate-800">{m.name}</p>
+                    <p className="truncate text-xs text-slate-400">
                       {m.designation || m.role} · {m.department} · Off {weeklyOffLabel(m.weekly_off)}
                     </p>
                   </div>
@@ -175,7 +175,7 @@ export default function TeamClient({
           ) : (
             <div className="space-y-3">
               {leaves.map((l) => (
-                <div key={l.id} className="flex items-center gap-4 rounded-2xl border border-slate-100 p-4">
+                <div key={l.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 p-4">
                   <div
                     className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl text-white"
                     style={{ backgroundColor: l.leave_type_color }}

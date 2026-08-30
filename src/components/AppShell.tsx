@@ -137,7 +137,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
       <Sidebar
         user={user}
         nav={labeledNav}
@@ -158,7 +158,7 @@ export default function AppShell({
         onLogout={logout}
       />
 
-      <header className={`flex h-[62px] shrink-0 items-center gap-3 border-b border-line bg-white px-4 sm:px-6 ${desktopOpen ? "lg:pl-72" : ""}`}>
+      <header className={`flex h-[62px] min-w-0 shrink-0 items-center gap-2 border-b border-line bg-white px-3 sm:gap-3 sm:px-6 ${desktopOpen ? "lg:pl-72" : ""}`}>
           <button
             onClick={() => setGridOpen(true)}
             className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB]"
@@ -188,7 +188,7 @@ export default function AppShell({
             {notifOpen && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-pop">
+                <div className="fixed right-3 top-[62px] z-30 w-[min(22rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-pop sm:right-4">
                   <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-800">{t("notifications")}</p>
                     {unreadCount > 0 && (
@@ -250,7 +250,7 @@ export default function AppShell({
             {userMenu && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setUserMenu(false)} />
-                <div className="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl border border-line bg-white py-1 shadow-pop">
+                <div className="fixed right-3 top-[62px] z-30 w-52 overflow-hidden rounded-2xl border border-line bg-white py-1 shadow-pop sm:right-4">
                   <Link
                     href="/profile"
                     onClick={() => setUserMenu(false)}
@@ -279,10 +279,16 @@ export default function AppShell({
 
       <div
         id="app-body"
-        className={`min-h-0 flex-1 overflow-y-auto ${desktopOpen ? "lg:pl-72" : ""}`}
-        style={{ flex: "1 1 0%", minHeight: 0, WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+        className={`min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto ${desktopOpen ? "lg:pl-72" : ""}`}
+        style={{
+          flex: "1 1 0%",
+          minHeight: 0,
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-y",
+          overscrollBehaviorX: "none",
+        }}
       >
-        <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <main className="mx-auto min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           {children}
         </main>
       </div>

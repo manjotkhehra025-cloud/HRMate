@@ -71,7 +71,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-fit">
+      <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-fit">
         {[
           { key: "all", label: `All (${total})` },
           { key: "leaves", label: `Leaves (${leaves.length})` },
@@ -81,7 +81,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
               tab === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
             }`}
           >
@@ -117,11 +117,11 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     <CalendarDays className="h-3.5 w-3.5" />
                     {formatDate(l.start_date)} → {formatDate(l.end_date)} · {l.days} day{l.days > 1 ? "s" : ""}
                   </p>
-                  <p className="mt-1.5 text-sm text-slate-600">{l.reason}</p>
+                  <p className="mt-1.5 break-words text-sm text-slate-600">{l.reason}</p>
                   <p className="mt-1 text-[11px] text-slate-400">Requested {timeAgo(l.created_at)}</p>
                 </div>
                 {canManage && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => act("leave", l.id, "approve")}
                       disabled={busy === l.id}
@@ -167,11 +167,11 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     <Clock className="h-3.5 w-3.5" />
                     {formatDate(m.date)} · {m.time}
                   </p>
-                  <p className="mt-1.5 text-sm text-slate-600">{m.reason}</p>
+                  <p className="mt-1.5 break-words text-sm text-slate-600">{m.reason}</p>
                   <p className="mt-1 text-[11px] text-slate-400">Requested {timeAgo(m.created_at)}</p>
                 </div>
                 {canManage && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => act("manual", m.id, "approve")}
                       disabled={busy === m.id}
@@ -199,7 +199,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-800">{c.requester_name}</p>
                   <p className="text-xs capitalize text-muted">{String(c.kind).replace("_", " ")}</p>
-                  <p className="mt-1 text-sm text-slate-600">{JSON.stringify(c.payload)}</p>
+                  <p className="mt-1 break-all text-sm text-slate-600">{JSON.stringify(c.payload)}</p>
                   <p className="mt-1 text-[11px] text-slate-400">Requested {timeAgo(c.created_at)}</p>
                 </div>
                 {canManage && (

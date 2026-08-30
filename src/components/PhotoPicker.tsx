@@ -75,11 +75,11 @@ export default function PhotoPicker({
 
   const btn =
     tone === "onGradient"
-      ? "flex cursor-pointer items-center justify-center gap-1.5 rounded-btn bg-white/15 px-2 py-2 text-[12px] font-semibold text-white ring-1 ring-white/25"
-      : "flex cursor-pointer items-center justify-center gap-1.5 rounded-btn border border-line bg-white px-2 py-2 text-[12px] font-semibold text-ink";
+      ? "flex min-h-[40px] min-w-0 cursor-pointer flex-wrap items-center justify-center gap-1 rounded-btn bg-white/15 px-1.5 py-2 text-center text-[11px] font-semibold leading-snug text-white ring-1 ring-white/25"
+      : "flex min-h-[40px] min-w-0 cursor-pointer flex-wrap items-center justify-center gap-1 rounded-btn border border-line bg-white px-1.5 py-2 text-center text-[11px] font-semibold leading-snug text-ink";
 
   return (
-    <div className="grid w-full grid-cols-2 gap-2">
+    <div className="grid w-full min-w-0 grid-cols-2 gap-2">
       <input
         id={cam}
         type="file"
@@ -98,10 +98,12 @@ export default function PhotoPicker({
         onChange={onChange}
       />
       <label htmlFor={cam} className={btn}>
-        <Camera className="h-3.5 w-3.5" /> {t("takePhoto")}
+        <Camera className="h-3.5 w-3.5 shrink-0" />
+        <span className="min-w-0">{t("takePhoto")}</span>
       </label>
       <label htmlFor={gal} className={btn}>
-        <ImageIcon className="h-3.5 w-3.5" /> {t("chooseGallery")}
+        <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+        <span className="min-w-0">{t("chooseGallery")}</span>
       </label>
     </div>
   );

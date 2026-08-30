@@ -262,11 +262,11 @@ export default function ProfileClient({
       </form>
 
       <div className="card space-y-4 p-6 lg:col-span-2">
-        <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Fingerprint className="h-4 w-4 text-brand-500" /> {t("passkeys")}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
+            <Fingerprint className="h-4 w-4 shrink-0 text-brand-500" /> {t("passkeys")}
           </h2>
-          <button onClick={registerPasskey} disabled={registering} className="btn-primary px-3 py-2 text-xs">
+          <button onClick={registerPasskey} disabled={registering} className="btn-primary shrink-0 px-3 py-2 text-xs">
             {registering ? <Spinner /> : <><Plus className="h-3.5 w-3.5" /> Add passkey</>}
           </button>
         </div>
@@ -298,7 +298,7 @@ export default function ProfileClient({
             className="fixed inset-0 z-40 bg-navy/40"
             onClick={() => setPickerOpen(false)}
           />
-          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg rounded-t-[18px] border-t border-line bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-pop">
+          <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-50 mx-auto w-full max-w-lg rounded-t-[18px] border-t border-line bg-white p-4 shadow-pop lg:bottom-0 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
             <p className="mb-3 text-sm font-semibold text-ink">{t("addPhoto")}</p>
             <label
               htmlFor="profile-camera"
