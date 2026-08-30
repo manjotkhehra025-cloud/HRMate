@@ -12,6 +12,7 @@ interface LeaveType {
   days_per_year: number;
   color: string;
   sort: number;
+  reset_period?: string;
 }
 
 export default function SettingsTab() {
@@ -277,7 +278,9 @@ export default function SettingsTab() {
                     )
                   }
                 />
-                <span className="text-xs text-slate-400">days/yr</span>
+                <span className="text-xs text-slate-400">
+                  {lt.reset_period === "month" ? "days/mo" : "days/yr"}
+                </span>
               </div>
               <input
                 type="color"
