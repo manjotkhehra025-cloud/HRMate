@@ -17,7 +17,8 @@ export type Permission =
   | "admin.users"
   | "admin.permissions"
   | "admin.settings"
-  | "reports.view";
+  | "reports.view"
+  | "profile.full";
 
 export const ALL_PERMISSIONS: { key: Permission; label: string; group: string }[] = [
   { key: "attendance.view", label: "View own attendance", group: "Attendance" },
@@ -39,9 +40,10 @@ export const ALL_PERMISSIONS: { key: Permission; label: string; group: string }[
   { key: "admin.permissions", label: "Manage permissions", group: "Admin" },
   { key: "admin.settings", label: "Manage settings & geofence", group: "Admin" },
   { key: "reports.view", label: "View reports", group: "Reports" },
+  { key: "profile.full", label: "Fully edit own profile (email, department, designation)", group: "Account" },
 ];
 
-export const PERMISSION_GROUPS = ["Attendance", "Leaves", "Social Wall", "Approvals", "Admin", "Reports"];
+export const PERMISSION_GROUPS = ["Account", "Attendance", "Leaves", "Social Wall", "Approvals", "Admin", "Reports"];
 
 export const ROLES = ["super_admin", "admin", "manager", "employee"] as const;
 export type Role = (typeof ROLES)[number];
@@ -62,6 +64,7 @@ const ROLE_DEFAULTS: Record<Role, (Permission | "*")[]> = {
     "approvals.view", "approvals.manage",
     "admin.view", "admin.users", "admin.settings",
     "reports.view",
+    "profile.full",
   ],
   manager: [
     "attendance.view", "attendance.punch", "attendance.manual", "attendance.team",

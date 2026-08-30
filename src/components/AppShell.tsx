@@ -26,6 +26,7 @@ import ModuleMenu from "./ModuleMenu";
 import { timeAgo } from "@/lib/utils";
 import { classNames } from "@/lib/utils";
 import { usePrefs } from "./PrefsProvider";
+import IdleGuard from "./IdleGuard";
 import { navLabel } from "@/lib/i18n";
 
 interface Notif {
@@ -138,6 +139,7 @@ export default function AppShell({
 
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+      <IdleGuard />
       <Sidebar
         user={user}
         nav={labeledNav}

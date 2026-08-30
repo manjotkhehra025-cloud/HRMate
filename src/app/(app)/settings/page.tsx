@@ -30,6 +30,7 @@ export default function SettingsPage() {
           avatar: user.avatar || "",
         }}
         canSettings={perms.isSuperAdmin || perms.has("admin.settings")}
+        canProfileFull={perms.isSuperAdmin || perms.has("profile.full")}
         vapidPublicKey={getVapidPublicKey()}
         factoryName={factory.name}
       />

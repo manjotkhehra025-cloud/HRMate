@@ -19,6 +19,7 @@ import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner } from "@/components/ui";
 import { timeAgo } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
+import { DEPARTMENTS } from "@/lib/staff";
 
 interface Passkey {
   id: string;
@@ -29,6 +30,7 @@ interface Passkey {
 
 export default function ProfileClient({
   user: initialUser,
+  canFull = false,
 }: {
   user: {
     id: string;
@@ -41,12 +43,16 @@ export default function ProfileClient({
     color: string;
     avatar?: string;
   };
+  canFull?: boolean;
 }) {
   const { t } = usePrefs();
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
   const [name, setName] = useState(initialUser.name);
   const [phone, setPhone] = useState(initialUser.phone || "");
+  const [email, setEmail] = useState(initialUser.email);
+  const [department, setDepartment] = useState(initialUser.department || "");
+  const [designation, setDesignation] = useState(initialUser.designation || "");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [err, setErr] = useState("");
@@ -76,6 +82,9 @@ export default function ProfileClient({
           setUser(d.user);
           setName(d.user.name);
           setPhone(d.user.phone || "");
+          setEmail(d.user.email || "");
+          setDepartment(d.user.department || "");
+          setDesignation(d.user.designation || "");
         }
       })
       .catch(() => {});
@@ -107,7 +116,9 @@ export default function ProfileClient({
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify(
+          canFull ? { name, phone, email, department, designation } : { name, phone }
+        ),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Save failed");

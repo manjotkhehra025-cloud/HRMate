@@ -33,6 +33,7 @@ import { timeAgo } from "@/lib/utils";
 import { parseCoordsFromText } from "@/lib/maps";
 import { usePrefs } from "@/components/PrefsProvider";
 import { classNames } from "@/lib/utils";
+import { DEPARTMENTS } from "@/lib/staff";
 
 interface Passkey {
   id: string;
@@ -101,6 +102,7 @@ function Row({
 export default function SettingsClient({
   user: initialUser,
   canSettings: initialCanSettings,
+  canProfileFull: initialCanProfileFull = false,
   vapidPublicKey,
   factoryName,
 }: {
@@ -116,6 +118,7 @@ export default function SettingsClient({
     avatar?: string;
   };
   canSettings: boolean;
+  canProfileFull?: boolean;
   vapidPublicKey: string;
   factoryName: string;
 }) {
@@ -123,6 +126,7 @@ export default function SettingsClient({
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
   const [canSettings, setCanSettings] = useState(initialCanSettings);
+  const [canProfileFull, setCanProfileFull] = useState(initialCanProfileFull);
   const [factory, setFactory] = useState({
     name: factoryName,
     lat: 0,
@@ -140,6 +144,9 @@ export default function SettingsClient({
 
   const [name, setName] = useState(initialUser.name);
   const [phone, setPhone] = useState(initialUser.phone || "");
+  const [email, setEmail] = useState(initialUser.email);
+  const [department, setDepartment] = useState(initialUser.department || "");
+  const [designation, setDesignation] = useState(initialUser.designation || "");
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -219,9 +226,13 @@ export default function SettingsClient({
           setUser(d.user);
           setName(d.user.name);
           setPhone(d.user.phone || "");
+          setEmail(d.user.email || "");
+          setDepartment(d.user.department || "");
+          setDesignation(d.user.designation || "");
         }
         if (d.factory) setFactory((f) => ({ ...f, ...d.factory }));
         if (typeof d.canSettings === "boolean") setCanSettings(d.canSettings);
+        if (typeof d.canProfileFull === "boolean") setCanProfileFull(d.canProfileFull);
       })
       .catch(() => {});
     loadPasskeys();
@@ -525,6 +536,10 @@ export default function SettingsClient({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newLeaveName, days_per_year: parseInt(newLeaveDays, 10) || 0 }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      flash(s, 10) || 0 }),
     });
     const d = await res.json();
     if (!res.ok) {
@@ -1191,6 +1206,36 @@ function LeaveBalanceCard() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <select className="input" value={userId} onChange={(e) => setUserId(e.target.value)}>
           {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
+        </select>
+        <select className="input" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+          {types.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <input
+          className="input"
+          type="number"
+          step="0.5"
+          value={delta}
+          onChange={(e) => setDelta(e.target.value)}
+          placeholder="+ days"
+        />
+        <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" required />
+      </div>
+      <button className="btn-primary text-xs" type="submit">
+        Submit adjustment
+      </button>
+      {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+    </form>
+  );
+}
+map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
             </option>

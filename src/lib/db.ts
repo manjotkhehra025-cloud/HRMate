@@ -84,7 +84,8 @@ function migrate(d: DatabaseLike) {
     token TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     created_at INTEGER NOT NULL,
-    expires_at INTEGER NOT NULL
+    expires_at INTEGER NOT NULL,
+    last_seen INTEGER
   );
   CREATE TABLE IF NOT EXISTS user_permissions (
     user_id TEXT NOT NULL,
@@ -281,6 +282,9 @@ function ensureSchema(d: DatabaseLike) {
     PRIMARY KEY (user_id, date)
   );
   `);
+  if (!hasColumn(d, "sessions", "last_seen")) {
+    d.exec(`ALTER TABLE sessions ADD COLUMN last_seen INTEGER`);
+  }
 }
 
 function seed(d: DatabaseLike) {

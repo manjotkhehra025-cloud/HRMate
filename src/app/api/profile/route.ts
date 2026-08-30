@@ -35,6 +35,7 @@ export async function GET() {
     prefs: getUserPrefs(user.id),
     canSettings: hasPermission(user.id, "admin.settings"),
     canAdjustLeaves: hasPermission(user.id, "leaves.adjust"),
+    canProfileFull: hasPermission(user.id, "profile.full"),
     vapidPublicKey: getVapidPublicKey(),
   });
 }
@@ -52,7 +53,26 @@ export async function PUT(req: NextRequest) {
     return error("Enter a valid phone number");
   }
 
-  db.prepare("UPDATE users SET name = ?, phone = ? WHERE id = ?").run(name, phone, user.id);
+  if (hasPermission(user.id, "profile.full")) {
+    const email = String(body.email || user.email || "").trim().toLowerCase();
+    const department = String(body.department ?? user.department ?? "").trim();
+    const designation = String(body.designation ?? user.designation ?? "").trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return error("Enter a valid email");
+    }
+    if (email.length > 120) return error("Email is too long");
+    if (department.length > 80) return error("Department is too long");
+    if (designation.length > 80) return error("Designation is too long");
+    const taken = db
+      .prepare("SELECT id FROM users WHERE email = ? AND id != ?")
+      .get(email, user.id) as { id: string } | undefined;
+    if (taken) return error("That email is already in use");
+    db.prepare(
+      "UPDATE users SET name = ?, phone = ?, email = ?, department = ?, designation = ? WHERE id = ?"
+    ).run(name, phone, email, department, designation, user.id);
+  } else {
+    db.prepare("UPDATE users SET name = ?, phone = ? WHERE id = ?").run(name, phone, user.id);
+  }
   const row = db.prepare(USER_COLS).get(user.id);
 
   return json({ ok: true, user: row });
