@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    instrumentationHook: true,
     serverComponentsExternalPackages: ["better-sqlite3", "web-push", "@simplewebauthn/server"],
     // Better-sqlite3 is a native C++ addon that segfaults inside Next.js's
     // static-generation WORKER THREADS ("Collecting page data" -> SIGSEGV).

@@ -38,7 +38,16 @@ function getDb(): DatabaseLike {
   seedFactoryDefaults(db);
   seedShiftsAndLeave(db);
   globalForDb.__hrmateDb = db;
+  startJobsSafe();
   return db;
+}
+
+function startJobsSafe() {
+  if (process.env.NEXT_PHASE) return;
+  if (process.env.NEXT_RUNTIME === "edge") return;
+  import("./jobs")
+    .then((m) => m.startScheduler())
+    .catch((e) => console.error("[hrmate jobs] start failed", e));
 }
 
 // Default export is a Proxy so all existing `db.prepare(...)` call sites keep
