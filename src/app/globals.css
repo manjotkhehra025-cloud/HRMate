@@ -34,6 +34,12 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  height: auto;
+  max-height: none;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 html[data-text="small"] {
   font-size: 14px;
@@ -105,7 +111,14 @@ body {
   background: var(--background);
   font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
   font-feature-settings: "tnum" 1, "cv02", "cv03", "cv04";
-  min-height: 100dvh;
+  min-height: 100%;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  position: static;
+}
+.leaflet-container {
+  touch-action: pan-y pinch-zoom !important;
 }
 
 .flow-gradient {
@@ -114,7 +127,7 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-card border border-line bg-white shadow-card;
+    @apply overflow-clip rounded-card border border-line bg-white shadow-card;
   }
   .btn {
     @apply inline-flex h-10 items-center justify-center gap-2 rounded-btn px-[18px] py-3 text-[13px] font-semibold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/35 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation;

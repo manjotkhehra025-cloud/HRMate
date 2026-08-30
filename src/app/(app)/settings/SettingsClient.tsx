@@ -561,7 +561,7 @@ export default function SettingsClient({
   const roleLabel = user.role.replace("_", " ");
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2">
       {(toast || err) && (
         <p
           className={classNames(
@@ -574,7 +574,7 @@ export default function SettingsClient({
       )}
 
       {/* Gradient profile card */}
-      <div className="flow-gradient overflow-hidden rounded-[18px] p-5 text-white shadow-glow">
+      <div className="flow-gradient overflow-clip rounded-[18px] p-5 text-white shadow-glow">
         <div className="flex items-center gap-4">
           <Avatar name={user.name} color={user.color} size={64} className="ring-2 ring-white/40" />
           <div className="min-w-0">
@@ -587,7 +587,7 @@ export default function SettingsClient({
         </div>
       </div>
 
-      <section className="card overflow-hidden">
+      <section className="card">
         <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
           {t("account")}
         </p>
@@ -691,7 +691,7 @@ export default function SettingsClient({
         )}
       </section>
 
-      <section className="card overflow-hidden">
+      <section className="card">
         <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
           {t("display")}
         </p>
@@ -789,7 +789,7 @@ export default function SettingsClient({
         )}
       </section>
 
-      <section className="card overflow-hidden">
+      <section className="card">
         <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
           {t("notifications")}
         </p>
@@ -829,7 +829,7 @@ export default function SettingsClient({
       {canSettings && (
         <>
           <LeaveBalanceCard />
-          <section className="card overflow-hidden">
+          <section className="card">
             <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
               {t("leaveEntitlements")}
             </p>
@@ -904,7 +904,7 @@ export default function SettingsClient({
             </div>
           </section>
 
-          <section className="card overflow-hidden">
+          <section className="card">
             <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
               {t("shifts")}
             </p>
@@ -981,7 +981,7 @@ export default function SettingsClient({
             )}
           </section>
 
-          <section className="card overflow-hidden p-4 lg:col-span-2">
+          <section className="card p-4 lg:col-span-2">
             <div className="mb-3 flex items-center gap-2">
               <MapPin className="h-5 w-5 text-brand-600" />
               <div>
@@ -989,21 +989,7 @@ export default function SettingsClient({
                 <p className="text-xs text-muted">{t("attendanceAreaSub")}</p>
               </div>
             </div>
-            <GeofenceMap
-              lat={factory.lat}
-              lng={factory.lng}
-              radius={factory.radius}
-              onChange={({ lat, lng }) => {
-                setFactory((f) => ({ ...f, lat, lng }));
-                reverseGeocode(lat, lng);
-              }}
-            />
-            <p className="mt-2 text-xs text-muted">
-              {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`}
-              {" · "}
-              {factory.radius}m circle · drag the pin
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label">Radius (m)</label>
                 <input
@@ -1045,6 +1031,22 @@ export default function SettingsClient({
               <button type="button" className="btn-primary text-xs" onClick={saveArea} disabled={savingArea}>
                 {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} {t("saveArea")}
               </button>
+            </div>
+            <div className="mt-4">
+              <GeofenceMap
+                lat={factory.lat}
+                lng={factory.lng}
+                radius={factory.radius}
+                onChange={({ lat, lng }) => {
+                  setFactory((f) => ({ ...f, lat, lng }));
+                  reverseGeocode(lat, lng);
+                }}
+              />
+              <p className="mt-2 text-xs text-muted">
+                {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`}
+                {" · "}
+                {factory.radius}m circle · drag the pin · scroll the page as usual
+              </p>
             </div>
           </section>
         </>

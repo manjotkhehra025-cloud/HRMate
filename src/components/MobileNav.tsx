@@ -42,8 +42,8 @@ export default function MobileNav({
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 h-[66px] border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-nav lg:hidden">
-      <div className="flex h-full items-center px-1">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] shadow-nav lg:hidden">
+      <div className="flex h-[56px] items-center px-1">
         {left.map((item) => (
           <Tab key={item.href} item={item} />
         ))}

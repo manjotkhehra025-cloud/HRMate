@@ -133,9 +133,9 @@ export default function ReportsClient() {
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card">
         <p className="px-5 py-4 text-sm font-semibold">Per employee</p>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" style={{ touchAction: "pan-x pan-y" }}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-y border-line text-left text-[11px] font-semibold uppercase text-muted">

@@ -235,7 +235,7 @@ export default function AttendanceClient({
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="card">
         <div className="flex items-center justify-between px-5 py-4">
           <h3 className="text-sm font-semibold text-ink">History</h3>
           {canManual && (
@@ -280,7 +280,7 @@ export default function AttendanceClient({
             <Spinner className="h-6 w-6 text-brand-500" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" style={{ touchAction: "pan-x pan-y" }}>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-y border-line text-left text-[11px] font-semibold uppercase tracking-table text-muted">

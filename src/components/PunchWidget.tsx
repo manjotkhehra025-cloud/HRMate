@@ -106,7 +106,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       : { label: "Not punched in", className: "bg-slate-100 text-slate-600 ring-slate-400/15" };
 
   return (
-    <div className="card relative overflow-hidden p-5 sm:p-6">
+    <div className="card relative p-5 sm:p-6">
       <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-brand-100/70 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-violet-100/50 blur-2xl" />
 

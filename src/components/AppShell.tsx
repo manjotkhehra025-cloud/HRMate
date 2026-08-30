@@ -61,6 +61,16 @@ export default function AppShell({
   const { t, prefs } = usePrefs();
 
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.removeProperty("overflow");
+    html.style.height = "auto";
+    body.style.removeProperty("overflow");
+    body.style.height = "auto";
+    body.style.position = "static";
+  }, []);
+
+  useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     setDesktopOpen(mq.matches);
     const onChange = (e: MediaQueryListEvent) => setDesktopOpen(e.matches);
@@ -137,7 +147,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="min-h-[100dvh]">
+    <div className="relative min-h-full">
       <Sidebar
         user={user}
         nav={labeledNav}
@@ -278,7 +288,7 @@ export default function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-5 pb-28 sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
+        <main className="mx-auto max-w-7xl px-4 py-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
           {children}
         </main>
       </div>

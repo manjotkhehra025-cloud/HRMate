@@ -54,7 +54,19 @@ export default function GeofenceMap({
     let cancelled = false;
     loadLeaflet().then((L) => {
       if (cancelled || !el.current || mapRef.current) return;
-      const map = L.map(el.current, { zoomControl: true }).setView([safeLat, safeLng], 17);
+      const coarse = window.matchMedia("(pointer: coarse)").matches;
+      const map = L.map(el.current, {
+        zoomControl: true,
+        scrollWheelZoom: false,
+        dragging: !coarse,
+        tap: false,
+        bounceAtZoomLimits: false,
+        keyboard: false,
+      }).setView([safeLat, safeLng], 17);
+      map.getContainer().style.touchAction = "pan-y";
+      if (coarse) {
+        map.dragging.disable();
+      }
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
@@ -111,7 +123,7 @@ export default function GeofenceMap({
   return (
     <div
       ref={el}
-      className="h-[280px] w-full overflow-hidden rounded-[14px] border border-line bg-[#E8F0E8]"
+      className="h-[180px] w-full overflow-clip rounded-[14px] border border-line bg-[#E8F0E8] sm:h-[280px]"
       role="application"
       aria-label="Attendance area map"
     />

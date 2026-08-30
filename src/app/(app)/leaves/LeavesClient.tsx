@@ -108,7 +108,7 @@ export default function LeavesClient({
         </div>
       </div>
 
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3">
       {/* Left: balances */}
       <div className="space-y-6 lg:col-span-1">
         <div className="card p-6">
