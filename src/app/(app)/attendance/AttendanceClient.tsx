@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Send, LogIn, LogOut } from "lucide-react";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { formatDate, formatTime, istParts } from "@/lib/utils";
 import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
@@ -45,32 +45,6 @@ function worked(inAt: number | null, outAt: number | null) {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
-function isLate(date: string, punchIn: number | null, workStart: string) {
-  if (!punchIn || !workStart) return false;
-  const t = /^\d{2}:\d{2}$/.test(workStart) ? `${workStart}:00` : workStart;
-  const start = new Date(`${date}T${t}+05:30`).getTime();
-  if (!Number.isFinite(start)) return false;
-  return punchIn > start;
-}
-
-function Spark({ color, values }: { color: string; values: number[] }) {
-  const max = Math.max(1, ...values);
-  const pts = values
-    .map((v, i) => {
-      const x = (i / Math.max(1, values.length - 1)) * 100;
-      const y = 26 - (v / max) * 20;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const area = `0,32 ${pts} 100,32`;
-  return (
-    <svg viewBox="0 0 100 32" className="mt-3 h-9 w-full" preserveAspectRatio="none">
-      <polyline fill={`${color}22`} stroke="none" points={area} />
-      <polyline fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round" points={pts} />
-    </svg>
-  );
-}
-
 const DOT: Record<string, string> = {
   present: "bg-[#16B878]",
   half: "bg-[#D98200]",
@@ -79,33 +53,12 @@ const DOT: Record<string, string> = {
   grace: "bg-[#D98200]",
 };
 
-const PILL: Record<string, string> = {
-  present: "bg-[#E1F8EF] text-[#06613E]",
-  half: "bg-amber-50 text-amber-800",
-  absent: "bg-rose-50 text-rose-700",
-  weekly_off: "bg-[#E8F1FC] text-[#1E6FE0]",
-  grace: "bg-amber-50 text-amber-800",
-  empty: "bg-[#F4F7FB] text-[#8A97A8]",
-  future: "bg-[#F4F7FB] text-[#8A97A8]",
-};
-
-function statusLabel(st: DayStatus) {
-  if (st === "weekly_off") return "Weekly off";
-  if (st === "grace") return "Apply leave";
-  if (st === "half") return "Half day";
-  if (st === "empty") return "—";
-  if (st === "future") return "—";
-  return st.charAt(0).toUpperCase() + st.slice(1);
-}
-
 export default function AttendanceClient({
   canManual,
   canView,
-  workStart,
 }: {
   canManual: boolean;
   canView: boolean;
-  workStart: string;
 }) {
   const today = istParts().dateKey;
   const [month, setMonth] = useState(() => istParts().monthKey);
@@ -166,49 +119,20 @@ export default function AttendanceClient({
   const stats = useMemo(() => {
     let present = 0,
       half = 0,
-      absent = 0,
-      late = 0,
-      minutes = 0;
-    const [y, mo] = month.split("-").map(Number);
-    const last = new Date(y, mo, 0).getDate();
-    const presentSpark: number[] = [];
-    const lateSpark: number[] = [];
-    const hourSpark: number[] = [];
-    for (let d = 1; d <= last; d++) {
-      const date = `${month}-${String(d).padStart(2, "0")}`;
-      const rec = byDate[date];
-      const st = statusOf(date, rec, today, weeklyOff, leaveCover);
+      absent = 0;
+    for (const r of records) {
+      const st = statusOf(r.date, r, today, weeklyOff, leaveCover);
       if (st === "present") present++;
       else if (st === "half") half++;
-      else if (st === "absent") absent++;
-      const lateDay = isLate(date, rec?.punch_in_at || null, workStart);
-      if (lateDay) late++;
-      let hrs = 0;
-      if (rec?.punch_in_at && rec?.punch_out_at && rec.punch_out_at > rec.punch_in_at) {
-        const mins = Math.round((rec.punch_out_at - rec.punch_in_at) / 60000);
-        minutes += mins;
-        hrs = mins / 60;
-      }
-      if (date <= today) {
-        presentSpark.push(st === "present" || st === "half" ? 1 : 0);
-        lateSpark.push(lateDay ? 1 : 0);
-        hourSpark.push(hrs);
-      }
     }
-    return { present, half, absent, late, minutes, presentSpark, lateSpark, hourSpark };
-  }, [records, month, today, byDate, weeklyOff, leaveCover, workStart]);
-
-  const recentDays = useMemo(() => {
     const [y, mo] = month.split("-").map(Number);
     const last = new Date(y, mo, 0).getDate();
-    const out: { date: string; st: DayStatus }[] = [];
-    for (let d = last; d >= 1 && out.length < 8; d--) {
+    for (let d = 1; d <= last; d++) {
       const date = `${month}-${String(d).padStart(2, "0")}`;
-      if (date > today) continue;
-      out.push({ date, st: statusOf(date, byDate[date], today, weeklyOff, leaveCover) });
+      if (statusOf(date, byDate[date], today, weeklyOff, leaveCover) === "absent") absent++;
     }
-    return out;
-  }, [month, today, byDate, weeklyOff, leaveCover]);
+    return { present, half, absent };
+  }, [records, month, today, byDate, weeklyOff, leaveCover]);
 
   function shiftMonth(delta: number) {
     const [y, m] = month.split("-").map(Number);
@@ -256,45 +180,20 @@ export default function AttendanceClient({
     month: "long",
     year: "numeric",
   });
-  const hoursLabel = `${Math.floor(stats.minutes / 60)}h ${stats.minutes % 60}m`;
 
   if (!canView) return null;
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="card p-4">
-          <p className="text-[13px] text-[#8A97A8]">Present days</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums leading-none text-[#1E6FE0]">{stats.present}</p>
-          <p className="mt-1.5 text-[12px] text-[#8A97A8]">{stats.half} half day</p>
-          <Spark color="#1E6FE0" values={stats.presentSpark.length ? stats.presentSpark : [0]} />
-        </div>
-        <div className="card p-4">
-          <p className="text-[13px] text-[#8A97A8]">Late</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums leading-none text-[#16B878]">{stats.late}</p>
-          <p className="mt-1.5 text-[12px] text-[#8A97A8]">after {workStart || "shift start"}</p>
-          <Spark color="#16B878" values={stats.lateSpark.length ? stats.lateSpark : [0]} />
-        </div>
-        <div className="card p-4">
-          <p className="text-[13px] text-[#8A97A8]">Hours this month</p>
-          <p className="mt-1 text-[28px] font-bold tabular-nums leading-none text-[#F5A623]">{hoursLabel}</p>
-          <p className="mt-1.5 text-[12px] text-[#8A97A8]">{stats.absent} absent</p>
-          <Spark color="#F5A623" values={stats.hourSpark.length ? stats.hourSpark : [0]} />
-        </div>
-      </div>
-
+    <div className="space-y-6">
       <div className="card p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-[#172334]">This month</h2>
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={() => shiftMonth(-1)} className="rounded-lg p-2 hover:bg-[#F3F7FB]" aria-label="Previous month">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <p className="min-w-[9rem] text-center text-sm font-bold text-ink">{monthLabel}</p>
-            <button type="button" onClick={() => shiftMonth(1)} className="rounded-lg p-2 hover:bg-[#F3F7FB]" aria-label="Next month">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
+          <button onClick={() => shiftMonth(-1)} className="rounded-lg p-2 hover:bg-[#F3F7FB]">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <p className="text-sm font-bold text-ink">{monthLabel}</p>
+          <button onClick={() => shiftMonth(1)} className="rounded-lg p-2 hover:bg-[#F3F7FB]">
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
         <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase text-muted">
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
@@ -312,7 +211,6 @@ export default function AttendanceClient({
             return (
               <button
                 key={c.date}
-                type="button"
                 onClick={() => setSelected(c.date!)}
                 className={classNames(
                   "mx-auto flex h-[36px] w-[36px] flex-col items-center justify-center rounded-full text-sm font-semibold",
@@ -344,36 +242,35 @@ export default function AttendanceClient({
             <i className="h-2 w-2 rounded-full bg-[#D98200]" /> Apply leave
           </span>
         </div>
-        {selected < today && statusOf(selected, byDate[selected], today, weeklyOff, leaveCover) === "grace" && (
-          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-            No punch on this day. Apply leave by {formatDate(addWorkingDays(selected, 2, weeklyOff))} or it
-            will be marked absent. Your weekly off is not counted.
-          </p>
-        )}
+        {selected < today &&
+          statusOf(selected, byDate[selected], today, weeklyOff, leaveCover) === "grace" && (
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+              No punch on this day. Apply leave by {formatDate(addWorkingDays(selected, 2, weeklyOff))} or it
+              will be marked absent. Your weekly off is not counted.
+            </p>
+          )}
+      </div>
 
-        <ul className="mt-4 divide-y divide-[#F0F4F8] lg:hidden">
-          {recentDays.map((r) => (
-            <li key={r.date} className="flex items-center justify-between py-2.5">
-              <span className="text-[13px] font-medium text-[#172334]">
-                {new Date(r.date + "T12:00:00+05:30").toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-              <span className={classNames("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", PILL[r.st])}>
-                {statusLabel(r.st)}
-              </span>
-            </li>
-          ))}
-        </ul>
+      <div className="card grid grid-cols-3 divide-x divide-line p-4 text-center">
+        <div>
+          <p className="text-2xl font-bold text-brand-600">{stats.present}</p>
+          <p className="text-xs text-muted">Present</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-[#D98200]">{stats.half}</p>
+          <p className="text-xs text-muted">Half day</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-[#C52B35]">{stats.absent}</p>
+          <p className="text-xs text-muted">Absent</p>
+        </div>
       </div>
 
       <div className="card">
         <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-4">
-          <h3 className="text-[15px] font-semibold text-[#172334]">History</h3>
+          <h3 className="text-sm font-semibold text-ink">History</h3>
           {canManual && (
-            <button type="button" onClick={() => setShowManual((s) => !s)} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
+            <button onClick={() => setShowManual((s) => !s)} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
               <Clock className="h-3.5 w-3.5" /> Manual punch
             </button>
           )}
@@ -449,9 +346,7 @@ export default function AttendanceClient({
                               ? "bg-emerald-50 text-emerald-700"
                               : st === "half"
                                 ? "bg-amber-50 text-amber-700"
-                                : st === "weekly_off"
-                                  ? "bg-[#E8F1FC] text-[#1E6FE0]"
-                                  : "bg-rose-50 text-rose-700"
+                                : "bg-rose-50 text-rose-700"
                           )}
                         >
                           {st === "grace" ? "apply leave" : st.replace("_", " ")}
