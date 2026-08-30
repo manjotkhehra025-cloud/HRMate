@@ -157,10 +157,10 @@ export default function LoginForm() {
           </svg>
         </div>
 
-        <div className="px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 lg:flex lg:justify-center lg:px-10 lg:py-12">
-          <div className="card mx-auto w-full max-w-[22.5rem] p-5 shadow-pop lg:p-7">
-            <div className="hidden lg:block">
-              <h2 className="text-[1.55rem] font-bold tracking-tight text-ink">Welcome back</h2>
+        <div className="px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 lg:flex lg:w-full lg:justify-center lg:px-10 lg:py-12">
+          <div className="card mx-auto w-full max-w-[22.5rem] p-5 shadow-pop lg:max-w-[24rem] lg:p-8">
+            <div className="hidden text-center lg:block">
+              <h2 className="text-[1.65rem] font-bold tracking-tight text-ink">Welcome back</h2>
               <p className="mt-1 text-[13.5px] text-muted">Sign in to your workspace</p>
             </div>
 
