@@ -137,7 +137,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
       <Sidebar
         user={user}
         nav={labeledNav}
@@ -280,7 +280,7 @@ export default function AppShell({
       <div
         id="app-body"
         className={`min-h-0 flex-1 overflow-y-auto ${desktopOpen ? "lg:pl-72" : ""}`}
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+        style={{ flex: "1 1 0%", minHeight: 0, WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
       >
         <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           {children}
