@@ -93,12 +93,27 @@ export default function LeavesClient({
   }
 
   return (
+    <div className="space-y-6">
+      <div className="flow-gradient overflow-hidden rounded-[18px] p-5 text-white shadow-glow">
+        <p className="text-sm text-white/80">Leave balance</p>
+        <p className="text-lg font-bold">Track your available leave</p>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {balance.slice(0, 4).map((b) => (
+            <div key={b.id} className="rounded-xl bg-white/95 p-3 text-ink">
+              <p className="text-[11px] text-muted">{b.name}</p>
+              <p className="text-xl font-bold">{b.balance}</p>
+              <p className="text-[11px] text-muted">days</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Left: balances */}
       <div className="space-y-6 lg:col-span-1">
         <div className="card p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">Leave balance</h2>
+            <h2 className="text-sm font-semibold text-slate-800">All types</h2>
             {canApply && (
               <button
                 onClick={() => setShowForm((s) => !s)}
@@ -253,6 +268,7 @@ export default function LeavesClient({
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

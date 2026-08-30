@@ -33,11 +33,23 @@ export async function GET() {
   const usedMap: Record<string, number> = {};
   for (const u of used) usedMap[u.leave_type_id] = u.total;
 
-  const balance = (types as any[]).map((t) => ({
-    ...t,
-    used: usedMap[t.id] || 0,
-    balance: t.days_per_year - (usedMap[t.id] || 0),
-  }));
+  const extras = db
+    .prepare("SELECT leave_type_id, extra_days FROM leave_balances WHERE user_id = ?")
+    .all(user.id) as { leave_type_id: string; extra_days: number }[];
+  const extraMap: Record<string, number> = {};
+  for (const e of extras) extraMap[e.leave_type_id] = e.extra_days;
+
+  const balance = (types as any[]).map((t) => {
+    const extra = extraMap[t.id] || 0;
+    const used = usedMap[t.id] || 0;
+    return {
+      ...t,
+      extra,
+      used,
+      days_per_year: t.days_per_year + extra,
+      balance: t.days_per_year + extra - used,
+    };
+  });
 
   return json({ requests, types, balance });
 }
@@ -70,9 +82,15 @@ export async function POST(req: NextRequest) {
     )
     .get(user.id, leave_type_id, year) as { total: number };
 
-  if (used.total + days > type.days_per_year) {
+  const extra = (
+    db
+      .prepare("SELECT extra_days FROM leave_balances WHERE user_id = ? AND leave_type_id = ?")
+      .get(user.id, leave_type_id) as { extra_days: number } | undefined
+  )?.extra_days || 0;
+  const allowance = type.days_per_year + extra;
+  if (used.total + days > allowance) {
     return error(
-      `Insufficient balance. You have ${type.days_per_year - used.total} days remaining.`
+      `Insufficient balance. You have ${allowance - used.total} days remaining.`
     );
   }
 

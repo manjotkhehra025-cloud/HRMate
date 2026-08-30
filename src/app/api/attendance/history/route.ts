@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
 
   const records = db
     .prepare(
-      `SELECT * FROM attendance WHERE user_id = ? AND date LIKE ? ORDER BY date DESC`
+      `SELECT a.*, s.name AS shift_name, s.start_time AS shift_start, s.hours AS shift_hours
+       FROM attendance a
+       LEFT JOIN shifts s ON s.id = a.shift_id
+       WHERE a.user_id = ? AND a.date LIKE ? ORDER BY a.date DESC`
     )
     .all(user.id, `${month}%`);
 

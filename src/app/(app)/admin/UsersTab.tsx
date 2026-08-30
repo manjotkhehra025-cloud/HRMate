@@ -17,6 +17,8 @@ interface User {
   color: string;
   active: number;
   passkey_count: number;
+  staff_type?: string;
+  manager_scope?: string;
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -48,14 +50,29 @@ export default function UsersTab({
     email: "",
     password: "",
     role: "employee",
-    department: "",
+    department: "Production",
     designation: "",
+    staff_type: "official",
+    manager_scope: "operations",
   });
+  const [caps, setCaps] = useState({ total: 70, yellow_card: 50, official: 20 });
+  const [counts, setCounts] = useState({ total: 0, yellow: 0, official: 0 });
+  const DEPARTMENTS = [
+    "Production",
+    "Store",
+    "Lab",
+    "Production & Quality",
+    "Maintenance",
+    "Instrument",
+    "Electrician",
+  ];
 
   async function load() {
     const res = await fetch("/api/admin/users");
     const data = await res.json();
     setUsers(data.users);
+    if (data.caps) setCaps(data.caps);
+    if (data.counts) setCounts(data.counts);
     setLoading(false);
   }
 
@@ -64,7 +81,16 @@ export default function UsersTab({
   }, []);
 
   function resetForm() {
-    setForm({ name: "", email: "", password: "", role: "employee", department: "", designation: "" });
+    setForm({
+      name: "",
+      email: "",
+      password: "",
+      role: "employee",
+      department: "Production",
+      designation: "",
+      staff_type: "official",
+      manager_scope: "operations",
+    });
   }
 
   async function createUser(e: React.FormEvent) {
@@ -181,12 +207,32 @@ export default function UsersTab({
             </div>
             <div>
               <label className="label">Department</label>
-              <input className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Production" />
+              <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                {DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="label">Designation</label>
               <input className="input" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="Operator" />
             </div>
+            <div>
+              <label className="label">Staff type</label>
+              <select className="input" value={form.staff_type} onChange={(e) => setForm({ ...form, staff_type: e.target.value })}>
+                <option value="official">Official G.D. Foods Staff</option>
+                <option value="yellow_card">Yellow card / Third party</option>
+              </select>
+            </div>
+            {form.role === "manager" && (
+              <div>
+                <label className="label">Manager approves</label>
+                <select className="input" value={form.manager_scope} onChange={(e) => setForm({ ...form, manager_scope: e.target.value })}>
+                  <option value="engineering">Engineering — Maintenance, Instrument, Electrician</option>
+                  <option value="operations">Operations — Production, Store, Lab</option>
+                </select>
+              </div>
+            )}
           </div>
           <button type="submit" disabled={saving} className="btn-primary">
             {saving ? <Spinner className="h-4 w-4" /> : "Create user"}
@@ -209,6 +255,9 @@ export default function UsersTab({
                   <span className="badge text-[10px]" style={{ backgroundColor: `${ROLE_COLORS[u.role]}18`, color: ROLE_COLORS[u.role] }}>
                     {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS]}
                   </span>
+                  {u.staff_type === "yellow_card" && (
+                    <span className="badge bg-amber-50 text-[10px] text-amber-700">Yellow card</span>
+                  )}
                 </div>
                 <p className="truncate text-xs text-slate-400">{u.email}</p>
               </div>
@@ -236,6 +285,24 @@ export default function UsersTab({
                   className={`px-2.5 py-1.5 text-xs font-semibold ${u.active ? "text-rose-500 hover:text-rose-600" : "text-emerald-500 hover:text-emerald-600"}`}
                 >
                   {u.active ? "Deactivate" : "Activate"}
+                </button>
+              )}
+              {isSuperAdmin && u.role !== "super_admin" && (
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
+                    const res = await fetch("/api/admin/users", {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: u.id }),
+                    });
+                    const d = await res.json();
+                    if (!res.ok) setError(d.error || "Delete failed");
+                    else load();
+                  }}
+                  className="px-2.5 py-1.5 text-xs font-semibold text-rose-600"
+                >
+                  Delete
                 </button>
               )}
             </div>

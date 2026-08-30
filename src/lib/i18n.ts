@@ -1,6 +1,7 @@
 export type Lang = "en" | "pa";
 
 const en = {
+  reports: "Reports",
   dashboard: "Dashboard",
   attendance: "Attendance",
   leaves: "Leaves",
@@ -66,6 +67,7 @@ const en = {
 };
 
 const pa: Record<keyof typeof en, string> = {
+  reports: "ਰਿਪੋਰਟਾਂ",
   dashboard: "ਡੈਸ਼ਬੋਰਡ",
   attendance: "ਹਾਜ਼ਰੀ",
   leaves: "ਛੁੱਟੀਆਂ",
@@ -147,7 +149,9 @@ export function navLabel(lang: Lang, href: string, fallback: string): string {
     "/team": "team",
     "/approvals": "approvals",
     "/admin": "admin",
-    "/profile": "settings",
+    "/profile": "myProfile",
+    "/settings": "settings",
+    "/reports": "reports",
   };
   const key = map[href];
   return key ? t(lang, key) : fallback;

@@ -3,17 +3,18 @@ import db from "@/lib/db";
 import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
+import { applyChangeRequest, submitChange } from "@/lib/workflow";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function guard() {
   const user = requireUser();
-  if (!user) return { res: unauthorized() as Response };
-  if (!hasPermission(user.id, "admin.settings")) {
-    return { res: error("You don't have permission to manage leave types", 403) as Response };
+  if (!user) return { user: null as any, res: unauthorized() };
+  if (!hasPermission(user.id, "admin.settings") && !hasPermission(user.id, "leaves.adjust")) {
+    return { user: null as any, res: error("You don't have permission to manage leave types", 403) };
   }
-  return { res: null };
+  return { user, res: null };
 }
 
 function list() {
@@ -37,13 +38,12 @@ export async function POST(req: NextRequest) {
   if (!Number.isFinite(days) || days < 0 || days > 365) {
     return error("Days per year must be 0–365");
   }
-  const max = db.prepare("SELECT COALESCE(MAX(sort), 0) AS m FROM leave_types").get() as {
-    m: number;
-  };
-  const id = randomId("lt_");
-  db.prepare(
-    `INSERT INTO leave_types (id, name, days_per_year, color, sort) VALUES (?, ?, ?, ?, ?)`
-  ).run(id, name, days, color, max.m + 1);
+  const payload = { action: "create", name, days_per_year: days, color };
+  if (g.user.role !== "super_admin") {
+    submitChange("leave_type", payload, g.user.id);
+    return json({ ok: true, pending: true, leaveTypes: list() });
+  }
+  applyChangeRequest("leave_type", payload);
   return json({ ok: true, leaveTypes: list() });
 }
 
@@ -61,12 +61,12 @@ export async function PUT(req: NextRequest) {
   const color = String(body.color ?? existing.color);
   if (!name) return error("Leave type name is required");
   if (days < 0 || days > 365) return error("Days per year must be 0–365");
-  db.prepare("UPDATE leave_types SET name = ?, days_per_year = ?, color = ? WHERE id = ?").run(
-    name,
-    days,
-    color,
-    body.id
-  );
+  const payload = { action: "update", id: body.id, name, days_per_year: days, color };
+  if (g.user.role !== "super_admin") {
+    submitChange("leave_type", payload, g.user.id);
+    return json({ ok: true, pending: true, leaveTypes: list() });
+  }
+  applyChangeRequest("leave_type", payload);
   return json({ ok: true, leaveTypes: list() });
 }
 
@@ -80,6 +80,10 @@ export async function DELETE(req: NextRequest) {
     .get(id) as { c: number };
   if (used.c > 0) {
     return error("This leave type has requests — you can set days to 0 instead of deleting it");
+  }
+  if (g.user.role !== "super_admin") {
+    submitChange("leave_type", { action: "delete", id }, g.user.id);
+    return json({ ok: true, pending: true, leaveTypes: list() });
   }
   db.prepare("DELETE FROM leave_types WHERE id = ?").run(id);
   return json({ ok: true, leaveTypes: list() });

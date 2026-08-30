@@ -31,6 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         color: user.color,
         department: user.department,
         designation: user.designation,
+        avatar: user.avatar || "",
       }}
       permissions={permissionList}
       unread={unread}

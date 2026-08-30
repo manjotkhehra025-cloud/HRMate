@@ -33,16 +33,18 @@ interface ManualReq {
 
 export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
   const [leaves, setLeaves] = useState<LeaveReq[]>([]);
-  const [manual, setManual] = useState<ManualReq[]>([]);
+  const [manual, setManual] = useState<(ManualReq & { stage?: string; user_staff_type?: string })[]>([]);
+  const [changes, setChanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"all" | "leaves" | "manual">("all");
+  const [tab, setTab] = useState<"all" | "leaves" | "manual" | "changes">("all");
   const [busy, setBusy] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/approvals");
     const data = await res.json();
-    setLeaves(data.leaves);
-    setManual(data.manual);
+    setLeaves(data.leaves || []);
+    setManual(data.manual || []);
+    setChanges(data.changes || []);
     setLoading(false);
   }
 
@@ -61,15 +63,16 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
     load();
   }
 
-  const total = leaves.length + manual.length;
+  const total = leaves.length + manual.length + changes.length;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-80">
+      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-fit">
         {[
           { key: "all", label: `All (${total})` },
           { key: "leaves", label: `Leaves (${leaves.length})` },
           { key: "manual", label: `Manual (${manual.length})` },
+          ...(changes.length ? [{ key: "changes", label: `Changes (${changes.length})` }] : []),
         ].map((t) => (
           <button
             key={t.key}
@@ -145,6 +148,11 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                       Manual {m.type === "punch_in" ? "Punch In" : "Punch Out"}
                     </span>
+                    {m.user_staff_type === "yellow_card" && (
+                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                        Yellow card · {m.stage === "manager" ? "manager" : "Super Admin"}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
                     <Clock className="h-3.5 w-3.5" />
@@ -166,6 +174,38 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     <button
                       onClick={() => act("manual", m.id, "reject")}
                       disabled={busy === m.id}
+                      className="btn-danger px-3 py-2 text-xs"
+                    >
+                      <XCircle className="h-4 w-4" /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+          {(tab === "all" || tab === "changes") &&
+            changes.map((c) => (
+              <div key={`c_${c.id}`} className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                <Avatar name={c.requester_name} color={c.requester_color} size={44} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800">{c.requester_name}</p>
+                  <p className="text-xs capitalize text-muted">{String(c.kind).replace("_", " ")}</p>
+                  <p className="mt-1 text-sm text-slate-600">{JSON.stringify(c.payload)}</p>
+                  <p className="mt-1 text-[11px] text-slate-400">Requested {timeAgo(c.created_at)}</p>
+                </div>
+                {canManage && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => act("change", c.id, "approve")}
+                      disabled={busy === c.id}
+                      className="btn-success px-3 py-2 text-xs"
+                    >
+                      {busy === c.id ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => act("change", c.id, "reject")}
+                      disabled={busy === c.id}
                       className="btn-danger px-3 py-2 text-xs"
                     >
                       <XCircle className="h-4 w-4" /> Reject

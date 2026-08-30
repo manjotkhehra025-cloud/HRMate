@@ -232,6 +232,29 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
           </p>
         )}
 
+        {record?.punch_in_lat != null && (
+          <div className="mt-4 rounded-2xl border border-line bg-[#F8FAFD] px-4 py-3 text-xs">
+            <p className="font-semibold text-emerald-700">GPS verified</p>
+            <p className="tabular-nums text-muted">
+              {Number(record.punch_in_lat).toFixed(5)}, {Number(record.punch_in_lng).toFixed(5)}
+            </p>
+            <a
+              className="mt-1 inline-block font-semibold text-brand-600"
+              href={`https://www.google.com/maps?q=${record.punch_in_lat},${record.punch_in_lng}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in Google Maps
+            </a>
+          </div>
+        )}
+        {(record?.shift_name || record?.shift_id) && (
+          <p className="mt-3 rounded-xl border border-line px-3 py-2 text-xs text-ink">
+            Shift {record.shift_name || "assigned"}
+            {record.shift_start ? ` · ${record.shift_start}` : ""}
+            {record.shift_hours ? ` · ${record.shift_hours} hours` : ""}
+          </p>
+        )}
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-400">
           <span>Must be inside the factory geofence</span>
           <span>Radius {factory.radius}m</span>

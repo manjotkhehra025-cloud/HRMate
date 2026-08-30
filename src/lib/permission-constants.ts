@@ -7,6 +7,7 @@ export type Permission =
   | "leaves.apply"
   | "leaves.approve"
   | "leaves.team"
+  | "leaves.adjust"
   | "wall.view"
   | "wall.post"
   | "wall.moderate"
@@ -27,6 +28,7 @@ export const ALL_PERMISSIONS: { key: Permission; label: string; group: string }[
   { key: "leaves.apply", label: "Apply for leave", group: "Leaves" },
   { key: "leaves.approve", label: "Approve / reject leaves", group: "Leaves" },
   { key: "leaves.team", label: "View team leaves", group: "Leaves" },
+  { key: "leaves.adjust", label: "Adjust leave balances (admin approval)", group: "Leaves" },
   { key: "wall.view", label: "View social wall", group: "Social Wall" },
   { key: "wall.post", label: "Post on wall", group: "Social Wall" },
   { key: "wall.moderate", label: "Moderate / delete posts", group: "Social Wall" },
@@ -55,7 +57,7 @@ const ROLE_DEFAULTS: Record<Role, (Permission | "*")[]> = {
   super_admin: ["*"],
   admin: [
     "attendance.view", "attendance.punch", "attendance.manual", "attendance.team",
-    "leaves.view", "leaves.apply", "leaves.approve", "leaves.team",
+    "leaves.view", "leaves.apply", "leaves.approve", "leaves.team", "leaves.adjust",
     "wall.view", "wall.post", "wall.moderate",
     "approvals.view", "approvals.manage",
     "admin.view", "admin.users", "admin.settings",

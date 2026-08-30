@@ -3,8 +3,8 @@ import db from "@/lib/db";
 import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
-import { notifyMany } from "@/lib/notify";
 import { istTimestamp } from "@/lib/attendance";
+import { notifyPunchApprovers, punchStageForUser } from "@/lib/workflow";
 
 export const dynamic = "force-dynamic";
 
@@ -53,26 +53,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const stage = punchStageForUser(user.id);
   const insert = db.prepare(
-    `INSERT INTO manual_punch_requests (id, user_id, date, type, time, reason, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO manual_punch_requests (id, user_id, date, type, time, reason, created_at, stage)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const p of punches) {
-    insert.run(randomId("mp_"), user.id, date, p.type, p.time, reason.trim(), Date.now());
+    insert.run(randomId("mp_"), user.id, date, p.type, p.time, reason.trim(), Date.now(), stage);
   }
 
-  const approvers = db
-    .prepare("SELECT id FROM users WHERE role IN ('super_admin','admin','manager') AND active = 1")
-    .all() as { id: string }[];
   const summary = punches
     .map((p) => `${p.type === "punch_in" ? "in" : "out"} ${p.time}`)
     .join(", ");
-  notifyMany(
-    approvers.map((a) => a.id),
-    "Manual punch request",
-    `${user.name} requested manual punch ${summary} on ${date}`,
-    { type: "approval", link: "/approvals" }
+  notifyPunchApprovers(
+    { id: user.id, name: user.name, department: user.department, staff_type: user.staff_type },
+    summary,
+    date,
+    stage
   );
 
-  return json({ ok: true, count: punches.length });
+  return json({ ok: true, count: punches.length, stage });
 }

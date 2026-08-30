@@ -218,6 +218,37 @@ function ensureSchema(d: DatabaseLike) {
   if (!hasColumn(d, "attendance", "shift_id")) {
     d.exec(`ALTER TABLE attendance ADD COLUMN shift_id TEXT`);
   }
+  if (!hasColumn(d, "users", "staff_type")) {
+    d.exec(`ALTER TABLE users ADD COLUMN staff_type TEXT NOT NULL DEFAULT 'official'`);
+  }
+  if (!hasColumn(d, "users", "manager_scope")) {
+    d.exec(`ALTER TABLE users ADD COLUMN manager_scope TEXT NOT NULL DEFAULT ''`);
+  }
+  if (!hasColumn(d, "users", "avatar")) {
+    d.exec(`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`);
+  }
+  d.exec(`
+  CREATE TABLE IF NOT EXISTS leave_balances (
+    user_id TEXT NOT NULL,
+    leave_type_id TEXT NOT NULL,
+    extra_days REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, leave_type_id)
+  );
+  CREATE TABLE IF NOT EXISTS change_requests (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    requested_by TEXT NOT NULL,
+    reviewed_by TEXT,
+    reviewed_at INTEGER,
+    reviewed_note TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  `);
+  if (!hasColumn(d, "manual_punch_requests", "stage")) {
+    d.exec(`ALTER TABLE manual_punch_requests ADD COLUMN stage TEXT NOT NULL DEFAULT 'final'`);
+  }
 }
 
 function seed(d: DatabaseLike) {

@@ -20,6 +20,7 @@ export interface SessionUserShape {
   color: string;
   department: string;
   designation: string;
+  avatar?: string;
 }
 
 export default function Sidebar({
@@ -120,7 +121,7 @@ export default function Sidebar({
             onClick={onClose}
             className="flex items-center gap-3 rounded-tile bg-[#071827] p-3 transition hover:bg-white/[0.06]"
           >
-            <Avatar name={user.name} color={user.color} size={40} />
+            <Avatar name={user.name} color={user.color} size={40} src={user.avatar ? `/api/avatar/${user.id}?v=${user.avatar}` : undefined} />
             <div className="min-w-0">
               <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
               <p className="truncate text-[11.5px] text-[#7892AA]">{user.designation || user.role}</p>

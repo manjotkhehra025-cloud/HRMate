@@ -17,7 +17,11 @@ export default function AttendancePage() {
 
   const today = dateKey();
   const record = db
-    .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
+    .prepare(
+      `SELECT a.*, s.name AS shift_name, s.start_time AS shift_start, s.hours AS shift_hours
+       FROM attendance a LEFT JOIN shifts s ON s.id = a.shift_id
+       WHERE a.user_id = ? AND a.date = ?`
+    )
     .get(user.id, today) as any;
   const factory = getFactoryConfig();
 
@@ -26,21 +30,12 @@ export default function AttendancePage() {
       <div className="hidden lg:block">
         <h1 className="page-title">Attendance</h1>
         <p className="page-sub">
-          GPS-based punch in and out. You must be within {factory.radius}m of {factory.name}.
+          GPS punch, calendar and history. You must be within {factory.radius}m of {factory.name}.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} />
-        </div>
-        <div className="lg:col-span-2">
-          <AttendanceClient
-            canManual={has("attendance.manual")}
-            canView={has("attendance.view")}
-          />
-        </div>
-      </div>
+      <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} />
+      <AttendanceClient canManual={has("attendance.manual")} canView={has("attendance.view")} />
     </div>
   );
 }

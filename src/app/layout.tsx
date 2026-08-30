@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PrefsProvider from "@/components/PrefsProvider";
+import PwaRegister from "@/components/PwaRegister";
 
 export const metadata: Metadata = {
   title: "HRMate — Smart HRMS",
   description: "Attendance, leaves, social wall, GPS punch-in and more — one premium HR platform.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "HRMate",
+  },
+  icons: { apple: "/icon.png" },
 };
 
 export const viewport: Viewport = {

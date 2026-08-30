@@ -9,21 +9,21 @@ import { getVapidPublicKey } from "@/lib/push";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const USER_COLS =
+  "SELECT id, email, name, role, department, designation, phone, color, avatar, staff_type FROM users WHERE id = ?";
+
 export async function GET() {
   const user = requireUser();
   if (!user) return unauthorized();
 
-  const row = db
-    .prepare(
-      "SELECT id, email, name, role, department, designation, phone, color FROM users WHERE id = ?"
-    )
-    .get(user.id) as any;
+  const row = db.prepare(USER_COLS).get(user.id) as any;
 
   const factory = getFactoryConfig();
   return json({
     user: {
       ...row,
       phone: row.phone || "",
+      avatar: row.avatar || "",
     },
     factory: {
       name: factory.name,
@@ -34,6 +34,7 @@ export async function GET() {
     },
     prefs: getUserPrefs(user.id),
     canSettings: hasPermission(user.id, "admin.settings"),
+    canAdjustLeaves: hasPermission(user.id, "leaves.adjust"),
     vapidPublicKey: getVapidPublicKey(),
   });
 }
@@ -52,11 +53,7 @@ export async function PUT(req: NextRequest) {
   }
 
   db.prepare("UPDATE users SET name = ?, phone = ? WHERE id = ?").run(name, phone, user.id);
-  const row = db
-    .prepare(
-      "SELECT id, email, name, role, department, designation, phone, color FROM users WHERE id = ?"
-    )
-    .get(user.id);
+  const row = db.prepare(USER_COLS).get(user.id);
 
   return json({ ok: true, user: row });
 }

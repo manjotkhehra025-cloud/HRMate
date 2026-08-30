@@ -23,6 +23,9 @@ export interface SessionUser {
   designation: string;
   phone: string;
   color: string;
+  avatar: string;
+  staff_type: string;
+  manager_scope: string;
   active: number;
 }
 
