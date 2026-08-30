@@ -164,7 +164,7 @@ export default function SettingsTab() {
             }
           />
           <p className="mt-2 text-xs text-muted">
-            Drag the pin or tap the map. Blue circle is the punch radius.
+            Pan the Google map. To change the pin, paste a Google Maps link below.
           </p>
         </div>
 
