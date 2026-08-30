@@ -18,11 +18,10 @@ export default function ScrollRoot({ children }: { children: React.ReactNode }) 
       el.style.right = "0";
       el.style.top = `${top}px`;
       el.style.height = `${Math.max(height, 200)}px`;
-      el.style.overflowY = "auto";
-      el.style.overflowX = "hidden";
+      el.style.overflow = "hidden";
+      el.style.display = "flex";
+      el.style.flexDirection = "column";
       (el.style as any).webkitOverflowScrolling = "touch";
-      el.style.touchAction = "pan-y";
-      el.style.overscrollBehavior = "contain";
     };
 
     apply();

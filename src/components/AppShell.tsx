@@ -137,7 +137,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       <Sidebar
         user={user}
         nav={labeledNav}
@@ -158,8 +158,7 @@ export default function AppShell({
         onLogout={logout}
       />
 
-      <div className={desktopOpen ? "lg:pl-72" : ""}>
-        <header className="sticky top-0 z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 sm:px-6">
+      <header className={`flex h-[62px] shrink-0 items-center gap-3 border-b border-line bg-white px-4 sm:px-6 ${desktopOpen ? "lg:pl-72" : ""}`}>
           <button
             onClick={() => setGridOpen(true)}
             className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB]"
@@ -278,7 +277,12 @@ export default function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-5 pb-32 sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
+      <div
+        id="app-body"
+        className={`min-h-0 flex-1 overflow-y-auto ${desktopOpen ? "lg:pl-72" : ""}`}
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+      >
+        <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           {children}
         </main>
       </div>

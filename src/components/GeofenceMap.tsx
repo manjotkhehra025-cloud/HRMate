@@ -32,7 +32,7 @@ export default function GeofenceMap({
     <div className="overflow-hidden rounded-[14px] border border-line bg-[#E8F0E8]">
       <div className="relative h-[160px] w-full sm:h-[220px]">
         <img
-          src={`https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`}
+          src={`https://a.basemaps.cartocdn.com/light_all/${zoom}/${x}/${y}@2x.png`}
           alt="Attendance area"
           className="pointer-events-none h-full w-full object-cover"
           draggable={false}

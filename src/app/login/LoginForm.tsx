@@ -85,7 +85,7 @@ export default function LoginForm() {
   ];
 
   return (
-    <div className="lg:flex lg:min-h-screen">
+    <div className="h-full overflow-y-auto lg:flex lg:min-h-full">
       {/* Desktop brand panel */}
       <div className="flow-gradient relative hidden w-[48%] overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />

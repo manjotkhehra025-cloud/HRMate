@@ -45,12 +45,10 @@ body {
 #scroll-root {
   position: fixed;
   inset: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--background);
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  overscroll-behavior: contain;
 }
 html[data-text="small"] {
   font-size: 14px;
@@ -124,16 +122,6 @@ body {
   font-feature-settings: "tnum" 1, "cv02", "cv03", "cv04";
   margin: 0;
 }
-.leaflet-container,
-.leaflet-pane,
-.leaflet-top,
-.leaflet-bottom {
-  z-index: 0 !important;
-}
-.leaflet-container {
-  touch-action: pan-y !important;
-}
-
 .flow-gradient {
   background-image: linear-gradient(135deg, #1e6fe0 0%, #258fd0 52%, #16b878 100%);
 }
