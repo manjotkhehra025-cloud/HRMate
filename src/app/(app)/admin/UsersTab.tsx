@@ -68,6 +68,7 @@ export default function UsersTab({
     "Maintenance",
     "Instrument",
     "Electrician",
+    "Electric",
   ];
 
   async function load() {

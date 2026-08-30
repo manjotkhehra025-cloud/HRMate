@@ -24,11 +24,10 @@ export function managersForScope(scope: ManagerScope): string[] {
 
 export function punchStageForUser(userId: string): "manager" | "scope" | "final" {
   const u = db
-    .prepare("SELECT role, staff_type, department FROM users WHERE id = ?")
-    .get(userId) as { role: string; staff_type: string; department: string } | undefined;
-  if (!u) return "final";
-  if (isLeadershipRole(u.role)) return "final";
-  if (u.staff_type === "yellow_card") return "manager";
+    .prepare("SELECT role, department FROM users WHERE id = ?")
+    .get(userId) as { role: string; department: string } | undefined;
+  if (!u || isLeadershipRole(u.role)) return "final";
+  // Official + yellow card both go to the department manager (Senior Manager or AGM).
   return "scope";
 }
 
@@ -113,11 +112,7 @@ export function canActOnManual(
   if (actor.id === row.user_id) return false;
   if (isLeadershipRole(target.role)) return false;
   const stage = row.stage || "final";
-  if (target.staff_type === "yellow_card") {
-    if (stage === "manager") return managesDepartment(actor, target.department);
-    return false;
-  }
-  if (stage === "scope") return managesDepartment(actor, target.department);
+  if (stage === "scope" || stage === "manager") return managesDepartment(actor, target.department);
   return actor.role === "admin";
 }
 

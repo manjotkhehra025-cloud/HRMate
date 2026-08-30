@@ -150,7 +150,12 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     </span>
                     {m.user_staff_type === "yellow_card" && (
                       <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                        Yellow card · {m.stage === "manager" ? "manager" : "Super Admin"}
+                        Yellow card
+                      </span>
+                    )}
+                    {m.user_department && (
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                        {m.user_department}
                       </span>
                     )}
                   </div>

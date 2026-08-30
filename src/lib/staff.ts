@@ -26,7 +26,7 @@ export const MANAGER_SCOPES: { value: "operations" | "engineering"; label: strin
   {
     value: "engineering",
     label: "AGM Engineering",
-    hint: "Electrician, Maintenance, Instrument",
+    hint: "Electric, Electrician, Maintenance, Instrument",
   },
 ];
 
@@ -38,6 +38,7 @@ export const DEPARTMENTS: { name: string; scope: "engineering" | "operations" }[
   { name: "Maintenance", scope: "engineering" },
   { name: "Instrument", scope: "engineering" },
   { name: "Electrician", scope: "engineering" },
+  { name: "Electric", scope: "engineering" },
 ];
 
 export function departmentScope(department: string): "engineering" | "operations" | "" {

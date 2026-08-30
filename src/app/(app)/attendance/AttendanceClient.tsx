@@ -248,7 +248,7 @@ export default function AttendanceClient({
         {showManual && canManual && (
           <form onSubmit={submitManual} className="space-y-3 border-t border-line px-5 py-4">
             <p className="text-xs text-muted">
-              Request for {selected}. Official staff go to their manager. Yellow card goes to manager, then Super Admin.
+              Request for {selected}. Production / Lab go to Senior Manager. Electric (official and yellow card) go to AGM.
             </p>
             <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
               {(["in", "out", "both"] as const).map((k) => (
