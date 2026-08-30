@@ -58,7 +58,7 @@ export default function ModuleMenu({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-3">
           {nav.map((item, i) => {
             const c = TILE_COLORS[i % TILE_COLORS.length];
             const active =
@@ -69,13 +69,13 @@ export default function ModuleMenu({
                 href={item.href}
                 onClick={onClose}
                 className={classNames(
-                  "flex aspect-square flex-col items-center justify-center gap-2 rounded-[18px] px-2 text-center",
+                  "flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-[18px] px-2 py-3 text-center",
                   active ? "ring-2 ring-brand-500/40" : ""
                 )}
                 style={{ background: c.bg }}
               >
                 <span style={{ color: c.fg }}>{item.icon}</span>
-                <span className="text-[12px] font-semibold leading-tight text-ink">{item.label}</span>
+                <span className="text-[12.5px] font-semibold leading-tight text-ink">{item.label}</span>
               </Link>
             );
           })}
