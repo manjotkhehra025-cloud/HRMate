@@ -249,6 +249,12 @@ function ensureSchema(d: DatabaseLike) {
   if (!hasColumn(d, "manual_punch_requests", "stage")) {
     d.exec(`ALTER TABLE manual_punch_requests ADD COLUMN stage TEXT NOT NULL DEFAULT 'final'`);
   }
+  if (!hasColumn(d, "leave_types", "reset_period")) {
+    d.exec(`ALTER TABLE leave_types ADD COLUMN reset_period TEXT NOT NULL DEFAULT 'year'`);
+  }
+  d.prepare(
+    `UPDATE leave_types SET days_per_year = 2, reset_period = 'month' WHERE id = 'lt_short'`
+  ).run();
 }
 
 function seed(d: DatabaseLike) {
@@ -305,7 +311,8 @@ function seedShiftsAndLeave(d: DatabaseLike) {
   leave.run("lt_earned", "Earned Leave", 15, "#10b981", 3);
   leave.run("lt_optional", "Optional Holiday", 3, "#f59e0b", 4);
   leave.run("lt_comp", "Compensatory off", 0, "#8b5cf6", 5);
-  leave.run("lt_short", "Short leave", 6, "#06b6d4", 6);
+  leave.run("lt_short", "Short leave", 2, "#06b6d4", 6);
+  d.prepare(`UPDATE leave_types SET days_per_year = 2, reset_period = 'month' WHERE id = 'lt_short'`).run();
 
   const shift = d.prepare(
     `INSERT OR IGNORE INTO shifts (id, name, start_time, hours, auto_pick, sort) VALUES (?, ?, ?, ?, ?, ?)`

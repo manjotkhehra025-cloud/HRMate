@@ -12,6 +12,8 @@ interface LeaveType {
   color: string;
   used: number;
   balance: number;
+  reset_period?: string;
+  period_label?: string;
 }
 interface LeaveRequest {
   id: string;
@@ -133,11 +135,14 @@ export default function LeavesClient({
                     <span className="text-sm font-medium text-slate-700">{b.name}</span>
                     <span className="text-xs text-slate-400">
                       {b.used}/{b.days_per_year} used
+                      {b.reset_period === "month" ? " this month" : ""}
                     </span>
                   </div>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-slate-900">{b.balance}</span>
-                    <span className="text-xs text-slate-400">days left</span>
+                    <span className="text-xs text-slate-400">
+                      days left{b.reset_period === "month" ? " · lapses month-end" : ""}
+                    </span>
                   </div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                     <div

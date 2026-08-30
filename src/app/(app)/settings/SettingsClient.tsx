@@ -44,6 +44,7 @@ interface LeaveType {
   name: string;
   days_per_year: number;
   color: string;
+  reset_period?: string;
 }
 interface Shift {
   id: string;

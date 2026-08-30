@@ -5,6 +5,7 @@ import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { notifyMany } from "@/lib/notify";
 import { businessDays } from "@/lib/utils";
+import { balancesForUser, usedInPeriod } from "@/lib/leave";
 
 export async function GET() {
   const user = requireUser();
@@ -19,37 +20,7 @@ export async function GET() {
     .all(user.id);
 
   const types = db.prepare("SELECT * FROM leave_types ORDER BY sort").all();
-
-  // Balance: days_per_year - approved days this year
-  const year = new Date().getFullYear();
-  const used = db
-    .prepare(
-      `SELECT leave_type_id, SUM(days) AS total FROM leave_requests
-       WHERE user_id = ? AND status = 'approved' AND substr(start_date,1,4) = ?
-       GROUP BY leave_type_id`
-    )
-    .all(user.id, String(year)) as { leave_type_id: string; total: number }[];
-
-  const usedMap: Record<string, number> = {};
-  for (const u of used) usedMap[u.leave_type_id] = u.total;
-
-  const extras = db
-    .prepare("SELECT leave_type_id, extra_days FROM leave_balances WHERE user_id = ?")
-    .all(user.id) as { leave_type_id: string; extra_days: number }[];
-  const extraMap: Record<string, number> = {};
-  for (const e of extras) extraMap[e.leave_type_id] = e.extra_days;
-
-  const balance = (types as any[]).map((t) => {
-    const extra = extraMap[t.id] || 0;
-    const used = usedMap[t.id] || 0;
-    return {
-      ...t,
-      extra,
-      used,
-      days_per_year: t.days_per_year + extra,
-      balance: t.days_per_year + extra - used,
-    };
-  });
+  const balance = balancesForUser(user.id);
 
   return json({ requests, types, balance });
 }
@@ -70,28 +41,25 @@ export async function POST(req: NextRequest) {
   const days = businessDays(start_date, end_date);
   if (days <= 0) return error("Selected range has no working days");
 
-  // Validate balance
   const type = db.prepare("SELECT * FROM leave_types WHERE id = ?").get(leave_type_id) as any;
   if (!type) return error("Invalid leave type");
 
-  const year = start_date.slice(0, 4);
-  const used = db
-    .prepare(
-      `SELECT COALESCE(SUM(days),0) AS total FROM leave_requests
-       WHERE user_id = ? AND leave_type_id = ? AND status = 'approved' AND substr(start_date,1,4) = ?`
-    )
-    .get(user.id, leave_type_id, year) as { total: number };
+  const reset = type.reset_period === "month" ? "month" : "year";
+  if (reset === "month" && start_date.slice(0, 7) !== end_date.slice(0, 7)) {
+    return error("Short leave must start and end in the same month");
+  }
 
-  const extra = (
-    db
-      .prepare("SELECT extra_days FROM leave_balances WHERE user_id = ? AND leave_type_id = ?")
-      .get(user.id, leave_type_id) as { extra_days: number } | undefined
-  )?.extra_days || 0;
+  const extra =
+    (
+      db
+        .prepare("SELECT extra_days FROM leave_balances WHERE user_id = ? AND leave_type_id = ?")
+        .get(user.id, leave_type_id) as { extra_days: number } | undefined
+    )?.extra_days || 0;
   const allowance = type.days_per_year + extra;
-  if (used.total + days > allowance) {
-    return error(
-      `Insufficient balance. You have ${allowance - used.total} days remaining.`
-    );
+  const used = usedInPeriod(user.id, leave_type_id, reset, start_date);
+  if (used + days > allowance) {
+    const unit = reset === "month" ? "this month" : "this year";
+    return error(`Insufficient balance ${unit}. You have ${allowance - used} day(s) remaining.`);
   }
 
   db.prepare(

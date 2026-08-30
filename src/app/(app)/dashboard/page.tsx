@@ -9,6 +9,7 @@ import PunchWidget from "@/components/PunchWidget";
 import Avatar from "@/components/Avatar";
 import PushRegistration from "@/components/PushRegistration";
 import { getVapidPublicKey } from "@/lib/push";
+import { balancesForUser } from "@/lib/leave";
 import {
   CalendarDays,
   MapPin,
@@ -32,24 +33,8 @@ export default function DashboardPage() {
     .get(user.id, today) as any;
 
   const factory = getFactoryConfig();
-
-  const year = new Date().getFullYear();
-  const types = db.prepare("SELECT * FROM leave_types ORDER BY sort").all() as any[];
-  const usedRows = db
-    .prepare(
-      `SELECT leave_type_id, SUM(days) AS total FROM leave_requests
-       WHERE user_id = ? AND status = 'approved' AND substr(start_date,1,4) = ?
-       GROUP BY leave_type_id`
-    )
-    .all(user.id, String(year)) as { leave_type_id: string; total: number }[];
-  const usedMap: Record<string, number> = {};
-  for (const u of usedRows) usedMap[u.leave_type_id] = u.total;
-  const balances = types.map((t) => ({
-    ...t,
-    used: usedMap[t.id] || 0,
-    balance: t.days_per_year - (usedMap[t.id] || 0),
-  }));
-  const totalBalance = balances.reduce((s, b) => s + b.balance, 0);
+  const balances = balancesForUser(user.id);
+  const totalBalance = balances.reduce((s, b) => s + Math.max(0, b.balance), 0);
 
   let pendingCount = 0;
   if (has("approvals.view")) {
