@@ -2,15 +2,16 @@ import db from "./db";
 import { getFactoryConfig } from "./geo";
 import { istTimestamp } from "./attendance";
 import { istParts } from "./utils";
-import { isWeeklyOff, parseWeeklyOff } from "./staff";
+import { addWorkingDays, isWeeklyOff, parseWeeklyOff } from "./staff";
 
-export type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty";
+export type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty" | "grace";
 
 export function dayStatus(
   date: string,
   rec: { punch_in_at: number | null; punch_out_at: number | null } | null,
   today: string,
-  weeklyOff = 6
+  weeklyOff = 6,
+  flags?: { approvedLeave?: boolean; pendingLeave?: boolean }
 ): DayStatus {
   if (date > today) return "future";
   if (rec?.punch_in_at && rec?.punch_out_at) {
@@ -20,6 +21,10 @@ export function dayStatus(
   if (rec?.punch_in_at) return date === today ? "present" : "half";
   if (isWeeklyOff(date, weeklyOff)) return "weekly_off";
   if (date === today) return "empty";
+  if (flags?.approvedLeave) return "empty";
+  if (flags?.pendingLeave) return "grace";
+  const deadline = addWorkingDays(date, 2, weeklyOff);
+  if (today <= deadline) return "grace";
   return "absent";
 }
 
@@ -79,6 +84,25 @@ export function monthReport(month: string) {
   const leaveMap: Record<string, number> = {};
   for (const l of leaveDays) leaveMap[l.user_id] = l.total;
 
+  const coverRows = db
+    .prepare(
+      `SELECT user_id, start_date, end_date, status FROM leave_requests
+       WHERE status IN ('approved', 'pending') AND end_date >= ? AND start_date <= ?`
+    )
+    .all(`${month}-01`, `${month}-31`) as { user_id: string; start_date: string; end_date: string; status: string }[];
+  const cover: Record<string, Record<string, "approved" | "pending">> = {};
+  for (const l of coverRows) {
+    let d = l.start_date;
+    while (d <= l.end_date) {
+      cover[l.user_id] = cover[l.user_id] || {};
+      if (cover[l.user_id][d] !== "approved") {
+        cover[l.user_id][d] = l.status === "approved" ? "approved" : "pending";
+      }
+      const [y, m, day] = d.split("-").map(Number);
+      d = new Date(Date.UTC(y, m - 1, day + 1)).toISOString().slice(0, 10);
+    }
+  }
+
   const perEmployee = users.map((u) => {
     let present = 0;
     let late = 0;
@@ -87,7 +111,11 @@ export function monthReport(month: string) {
     const series: number[] = [];
     const off = parseWeeklyOff(u.weekly_off, 6);
     for (const d of dates) {
-      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, off);
+      const flag = cover[u.id]?.[d];
+      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, off, {
+        approvedLeave: flag === "approved",
+        pendingLeave: flag === "pending",
+      });
       series.push(st === "present" || st === "half" ? 1 : 0);
       if (st === "present") present++;
       else if (st === "half") half++;
@@ -138,7 +166,11 @@ export function monthReport(month: string) {
   const daily = dates.map((d) => {
     let c = 0;
     for (const u of users) {
-      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, parseWeeklyOff(u.weekly_off, 6));
+      const flag = cover[u.id]?.[d];
+      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, parseWeeklyOff(u.weekly_off, 6), {
+        approvedLeave: flag === "approved",
+        pendingLeave: flag === "pending",
+      });
       if (st === "present" || st === "half") c++;
     }
     return { date: d, present: c };

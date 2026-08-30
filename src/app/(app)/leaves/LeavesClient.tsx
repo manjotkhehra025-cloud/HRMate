@@ -49,6 +49,7 @@ export default function LeavesClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [openMissed, setOpenMissed] = useState<{ date: string; deadline: string }[]>([]);
   const visibleBalance =
     staffType === "yellow_card" ? balance.filter((b) => b.id !== "lt_comp") : balance;
 
@@ -59,6 +60,7 @@ export default function LeavesClient({
       const data = await res.json();
       setBalance(data.balance);
       setRequests(data.requests);
+      setOpenMissed(data.openMissed || []);
     } finally {
       setLoading(false);
     }
@@ -100,6 +102,31 @@ export default function LeavesClient({
 
   return (
     <div className="space-y-6">
+      {openMissed.length > 0 && canApply && (
+        <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">Apply leave in 2 days</p>
+          <ul className="mt-1 space-y-1 text-[13px]">
+            {openMissed.map((m) => (
+              <li key={m.date}>
+                No punch on {formatDate(m.date)}. Apply by {formatDate(m.deadline)} or you will be marked absent.
+                Weekly off is not counted.
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="mt-2 text-xs font-semibold text-amber-800 underline"
+            onClick={() => {
+              setShowForm(true);
+              setStartDate(openMissed[0].date);
+              setEndDate(openMissed[0].date);
+            }}
+          >
+            Apply now
+          </button>
+        </div>
+      )}
+
       <div className="flow-gradient overflow-hidden rounded-[18px] p-5 text-white shadow-glow">
         <p className="text-sm text-white/80">Leave balance</p>
         <p className="text-lg font-bold">Track your available leave</p>

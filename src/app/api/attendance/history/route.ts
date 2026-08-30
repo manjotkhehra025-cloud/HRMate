@@ -24,5 +24,13 @@ export async function GET(req: NextRequest) {
     )
     .all(user.id, `${month}%`);
 
-  return json({ records, manualRequests, month, weekly_off: user.weekly_off ?? 6 });
+  const leaveCover = db
+    .prepare(
+      `SELECT start_date, end_date, status FROM leave_requests
+       WHERE user_id = ? AND status IN ('approved', 'pending')
+       AND end_date >= ? AND start_date <= ?`
+    )
+    .all(user.id, `${month}-01`, `${month}-31`) as { start_date: string; end_date: string; status: string }[];
+
+  return json({ records, manualRequests, month, weekly_off: user.weekly_off ?? 6, leaveCover });
 }

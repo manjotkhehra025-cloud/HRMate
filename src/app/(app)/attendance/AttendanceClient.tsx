@@ -3,14 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, Send, LogIn, LogOut } from "lucide-react";
 import { Spinner, StatusBadge } from "@/components/ui";
-import { formatTime, istParts } from "@/lib/utils";
+import { formatDate, formatTime, istParts } from "@/lib/utils";
 import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
 import { classNames } from "@/lib/utils";
-import { isWeeklyOff } from "@/lib/staff";
+import { addWorkingDays, isWeeklyOff } from "@/lib/staff";
 
-type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty";
+type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty" | "grace";
+type LeaveCover = { start_date: string; end_date: string; status: string };
 
-function statusOf(date: string, rec: any, today: string, weeklyOff: number): DayStatus {
+function leaveFlag(date: string, cover: LeaveCover[]): "approved" | "pending" | null {
+  let pending = false;
+  for (const l of cover) {
+    if (l.start_date <= date && date <= l.end_date) {
+      if (l.status === "approved") return "approved";
+      if (l.status === "pending") pending = true;
+    }
+  }
+  return pending ? "pending" : null;
+}
+
+function statusOf(date: string, rec: any, today: string, weeklyOff: number, cover: LeaveCover[]): DayStatus {
   if (date > today) return "future";
   if (rec?.punch_in_at && rec?.punch_out_at) {
     const hours = (rec.punch_out_at - rec.punch_in_at) / 3600000;
@@ -19,6 +31,11 @@ function statusOf(date: string, rec: any, today: string, weeklyOff: number): Day
   if (rec?.punch_in_at) return date === today ? "present" : "half";
   if (isWeeklyOff(date, weeklyOff)) return "weekly_off";
   if (date === today) return "empty";
+  const flag = leaveFlag(date, cover);
+  if (flag === "approved") return "empty";
+  if (flag === "pending") return "grace";
+  const deadline = addWorkingDays(date, 2, weeklyOff);
+  if (today <= deadline) return "grace";
   return "absent";
 }
 
@@ -33,6 +50,7 @@ const DOT: Record<string, string> = {
   half: "bg-[#D98200]",
   absent: "bg-[#C52B35]",
   weekly_off: "bg-[#1E6FE0]",
+  grace: "bg-[#D98200]",
 };
 
 export default function AttendanceClient({
@@ -48,6 +66,7 @@ export default function AttendanceClient({
   const [records, setRecords] = useState<any[]>([]);
   const [manualReqs, setManualReqs] = useState<any[]>([]);
   const [weeklyOff, setWeeklyOff] = useState(6);
+  const [leaveCover, setLeaveCover] = useState<LeaveCover[]>([]);
   const [loading, setLoading] = useState(true);
   const [showManual, setShowManual] = useState(false);
 
@@ -66,6 +85,7 @@ export default function AttendanceClient({
       setRecords(data.records || []);
       setManualReqs(data.manualRequests || []);
       if (typeof data.weekly_off === "number") setWeeklyOff(data.weekly_off);
+      setLeaveCover(data.leaveCover || []);
     } finally {
       setLoading(false);
     }
@@ -101,7 +121,7 @@ export default function AttendanceClient({
       half = 0,
       absent = 0;
     for (const r of records) {
-      const st = statusOf(r.date, r, today, weeklyOff);
+      const st = statusOf(r.date, r, today, weeklyOff, leaveCover);
       if (st === "present") present++;
       else if (st === "half") half++;
     }
@@ -109,10 +129,10 @@ export default function AttendanceClient({
     const last = new Date(y, mo, 0).getDate();
     for (let d = 1; d <= last; d++) {
       const date = `${month}-${String(d).padStart(2, "0")}`;
-      if (statusOf(date, byDate[date], today, weeklyOff) === "absent") absent++;
+      if (statusOf(date, byDate[date], today, weeklyOff, leaveCover) === "absent") absent++;
     }
     return { present, half, absent };
-  }, [records, month, today, byDate, weeklyOff]);
+  }, [records, month, today, byDate, weeklyOff, leaveCover]);
 
   function shiftMonth(delta: number) {
     const [y, m] = month.split("-").map(Number);
@@ -186,7 +206,7 @@ export default function AttendanceClient({
           {days.map((c, i) => {
             if (!c.date) return <div key={i} />;
             const day = Number(c.date.slice(-2));
-            const st = statusOf(c.date, byDate[c.date], today, weeklyOff);
+            const st = statusOf(c.date, byDate[c.date], today, weeklyOff, leaveCover);
             const sel = c.date === selected;
             return (
               <button
@@ -218,7 +238,17 @@ export default function AttendanceClient({
           <span className="flex items-center gap-1">
             <i className="h-2 w-2 rounded-full bg-[#1E6FE0]" /> Weekly off
           </span>
+          <span className="flex items-center gap-1">
+            <i className="h-2 w-2 rounded-full bg-[#D98200]" /> Apply leave
+          </span>
         </div>
+        {selected < today &&
+          statusOf(selected, byDate[selected], today, weeklyOff, leaveCover) === "grace" && (
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+              No punch on this day. Apply leave by {formatDate(addWorkingDays(selected, 2, weeklyOff))} or it
+              will be marked absent. Your weekly off is not counted.
+            </p>
+          )}
       </div>
 
       <div className="card grid grid-cols-3 divide-x divide-line p-4 text-center">
@@ -297,7 +327,7 @@ export default function AttendanceClient({
               </thead>
               <tbody>
                 {records.map((r) => {
-                  const st = statusOf(r.date, r, today, weeklyOff);
+                  const st = statusOf(r.date, r, today, weeklyOff, leaveCover);
                   const source = (r.notes || "").toLowerCase().includes("manual") ? "manual" : "mobile";
                   return (
                     <tr key={r.id} className="border-b border-line/70">
@@ -319,7 +349,7 @@ export default function AttendanceClient({
                                 : "bg-rose-50 text-rose-700"
                           )}
                         >
-                          {st.replace("_", " ")}
+                          {st === "grace" ? "apply leave" : st.replace("_", " ")}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 tabular-nums">{r.punch_in_at ? formatTime(r.punch_in_at) : "—"}</td>

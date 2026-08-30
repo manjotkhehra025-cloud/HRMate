@@ -262,6 +262,16 @@ function ensureSchema(d: DatabaseLike) {
   if (!hasColumn(d, "attendance", "comp_off_credited")) {
     d.exec(`ALTER TABLE attendance ADD COLUMN comp_off_credited INTEGER NOT NULL DEFAULT 0`);
   }
+  d.exec(`
+  CREATE TABLE IF NOT EXISTS missed_days (
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    deadline TEXT NOT NULL,
+    notified_at INTEGER NOT NULL DEFAULT 0,
+    auto_absent_at INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, date)
+  );
+  `);
 }
 
 function seed(d: DatabaseLike) {

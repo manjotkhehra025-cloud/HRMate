@@ -68,6 +68,25 @@ export function isWeeklyOff(date: string, weeklyOff: number | null | undefined):
   return weekdayOf(date) === parseWeeklyOff(weeklyOff, 6);
 }
 
+export function addCalendarDays(date: string, n: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+/** Next n working days after `date`, skipping that person's weekly off. */
+export function addWorkingDays(date: string, n: number, weeklyOff: number | null | undefined): string {
+  let cur = date;
+  let added = 0;
+  const off = parseWeeklyOff(weeklyOff, 6);
+  let steps = 0;
+  while (added < n && steps < 40) {
+    cur = addCalendarDays(cur, 1);
+    steps++;
+    if (!isWeeklyOff(cur, off)) added++;
+  }
+  return cur;
+}
+
 export function weeklyOffLabel(n: number | null | undefined) {
   const v = parseWeeklyOff(n, 6);
   return WEEKDAYS.find((w) => w.value === v)?.label || "Saturday";

@@ -15,11 +15,13 @@ export function istParts(d = new Date()) {
       .map((p) => [p.type, p.value])
   ) as Record<string, string>;
   const hour = parseInt(parts.hour, 10) % 24;
+  const minute = parseInt(parts.minute, 10) || 0;
   return {
     year: parts.year,
     month: parts.month,
     day: parts.day,
     hour,
+    minute,
     dateKey: `${parts.year}-${parts.month}-${parts.day}`,
     monthKey: `${parts.year}-${parts.month}`,
   };
