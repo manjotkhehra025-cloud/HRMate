@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PrefsProvider from "@/components/PrefsProvider";
 import PwaRegister from "@/components/PwaRegister";
+import ScrollRoot from "@/components/ScrollRoot";
 
 export const metadata: Metadata = {
   title: "HRMate — Smart HRMS",
@@ -33,7 +34,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} />
-        <PrefsProvider>{children}</PrefsProvider>
+        <PwaRegister />
+        <ScrollRoot>
+          <PrefsProvider>{children}</PrefsProvider>
+        </ScrollRoot>
       </body>
     </html>
   );

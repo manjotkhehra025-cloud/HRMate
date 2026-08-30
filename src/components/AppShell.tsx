@@ -159,7 +159,7 @@ export default function AppShell({
       />
 
       <div className={desktopOpen ? "lg:pl-72" : ""}>
-        <header className="z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 sm:px-6 lg:sticky lg:top-0">
+        <header className="sticky top-0 z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 sm:px-6">
           <button
             onClick={() => setGridOpen(true)}
             className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB]"
