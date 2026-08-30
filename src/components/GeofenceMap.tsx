@@ -52,27 +52,39 @@ export default function GeofenceMap({
 
   useEffect(() => {
     let cancelled = false;
+    let map: any = null;
     loadLeaflet().then((L) => {
-      if (cancelled || !el.current || mapRef.current) return;
-      const coarse = window.matchMedia("(pointer: coarse)").matches;
-      const map = L.map(el.current, {
+      if (cancelled || !el.current) return;
+      map = L.map(el.current, {
         zoomControl: true,
         scrollWheelZoom: false,
-        dragging: !coarse,
+        dragging: false,
         tap: false,
         bounceAtZoomLimits: false,
         keyboard: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
       }).setView([safeLat, safeLng], 17);
-      map.getContainer().style.touchAction = "pan-y";
-      if (coarse) {
+
+      try {
         map.dragging.disable();
+        map.touchZoom.disable();
+        map.doubleClickZoom.disable();
+        map.scrollWheelZoom.disable();
+        map.boxZoom.disable();
+        map.keyboard.disable();
+        if (map.tap) map.tap.disable();
+      } catch {
+        /* older leaflet */
       }
+
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
       }).addTo(map);
 
-      const marker = L.marker([safeLat, safeLng], { draggable: true }).addTo(map);
+      const marker = L.marker([safeLat, safeLng], { draggable: false }).addTo(map);
       const circle = L.circle([safeLat, safeLng], {
         radius: safeRadius,
         color: "#1E6FE0",
@@ -81,22 +93,6 @@ export default function GeofenceMap({
         fillOpacity: 0.18,
       }).addTo(map);
 
-      const emit = (la: number, ln: number) => {
-        marker.setLatLng([la, ln]);
-        circle.setLatLng([la, ln]);
-        onChangeRef.current({ lat: la, lng: ln });
-      };
-
-      marker.on("drag", (e: any) => {
-        const p = e.target.getLatLng();
-        circle.setLatLng(p);
-      });
-      marker.on("dragend", (e: any) => {
-        const p = e.target.getLatLng();
-        emit(p.lat, p.lng);
-      });
-      map.on("click", (e: any) => emit(e.latlng.lat, e.latlng.lng));
-
       mapRef.current = map;
       markerRef.current = marker;
       circleRef.current = circle;
@@ -104,6 +100,16 @@ export default function GeofenceMap({
     });
     return () => {
       cancelled = true;
+      if (map) {
+        try {
+          map.remove();
+        } catch {
+          /* ignore */
+        }
+      }
+      mapRef.current = null;
+      markerRef.current = null;
+      circleRef.current = null;
     };
     // init once
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,10 +128,12 @@ export default function GeofenceMap({
 
   return (
     <div
-      ref={el}
-      className="h-[180px] w-full overflow-clip rounded-[14px] border border-line bg-[#E8F0E8] sm:h-[280px]"
-      role="application"
-      aria-label="Attendance area map"
-    />
+      className="relative z-0 h-[180px] w-full overflow-hidden rounded-[14px] border border-line bg-[#E8F0E8] sm:h-[280px]"
+      style={{ isolation: "isolate", contain: "paint" }}
+    >
+      <div ref={el} className="h-full w-full" role="img" aria-label="Attendance area map" />
+      {/* One-finger pan must scroll the page, never the map. */}
+      <div className="absolute inset-0 z-10 touch-pan-y lg:hidden" />
+    </div>
   );
 }

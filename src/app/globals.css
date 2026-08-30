@@ -34,12 +34,7 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
-  height: auto;
-  max-height: none;
-  overflow-x: clip;
-  overflow-y: auto;
-  overscroll-behavior-y: auto;
-  -webkit-overflow-scrolling: touch;
+  height: 100%;
 }
 html[data-text="small"] {
   font-size: 14px;
@@ -117,8 +112,14 @@ body {
   overflow: visible;
   position: static;
 }
+.leaflet-container,
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important;
+}
 .leaflet-container {
-  touch-action: pan-y pinch-zoom !important;
+  touch-action: pan-y !important;
 }
 
 .flow-gradient {
