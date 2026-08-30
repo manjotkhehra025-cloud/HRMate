@@ -27,17 +27,25 @@ export default function AttendancePage() {
   const factory = getFactoryConfig();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 pb-2 sm:space-y-5">
       <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Attendance</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">
-          Punch in at the factory, then review your month.
-        </p>
+        <h1 className="text-[26px] font-bold tracking-tight text-ink">Attendance</h1>
+        <p className="mt-1 text-[14px] text-muted">Punch in at the factory, then review your month.</p>
       </div>
 
+      {/* Map first, punch panel right below it — one card, one decision. */}
       <div className="card overflow-hidden">
-        <GeofenceMap lat={factory.lat} lng={factory.lng} radius={factory.radius} embedded />
-        <div className="p-5 sm:p-6">
+        <div className="relative">
+          <GeofenceMap lat={factory.lat} lng={factory.lng} radius={factory.radius} embedded />
+          <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11.5px] font-bold text-ink shadow-card">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#16B878] opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#16B878]" />
+            </span>
+            {factory.name} · {factory.radius} m punch zone
+          </div>
+        </div>
+        <div className="border-t border-line bg-slate-50 p-5 sm:p-6">
           <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} variant="flush" />
         </div>
       </div>
