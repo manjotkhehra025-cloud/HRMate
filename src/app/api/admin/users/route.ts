@@ -4,7 +4,7 @@ import { randomId, hashPassword } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { roleDefaults, ROLES } from "@/lib/permissions";
-import { DEPARTMENTS, STAFF_CAPS, departmentScope, type StaffType } from "@/lib/staff";
+import { DEPARTMENTS, STAFF_CAPS, departmentScope, parseWeeklyOff, type StaffType } from "@/lib/staff";
 
 function counts() {
   const rows = db
@@ -30,7 +30,7 @@ export async function GET() {
   const users = db
     .prepare(
       `SELECT u.id, u.email, u.name, u.role, u.department, u.designation, u.color, u.active, u.created_at,
-        u.staff_type, u.manager_scope, u.avatar, u.phone,
+        u.staff_type, u.manager_scope, u.weekly_off, u.avatar, u.phone,
         (SELECT COUNT(*) FROM passkey_credentials pc WHERE pc.user_id = u.id) AS passkey_count
        FROM users u ORDER BY u.created_at DESC`
     )
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { name, email, password, role, department, designation, color } = body;
   const staff_type: StaffType = body.staff_type === "yellow_card" ? "yellow_card" : "official";
+  const weekly_off = parseWeeklyOff(body.weekly_off, role === "super_admin" ? 0 : 6);
   const manager_scope =
     role === "manager"
       ? body.manager_scope === "engineering" || body.manager_scope === "operations"
@@ -75,8 +76,8 @@ export async function POST(req: NextRequest) {
 
   const id = randomId("u_");
   db.prepare(
-    `INSERT INTO users (id, email, password_hash, name, role, department, designation, color, staff_type, manager_scope, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO users (id, email, password_hash, name, role, department, designation, color, staff_type, manager_scope, weekly_off, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     email,
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
     color || "#1E6FE0",
     staff_type,
     manager_scope,
+    weekly_off,
     Date.now()
   );
 
@@ -110,7 +112,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { id, name, email, role, department, designation, color, active, password, staff_type, manager_scope } =
+  const { id, name, email, role, department, designation, color, active, password, staff_type, manager_scope, weekly_off } =
     body;
   if (!id) return error("User id required");
 
@@ -139,8 +141,13 @@ export async function PATCH(req: NextRequest) {
         : departmentScope(department ?? target.department)
       : "";
 
+  const nextOff =
+    weekly_off === undefined || weekly_off === null
+      ? target.weekly_off ?? 6
+      : parseWeeklyOff(weekly_off, target.weekly_off ?? 6);
+
   db.prepare(
-    `UPDATE users SET name = ?, email = ?, role = ?, department = ?, designation = ?, color = ?, active = ?, staff_type = ?, manager_scope = ? WHERE id = ?`
+    `UPDATE users SET name = ?, email = ?, role = ?, department = ?, designation = ?, color = ?, active = ?, staff_type = ?, manager_scope = ?, weekly_off = ? WHERE id = ?`
   ).run(
     name ?? target.name,
     email ?? target.email,
@@ -151,6 +158,7 @@ export async function PATCH(req: NextRequest) {
     active !== undefined ? (active ? 1 : 0) : target.active,
     nextType,
     nextScope,
+    nextOff,
     id
   );
 

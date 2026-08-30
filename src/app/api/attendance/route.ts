@@ -5,6 +5,7 @@ import { requireUser, unauthorized, error, json, dateKey } from "@/lib/api";
 import { isWithinGeofence, getFactoryConfig } from "@/lib/geo";
 import { hasPermission } from "@/lib/permissions";
 import { pickShiftForNow } from "@/lib/shifts";
+import { creditCompOffIfWorked } from "@/lib/weekly-off";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO attendance (id, user_id, date, punch_in_at, punch_in_lat, punch_in_lng, punch_in_geofence, shift_id)
        VALUES (?, ?, ?, ?, ?, ?, 1, ?)`
     ).run(randomId("a_"), user.id, today, now, lat, lng, shift?.id || null);
+    creditCompOffIfWorked(user.id, today);
   } else if (!record.punch_out_at) {
     db.prepare(
       `UPDATE attendance SET punch_out_at = ?, punch_out_lat = ?, punch_out_lng = ?, punch_out_geofence = 1

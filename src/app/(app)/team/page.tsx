@@ -20,6 +20,9 @@ export default function TeamPage() {
       <TeamClient
         canViewAttendance={has("attendance.team")}
         canViewLeaves={has("leaves.team")}
+        canEditWeeklyOff={has("admin.users") || user.role === "manager"}
+        viewerRole={user.role}
+        viewerScope={user.manager_scope || ""}
       />
     </div>
   );

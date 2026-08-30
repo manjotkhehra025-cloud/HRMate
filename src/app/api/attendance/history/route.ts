@@ -24,5 +24,5 @@ export async function GET(req: NextRequest) {
     )
     .all(user.id, `${month}%`);
 
-  return json({ records, manualRequests, month });
+  return json({ records, manualRequests, month, weekly_off: user.weekly_off ?? 6 });
 }

@@ -83,15 +83,16 @@ export function classNames(...args: (string | false | null | undefined)[]): stri
   return args.filter(Boolean).join(" ");
 }
 
-// Count business days (Mon-Fri) inclusive between two date strings
-export function businessDays(start: string, end: string): number {
+/** Inclusive working days between two YYYY-MM-DD strings, skipping that person's weekly off. */
+export function businessDays(start: string, end: string, weeklyOff = 6): number {
   let count = 0;
-  const d = new Date(start + "T00:00:00");
-  const endDate = new Date(end + "T00:00:00");
-  while (d <= endDate) {
-    const day = d.getDay();
-    if (day !== 0 && day !== 6) count++;
-    d.setDate(d.getDate() + 1);
+  let cur = start;
+  const off = weeklyOff >= 0 && weeklyOff <= 6 ? weeklyOff : 6;
+  while (cur <= end) {
+    const weekday = new Date(cur + "T12:00:00+05:30").getDay();
+    if (weekday !== off) count++;
+    const [y, m, d] = cur.split("-").map(Number);
+    cur = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
   }
   return count;
 }

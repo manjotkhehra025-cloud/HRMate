@@ -5,6 +5,7 @@ import { Users, MapPin, CalendarDays } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/utils";
+import { WEEKDAYS, departmentScope, weeklyOffLabel } from "@/lib/staff";
 
 interface Member {
   id: string;
@@ -13,6 +14,7 @@ interface Member {
   role: string;
   department: string;
   designation: string;
+  weekly_off?: number;
   today_in: number | null;
   today_out: number | null;
 }
@@ -29,9 +31,15 @@ interface Leave {
 export default function TeamClient({
   canViewAttendance,
   canViewLeaves,
+  canEditWeeklyOff,
+  viewerRole,
+  viewerScope,
 }: {
   canViewAttendance: boolean;
   canViewLeaves: boolean;
+  canEditWeeklyOff: boolean;
+  viewerRole: string;
+  viewerScope: string;
 }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -107,9 +115,35 @@ export default function TeamClient({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800">{m.name}</p>
                     <p className="text-xs text-slate-400">
-                      {m.designation || m.role} · {m.department}
+                      {m.designation || m.role} · {m.department} · Off {weeklyOffLabel(m.weekly_off)}
                     </p>
                   </div>
+                  {canEditWeeklyOff &&
+                    (viewerRole === "super_admin" ||
+                      viewerRole === "admin" ||
+                      (viewerRole === "manager" &&
+                        m.role !== "super_admin" &&
+                        viewerScope === departmentScope(m.department))) && (
+                    <select
+                      className="input h-9 min-h-0 w-[7.5rem] shrink-0 py-1 text-xs"
+                      value={m.weekly_off ?? 6}
+                      onChange={async (e) => {
+                        const weekly_off = Number(e.target.value);
+                        setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, weekly_off } : x)));
+                        await fetch("/api/team/weekly-off", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ user_id: m.id, weekly_off }),
+                        });
+                      }}
+                    >
+                      {WEEKDAYS.map((d) => (
+                        <option key={d.value} value={d.value}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {present && (
                     <span className="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20">
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />

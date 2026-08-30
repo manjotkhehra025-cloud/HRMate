@@ -1,5 +1,6 @@
 import db from "./db";
 import { randomId } from "./crypto";
+import { creditCompOffIfWorked } from "./weekly-off";
 
 /** Parse a calendar date + HH:MM as IST (Asia/Kolkata). */
 export function istTimestamp(date: string, time: string): number {
@@ -33,6 +34,7 @@ export function applyApprovedManualPunch(row: {
         `INSERT INTO attendance (id, user_id, date, punch_in_at, punch_in_geofence, notes)
          VALUES (?, ?, ?, ?, 0, ?)`
       ).run(randomId("a_"), row.user_id, row.date, ts, note);
+      creditCompOffIfWorked(row.user_id, row.date);
     } else {
       db.prepare(
         `INSERT INTO attendance (id, user_id, date, punch_out_at, punch_out_geofence, notes)
@@ -51,4 +53,5 @@ export function applyApprovedManualPunch(row: {
       `UPDATE attendance SET punch_out_at = ?, punch_out_geofence = 0, notes = ? WHERE id = ?`
     ).run(ts, note, record.id);
   }
+  if (row.type === "punch_in") creditCompOffIfWorked(row.user_id, row.date);
 }

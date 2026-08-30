@@ -24,7 +24,12 @@ export async function POST(req: NextRequest) {
     const row = db.prepare("SELECT * FROM leave_requests WHERE id = ?").get(id) as any;
     if (!row) return error("Leave request not found", 404);
     if (row.status !== "pending") return error("Already processed");
-    if (user.role === "manager") return error("Managers approve yellow-card attendance only", 403);
+    if (
+      !canActOnLeave({ id: user.id, role: user.role, manager_scope: user.manager_scope }, row) &&
+      user.role !== "super_admin"
+    ) {
+      return error("You can't act on this leave request", 403);
+    }
 
     db.prepare(
       "UPDATE leave_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewed_note = ? WHERE id = ?"

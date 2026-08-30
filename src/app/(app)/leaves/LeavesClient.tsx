@@ -31,9 +31,11 @@ interface LeaveRequest {
 export default function LeavesClient({
   canApply,
   canView,
+  staffType,
 }: {
   canApply: boolean;
   canView: boolean;
+  staffType: string;
 }) {
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -47,6 +49,8 @@ export default function LeavesClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const visibleBalance =
+    staffType === "yellow_card" ? balance.filter((b) => b.id !== "lt_comp") : balance;
 
   async function load() {
     setLoading(true);
@@ -100,7 +104,7 @@ export default function LeavesClient({
         <p className="text-sm text-white/80">Leave balance</p>
         <p className="text-lg font-bold">Track your available leave</p>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {balance.slice(0, 4).map((b) => (
+          {visibleBalance.slice(0, 4).map((b) => (
             <div key={b.id} className="rounded-xl bg-white/95 p-3 text-ink">
               <p className="text-[11px] text-muted">{b.name}</p>
               <p className="text-xl font-bold">{b.balance}</p>
@@ -127,7 +131,7 @@ export default function LeavesClient({
           </div>
 
           <div className="mt-4 space-y-3">
-            {balance.map((b) => {
+            {visibleBalance.map((b) => {
               const pct = b.days_per_year > 0 ? Math.round((b.balance / b.days_per_year) * 100) : 0;
               return (
                 <div key={b.id} className="rounded-2xl border border-slate-100 p-4">
@@ -141,7 +145,12 @@ export default function LeavesClient({
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-slate-900">{b.balance}</span>
                     <span className="text-xs text-slate-400">
-                      days left{b.reset_period === "month" ? " · lapses month-end" : ""}
+                      days left
+                      {b.reset_period === "month"
+                        ? " · lapses month-end"
+                        : b.id === "lt_comp"
+                          ? " · earned on weekly off"
+                          : ""}
                     </span>
                   </div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -174,7 +183,7 @@ export default function LeavesClient({
                 required
               >
                 <option value="">Select type…</option>
-                {balance.map((b) => (
+                {visibleBalance.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name} ({b.balance} left)
                   </option>

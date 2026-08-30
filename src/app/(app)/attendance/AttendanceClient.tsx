@@ -6,21 +6,18 @@ import { Spinner, StatusBadge } from "@/components/ui";
 import { formatTime, istParts } from "@/lib/utils";
 import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
 import { classNames } from "@/lib/utils";
+import { isWeeklyOff } from "@/lib/staff";
 
 type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty";
 
-function isSunday(date: string) {
-  return new Date(date + "T12:00:00+05:30").getDay() === 0;
-}
-
-function statusOf(date: string, rec: any, today: string): DayStatus {
+function statusOf(date: string, rec: any, today: string, weeklyOff: number): DayStatus {
   if (date > today) return "future";
   if (rec?.punch_in_at && rec?.punch_out_at) {
     const hours = (rec.punch_out_at - rec.punch_in_at) / 3600000;
     return hours < 4.5 ? "half" : "present";
   }
   if (rec?.punch_in_at) return date === today ? "present" : "half";
-  if (isSunday(date)) return "weekly_off";
+  if (isWeeklyOff(date, weeklyOff)) return "weekly_off";
   if (date === today) return "empty";
   return "absent";
 }
@@ -50,6 +47,7 @@ export default function AttendanceClient({
   const [selected, setSelected] = useState(today);
   const [records, setRecords] = useState<any[]>([]);
   const [manualReqs, setManualReqs] = useState<any[]>([]);
+  const [weeklyOff, setWeeklyOff] = useState(6);
   const [loading, setLoading] = useState(true);
   const [showManual, setShowManual] = useState(false);
 
@@ -67,6 +65,7 @@ export default function AttendanceClient({
       const data = await res.json();
       setRecords(data.records || []);
       setManualReqs(data.manualRequests || []);
+      if (typeof data.weekly_off === "number") setWeeklyOff(data.weekly_off);
     } finally {
       setLoading(false);
     }
@@ -102,7 +101,7 @@ export default function AttendanceClient({
       half = 0,
       absent = 0;
     for (const r of records) {
-      const st = statusOf(r.date, r, today);
+      const st = statusOf(r.date, r, today, weeklyOff);
       if (st === "present") present++;
       else if (st === "half") half++;
     }
@@ -110,10 +109,10 @@ export default function AttendanceClient({
     const last = new Date(y, mo, 0).getDate();
     for (let d = 1; d <= last; d++) {
       const date = `${month}-${String(d).padStart(2, "0")}`;
-      if (statusOf(date, byDate[date], today) === "absent") absent++;
+      if (statusOf(date, byDate[date], today, weeklyOff) === "absent") absent++;
     }
     return { present, half, absent };
-  }, [records, month, today, byDate]);
+  }, [records, month, today, byDate, weeklyOff]);
 
   function shiftMonth(delta: number) {
     const [y, m] = month.split("-").map(Number);
@@ -147,7 +146,9 @@ export default function AttendanceClient({
       setSubmitMsg(
         data.stage === "manager"
           ? "Sent to your department manager, then Super Admin."
-          : "Sent for approval. After approve, those times replace the day's record."
+          : data.stage === "scope"
+            ? "Sent to your department manager."
+            : "Sent to Super Admin. After approve, those times replace the day's record."
       );
       load();
     } finally {
@@ -185,7 +186,7 @@ export default function AttendanceClient({
           {days.map((c, i) => {
             if (!c.date) return <div key={i} />;
             const day = Number(c.date.slice(-2));
-            const st = statusOf(c.date, byDate[c.date], today);
+            const st = statusOf(c.date, byDate[c.date], today, weeklyOff);
             const sel = c.date === selected;
             return (
               <button
@@ -246,7 +247,9 @@ export default function AttendanceClient({
         </div>
         {showManual && canManual && (
           <form onSubmit={submitManual} className="space-y-3 border-t border-line px-5 py-4">
-            <p className="text-xs text-muted">Request for {selected}. Yellow card goes to manager, then Super Admin.</p>
+            <p className="text-xs text-muted">
+              Request for {selected}. Official staff go to their manager. Yellow card goes to manager, then Super Admin.
+            </p>
             <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
               {(["in", "out", "both"] as const).map((k) => (
                 <button
@@ -294,7 +297,7 @@ export default function AttendanceClient({
               </thead>
               <tbody>
                 {records.map((r) => {
-                  const st = statusOf(r.date, r, today);
+                  const st = statusOf(r.date, r, today, weeklyOff);
                   const source = (r.notes || "").toLowerCase().includes("manual") ? "manual" : "mobile";
                   return (
                     <tr key={r.id} className="border-b border-line/70">

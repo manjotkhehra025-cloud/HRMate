@@ -20,6 +20,7 @@ export default function LeavesPage() {
       <LeavesClient
         canApply={has("leaves.apply")}
         canView={has("leaves.view")}
+        staffType={user.staff_type || "official"}
       />
     </div>
   );

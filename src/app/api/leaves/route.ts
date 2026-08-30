@@ -3,9 +3,10 @@ import db from "@/lib/db";
 import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
-import { notifyMany } from "@/lib/notify";
 import { businessDays } from "@/lib/utils";
 import { balancesForUser, usedInPeriod } from "@/lib/leave";
+import { notifyLeaveApprovers } from "@/lib/workflow";
+import { parseWeeklyOff } from "@/lib/staff";
 
 export async function GET() {
   const user = requireUser();
@@ -38,11 +39,14 @@ export async function POST(req: NextRequest) {
   }
   if (end_date < start_date) return error("End date must be after start date");
 
-  const days = businessDays(start_date, end_date);
-  if (days <= 0) return error("Selected range has no working days");
-
   const type = db.prepare("SELECT * FROM leave_types WHERE id = ?").get(leave_type_id) as any;
   if (!type) return error("Invalid leave type");
+  if (type.id === "lt_comp" && user.staff_type === "yellow_card") {
+    return error("Compensatory off is only for official staff");
+  }
+
+  const days = businessDays(start_date, end_date, parseWeeklyOff(user.weekly_off, 6));
+  if (days <= 0) return error("Selected range has no working days");
 
   const reset = type.reset_period === "month" ? "month" : "year";
   if (reset === "month" && start_date.slice(0, 7) !== end_date.slice(0, 7)) {
@@ -67,14 +71,9 @@ export async function POST(req: NextRequest) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(randomId("lr_"), user.id, leave_type_id, start_date, end_date, days, reason, Date.now());
 
-  const approvers = db
-    .prepare("SELECT id FROM users WHERE role IN ('super_admin','admin','manager') AND active = 1")
-    .all() as { id: string }[];
-  notifyMany(
-    approvers.map((a) => a.id),
-    "Leave request",
-    `${user.name} requested ${days} day(s) of ${type.name} (${start_date} to ${end_date})`,
-    { type: "approval", link: "/approvals" }
+  notifyLeaveApprovers(
+    { id: user.id, name: user.name, role: user.role, department: user.department },
+    `${days} day(s) of ${type.name} (${start_date} to ${end_date})`
   );
 
   return json({ ok: true, days });

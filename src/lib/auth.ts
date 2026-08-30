@@ -26,6 +26,7 @@ export interface SessionUser {
   avatar: string;
   staff_type: string;
   manager_scope: string;
+  weekly_off: number;
   active: number;
 }
 

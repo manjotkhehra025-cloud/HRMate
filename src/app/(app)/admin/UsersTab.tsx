@@ -5,6 +5,7 @@ import { Plus, X, Fingerprint, UserCog } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/permission-constants";
+import { MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
 import PermissionPanel from "./PermissionPanel";
 
 interface User {
@@ -19,6 +20,7 @@ interface User {
   passkey_count: number;
   staff_type?: string;
   manager_scope?: string;
+  weekly_off?: number;
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -54,6 +56,7 @@ export default function UsersTab({
     designation: "",
     staff_type: "official",
     manager_scope: "operations",
+    weekly_off: 6,
   });
   const [caps, setCaps] = useState({ total: 70, yellow_card: 50, official: 20 });
   const [counts, setCounts] = useState({ total: 0, yellow: 0, official: 0 });
@@ -90,6 +93,7 @@ export default function UsersTab({
       designation: "",
       staff_type: "official",
       manager_scope: "operations",
+      weekly_off: 6,
     });
   }
 
@@ -224,12 +228,29 @@ export default function UsersTab({
                 <option value="yellow_card">Yellow card / Third party</option>
               </select>
             </div>
+            <div>
+              <label className="label">Weekly off</label>
+              <select
+                className="input"
+                value={form.weekly_off}
+                onChange={(e) => setForm({ ...form, weekly_off: Number(e.target.value) })}
+              >
+                {WEEKDAYS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             {form.role === "manager" && (
               <div>
-                <label className="label">Manager approves</label>
+                <label className="label">Manages (by designation)</label>
                 <select className="input" value={form.manager_scope} onChange={(e) => setForm({ ...form, manager_scope: e.target.value })}>
-                  <option value="engineering">Engineering — Maintenance, Instrument, Electrician</option>
-                  <option value="operations">Operations — Production, Store, Lab</option>
+                  {MANAGER_SCOPES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label} — {s.hint}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -312,7 +333,7 @@ export default function UsersTab({
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <form onSubmit={updateUser} className="card w-full max-w-lg space-y-4 p-6 animate-fade-in">
+          <form onSubmit={updateUser} className="card max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto p-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800">Edit user</h3>
               <button type="button" onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600">
@@ -349,6 +370,47 @@ export default function UsersTab({
                 <label className="label">Designation</label>
                 <input className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })} />
               </div>
+              <div>
+                <label className="label">Weekly off</label>
+                <select
+                  className="input"
+                  value={editing.weekly_off ?? 6}
+                  onChange={(e) => setEditing({ ...editing, weekly_off: Number(e.target.value) })}
+                >
+                  {WEEKDAYS.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Staff type</label>
+                <select
+                  className="input"
+                  value={editing.staff_type || "official"}
+                  onChange={(e) => setEditing({ ...editing, staff_type: e.target.value })}
+                >
+                  <option value="official">Official G.D. Foods Staff</option>
+                  <option value="yellow_card">Yellow card / Third party</option>
+                </select>
+              </div>
+              {editing.role === "manager" && (
+                <div className="col-span-2">
+                  <label className="label">Manages (by designation)</label>
+                  <select
+                    className="input"
+                    value={editing.manager_scope || "operations"}
+                    onChange={(e) => setEditing({ ...editing, manager_scope: e.target.value })}
+                  >
+                    {MANAGER_SCOPES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label} — {s.hint}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setEditing(null)} className="btn-secondary">Cancel</button>

@@ -255,6 +255,13 @@ function ensureSchema(d: DatabaseLike) {
   d.prepare(
     `UPDATE leave_types SET days_per_year = 2, reset_period = 'month' WHERE id = 'lt_short'`
   ).run();
+  if (!hasColumn(d, "users", "weekly_off")) {
+    d.exec(`ALTER TABLE users ADD COLUMN weekly_off INTEGER NOT NULL DEFAULT 6`);
+    d.prepare(`UPDATE users SET weekly_off = 0 WHERE role = 'super_admin'`).run();
+  }
+  if (!hasColumn(d, "attendance", "comp_off_credited")) {
+    d.exec(`ALTER TABLE attendance ADD COLUMN comp_off_credited INTEGER NOT NULL DEFAULT 0`);
+  }
 }
 
 function seed(d: DatabaseLike) {
@@ -280,6 +287,7 @@ function seed(d: DatabaseLike) {
     color: "#1E6FE0",
   };
   insertUser.run({ ...admin, created_at: now });
+  d.prepare(`UPDATE users SET weekly_off = 0 WHERE id = ?`).run(admin.id);
 
   const insertLeave = d.prepare(
     `INSERT INTO leave_types (id, name, days_per_year, color, sort) VALUES (?, ?, ?, ?, ?)`

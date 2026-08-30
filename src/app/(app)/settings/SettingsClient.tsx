@@ -872,7 +872,9 @@ export default function SettingsClient({
                     <>
                       <p className="text-sm font-semibold text-ink">{lt.name}</p>
                       <p className="text-xs text-muted">
-                        {lt.days_per_year} days / {lt.reset_period === "month" ? "month" : "year"}
+                        {lt.id === "lt_comp"
+                          ? "Official staff earn 1 day by working weekly off"
+                          : `${lt.days_per_year} days / ${lt.reset_period === "month" ? "month" : "year"}`}
                       </p>
                     </>
                   )}

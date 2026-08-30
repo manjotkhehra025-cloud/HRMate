@@ -2,17 +2,15 @@ import db from "./db";
 import { getFactoryConfig } from "./geo";
 import { istTimestamp } from "./attendance";
 import { istParts } from "./utils";
+import { isWeeklyOff, parseWeeklyOff } from "./staff";
 
 export type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty";
-
-function isSunday(date: string) {
-  return new Date(date + "T12:00:00+05:30").getDay() === 0;
-}
 
 export function dayStatus(
   date: string,
   rec: { punch_in_at: number | null; punch_out_at: number | null } | null,
-  today: string
+  today: string,
+  weeklyOff = 6
 ): DayStatus {
   if (date > today) return "future";
   if (rec?.punch_in_at && rec?.punch_out_at) {
@@ -20,7 +18,7 @@ export function dayStatus(
     return hours < 4.5 ? "half" : "present";
   }
   if (rec?.punch_in_at) return date === today ? "present" : "half";
-  if (isSunday(date)) return "weekly_off";
+  if (isWeeklyOff(date, weeklyOff)) return "weekly_off";
   if (date === today) return "empty";
   return "absent";
 }
@@ -58,7 +56,7 @@ export function monthReport(month: string) {
   const dates = monthDates(month);
   const users = db
     .prepare(
-      `SELECT id, name, department, staff_type, color FROM users WHERE active = 1 AND role != 'super_admin' ORDER BY name`
+      `SELECT id, name, department, staff_type, color, weekly_off FROM users WHERE active = 1 AND role != 'super_admin' ORDER BY name`
     )
     .all() as any[];
 
@@ -87,15 +85,16 @@ export function monthReport(month: string) {
     let half = 0;
     let absent = 0;
     const series: number[] = [];
+    const off = parseWeeklyOff(u.weekly_off, 6);
     for (const d of dates) {
-      const st = dayStatus(d, byUser[u.id]?.[d] || null, today);
+      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, off);
       series.push(st === "present" || st === "half" ? 1 : 0);
       if (st === "present") present++;
       else if (st === "half") half++;
       else if (st === "absent") absent++;
       if (isLate(d, byUser[u.id]?.[d]?.punch_in_at || null, factory.workStart)) late++;
     }
-    const working = dates.filter((d) => d <= today && !isSunday(d)).length || 1;
+    const working = dates.filter((d) => d <= today && !isWeeklyOff(d, off)).length || 1;
     const rate = Math.round(((present + half * 0.5) / working) * 1000) / 10;
     return {
       id: u.id,
@@ -132,14 +131,14 @@ export function monthReport(month: string) {
     }),
     { present: 0, late: 0, half: 0, absent: 0 }
   );
-  const workingDays = dates.filter((d) => d <= today && !isSunday(d)).length;
+  const workingDays = dates.filter((d) => d <= today && !isWeeklyOff(d, 6)).length;
   const possible = Math.max(1, workingDays * Math.max(1, perEmployee.length));
   const pct = Math.round(((totals.present + totals.half * 0.5) / possible) * 1000) / 10;
 
   const daily = dates.map((d) => {
     let c = 0;
     for (const u of users) {
-      const st = dayStatus(d, byUser[u.id]?.[d] || null, today);
+      const st = dayStatus(d, byUser[u.id]?.[d] || null, today, parseWeeklyOff(u.weekly_off, 6));
       if (st === "present" || st === "half") c++;
     }
     return { date: d, present: c };
