@@ -205,6 +205,11 @@ html[data-theme="dark"] .login-light .input {
   background: #ffffff !important;
   color: #172334 !important;
   border-color: #c9d5e2 !important;
+  border-radius: 14px;
+  min-height: 48px;
+}
+.login-light .login-card {
+  border: 0 !important;
 }
 .login-light .text-ink,
 html[data-theme="dark"] .login-light .text-ink {
