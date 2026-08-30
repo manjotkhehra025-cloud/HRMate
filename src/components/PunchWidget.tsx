@@ -19,9 +19,11 @@ interface PunchWidgetProps {
   canPunch: boolean;
   today: any;
   factory: { name: string; radius: number; address: string };
+  /** flush = sit under the map inside a parent card (attendance). */
+  variant?: "card" | "flush";
 }
 
-export default function PunchWidget({ canPunch, today, factory }: PunchWidgetProps) {
+export default function PunchWidget({ canPunch, today, factory, variant = "card" }: PunchWidgetProps) {
   const router = useRouter();
   const [record, setRecord] = useState(today);
   const [punching, setPunching] = useState(false);
@@ -123,7 +125,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       : "Punch in when you reach the factory.";
 
   return (
-    <div className="card p-5 sm:p-6">
+    <div className={variant === "flush" ? "" : "card p-5 sm:p-6"}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-[12px] font-medium text-muted">

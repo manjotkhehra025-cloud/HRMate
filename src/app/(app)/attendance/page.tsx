@@ -4,6 +4,7 @@ import { getFactoryConfig } from "@/lib/geo";
 import { dateKey } from "@/lib/api";
 import db from "@/lib/db";
 import PunchWidget from "@/components/PunchWidget";
+import GeofenceMap from "@/components/GeofenceMap";
 import AttendanceClient from "./AttendanceClient";
 
 export const metadata = { title: "Attendance — HRMate" };
@@ -26,16 +27,26 @@ export default function AttendancePage() {
   const factory = getFactoryConfig();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="hidden lg:block">
-        <h1 className="page-title">Attendance</h1>
-        <p className="page-sub">
-          GPS punch, calendar and history. You must be within {factory.radius}m of {factory.name}.
+        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Attendance</h1>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">
+          Punch in at the factory, then review your month.
         </p>
       </div>
 
-      <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} />
-      <AttendanceClient canManual={has("attendance.manual")} canView={has("attendance.view")} />
+      <div className="card overflow-hidden">
+        <GeofenceMap lat={factory.lat} lng={factory.lng} radius={factory.radius} embedded />
+        <div className="p-5 sm:p-6">
+          <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} variant="flush" />
+        </div>
+      </div>
+
+      <AttendanceClient
+        canManual={has("attendance.manual")}
+        canView={has("attendance.view")}
+        workStart={factory.workStart}
+      />
     </div>
   );
 }
