@@ -127,13 +127,8 @@ export default function GeofenceMap({
   }, [safeLat, safeLng, safeRadius]);
 
   return (
-    <div
-      className="relative z-0 h-[180px] w-full overflow-hidden rounded-[14px] border border-line bg-[#E8F0E8] sm:h-[280px]"
-      style={{ isolation: "isolate", contain: "paint" }}
-    >
+    <div className="pointer-events-none relative z-0 h-[160px] w-full overflow-hidden rounded-[14px] border border-line bg-[#E8F0E8] sm:h-[240px]">
       <div ref={el} className="h-full w-full" role="img" aria-label="Attendance area map" />
-      {/* One-finger pan must scroll the page, never the map. */}
-      <div className="absolute inset-0 z-10 touch-pan-y lg:hidden" />
     </div>
   );
 }

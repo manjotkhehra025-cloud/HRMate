@@ -85,7 +85,7 @@ export default function LoginForm() {
   ];
 
   return (
-    <div className="flex min-h-[100dvh]">
+    <div className="lg:flex lg:min-h-screen">
       {/* Desktop brand panel */}
       <div className="flow-gradient relative hidden w-[48%] overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
@@ -137,7 +137,7 @@ export default function LoginForm() {
       {/* Form column */}
       <div className="flex w-full flex-col bg-transparent lg:w-[52%]">
         {/* Mobile hero */}
-        <div className="flow-gradient relative overflow-hidden px-6 pb-14 pt-10 lg:hidden">
+        <div className="flow-gradient relative overflow-hidden px-5 py-6 lg:hidden">
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           <div className="relative flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
@@ -152,14 +152,14 @@ export default function LoginForm() {
               </span>
             </div>
           </div>
-          <h1 className="relative mt-8 text-3xl font-bold leading-tight text-white">
+          <h1 className="relative mt-4 text-2xl font-bold leading-tight text-white">
             Welcome back
           </h1>
           <p className="relative mt-1.5 text-sm text-white/75">Sign in to punch in and get to work.</p>
         </div>
 
-        <div className="flex flex-1 items-start justify-center px-4 pb-10 lg:items-center lg:px-8 lg:py-12">
-          <div className="card -mt-8 w-full max-w-sm p-6 shadow-pop animate-fade-in lg:mt-0 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
+        <div className="px-4 py-5 pb-10 lg:flex lg:flex-1 lg:items-center lg:justify-center lg:px-8 lg:py-12">
+          <div className="card w-full max-w-sm p-6 shadow-pop animate-fade-in lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
             <div className="hidden lg:block">
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
               <p className="mt-1 text-sm text-slate-500">Sign in to your workspace</p>

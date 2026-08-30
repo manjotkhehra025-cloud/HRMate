@@ -34,6 +34,17 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  height: auto !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: scroll !important;
+  touch-action: pan-y;
+}
+body {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  touch-action: pan-y;
 }
 html[data-text="small"] {
   font-size: 14px;

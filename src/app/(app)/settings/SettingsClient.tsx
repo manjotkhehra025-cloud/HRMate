@@ -989,7 +989,21 @@ export default function SettingsClient({
                 <p className="text-xs text-muted">{t("attendanceAreaSub")}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <GeofenceMap
+              lat={factory.lat}
+              lng={factory.lng}
+              radius={factory.radius}
+              onChange={({ lat, lng }) => {
+                setFactory((f) => ({ ...f, lat, lng }));
+                reverseGeocode(lat, lng);
+              }}
+            />
+            <p className="mt-2 text-xs text-muted">
+              {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`}
+              {" · "}
+              {factory.radius}m circle
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
                 <label className="label">Radius (m)</label>
                 <input
@@ -1031,22 +1045,6 @@ export default function SettingsClient({
               <button type="button" className="btn-primary text-xs" onClick={saveArea} disabled={savingArea}>
                 {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} {t("saveArea")}
               </button>
-            </div>
-            <div className="mt-4">
-              <GeofenceMap
-                lat={factory.lat}
-                lng={factory.lng}
-                radius={factory.radius}
-                onChange={({ lat, lng }) => {
-                  setFactory((f) => ({ ...f, lat, lng }));
-                  reverseGeocode(lat, lng);
-                }}
-              />
-              <p className="mt-2 text-xs text-muted">
-                {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`}
-                {" · "}
-                {factory.radius}m circle · drag the pin · scroll the page as usual
-              </p>
             </div>
           </section>
         </>
