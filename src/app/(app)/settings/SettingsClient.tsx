@@ -273,7 +273,9 @@ export default function SettingsClient({
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify(
+          canProfileFull ? { name, phone, email, department, designation } : { name, phone }
+        ),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Save failed");
@@ -539,10 +541,6 @@ export default function SettingsClient({
     });
     const d = await res.json();
     if (!res.ok) {
-      flash(s, 10) || 0 }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
       flash(d.error || "Could not add", true);
       return;
     }
@@ -651,16 +649,37 @@ export default function SettingsClient({
             </div>
             <div>
               <label className="label">{t("email")}</label>
-              <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+              {canProfileFull ? (
+                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              ) : (
+                <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="label">{t("department")}</label>
-                <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+                {canProfileFull ? (
+                  <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                    {department && !DEPARTMENTS.some((d) => d.name === department) && (
+                      <option value={department}>{department}</option>
+                    )}
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d.name} value={d.name}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+                )}
               </div>
               <div>
                 <label className="label">{t("designation")}</label>
-                <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
+                {canProfileFull ? (
+                  <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+                ) : (
+                  <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
+                )}
               </div>
             </div>
             <button type="submit" disabled={savingProfile} className="btn-primary">
@@ -1206,36 +1225,6 @@ function LeaveBalanceCard() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <select className="input" value={userId} onChange={(e) => setUserId(e.target.value)}>
           {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-        <select className="input" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-          {types.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <input
-          className="input"
-          type="number"
-          step="0.5"
-          value={delta}
-          onChange={(e) => setDelta(e.target.value)}
-          placeholder="+ days"
-        />
-        <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" required />
-      </div>
-      <button className="btn-primary text-xs" type="submit">
-        Submit adjustment
-      </button>
-      {msg && <p className="text-sm text-emerald-700">{msg}</p>}
-    </form>
-  );
-}
-map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
             </option>

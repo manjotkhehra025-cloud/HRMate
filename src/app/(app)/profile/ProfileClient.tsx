@@ -241,11 +241,36 @@ export default function ProfileClient({
           </div>
           <div>
             <label className="label">{t("email")}</label>
-            <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+            {canFull ? (
+              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            ) : (
+              <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+            )}
           </div>
           <div>
             <label className="label">{t("department")}</label>
-            <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+            {canFull ? (
+              <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                {department && !DEPARTMENTS.some((d) => d.name === department) && (
+                  <option value={department}>{department}</option>
+                )}
+                {DEPARTMENTS.map((d) => (
+                  <option key={d.name} value={d.name}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+            )}
+          </div>
+          <div>
+            <label className="label">{t("designation")}</label>
+            {canFull ? (
+              <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+            ) : (
+              <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
+            )}
           </div>
         </div>
         <button type="submit" disabled={saving} className="btn-primary">
