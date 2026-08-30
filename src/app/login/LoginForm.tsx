@@ -77,42 +77,39 @@ export default function LoginForm() {
   }
 
   const features = [
-    { icon: <MapPin className="h-4 w-4" />, label: "Geofenced GPS punch in & out" },
-    { icon: <CalendarDays className="h-4 w-4" />, label: "Leave balances & applications" },
-    { icon: <MessageSquare className="h-4 w-4" />, label: "Social wall for your team" },
-    { icon: <Bell className="h-4 w-4" />, label: "Real-time push notifications" },
+    { icon: <MapPin className="h-[18px] w-[18px]" />, label: "Geofenced GPS punch" },
+    { icon: <CalendarDays className="h-[18px] w-[18px]" />, label: "Leave balances" },
+    { icon: <MessageSquare className="h-[18px] w-[18px]" />, label: "Social wall" },
+    { icon: <Bell className="h-[18px] w-[18px]" />, label: "Push notifications" },
   ];
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-page lg:flex lg:min-h-full">
-      {/* Desktop brand panel */}
-      <div className="flow-gradient relative hidden w-[48%] overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="absolute -right-16 top-8 h-[28rem] w-[28rem] rounded-full border-[48px] border-white/10" />
-        <div className="absolute -bottom-24 -left-10 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-2/5 w-full bg-navy/25" style={{ clipPath: "polygon(18% 100%, 100% 38%, 100% 100%)" }} />
+    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-page lg:flex lg:overflow-hidden">
+      {/* Desktop brand panel — approved split mockup */}
+      <div className="flow-gradient relative hidden h-full w-[48%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-11">
+        <div className="pointer-events-none absolute -left-16 top-24 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-8 top-24 text-white/[0.12]">
+          <Fingerprint className="h-72 w-72" strokeWidth={1.15} />
+        </div>
+        <div
+          className="pointer-events-none absolute bottom-0 right-0 h-[46%] w-[72%] bg-navy/40"
+          style={{ clipPath: "polygon(22% 100%, 100% 18%, 100% 100%)" }}
+        />
+        <div className="pointer-events-none absolute -bottom-10 right-[18%] h-36 w-36 rounded-full bg-flow/30 blur-2xl" />
 
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur">
-            <Fingerprint className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <span className="block text-xl font-bold tracking-tight text-white">
-              HR<span className="text-brand-200">Mate</span>
-            </span>
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/60">
-              Smart HRMS
-            </span>
-          </div>
+        <div className="relative flex items-center gap-2.5">
+          <Fingerprint className="h-7 w-7 text-white" strokeWidth={1.75} />
+          <span className="text-[1.35rem] font-bold tracking-tight text-white">HRMate</span>
         </div>
 
-        <div className="relative">
-          <h1 className="max-w-md text-[2.15rem] font-bold leading-[1.15] text-white text-balance">
-            One platform for your entire workforce.
+        <div className="relative max-w-[22rem]">
+          <h1 className="text-[2.35rem] font-bold leading-[1.18] text-white">
+            “One platform for your entire workforce.”
           </h1>
-          <div className="mt-10 space-y-3.5">
+          <div className="mt-10 space-y-4">
             {features.map((f) => (
-              <div key={f.label} className="flex items-center gap-3 text-[14px] font-medium text-white">
-                <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-white/12 ring-1 ring-white/20">
+              <div key={f.label} className="flex items-center gap-3.5 text-[15px] font-medium text-white">
+                <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
                   {f.icon}
                 </span>
                 {f.label}
@@ -121,13 +118,11 @@ export default function LoginForm() {
           </div>
         </div>
 
-        <p className="relative text-xs text-white/50">
-          © {new Date().getFullYear()} HRMate · Shop floor and office
-        </p>
+        <div className="relative h-6" />
       </div>
 
       {/* Form column */}
-      <div className="flex w-full min-w-0 flex-col lg:w-[52%] lg:justify-center">
+      <div className="flex w-full min-w-0 flex-col lg:h-full lg:min-h-0 lg:w-[52%] lg:items-center lg:justify-center">
         {/* Mobile hero — compact, form never climbs over Welcome */}
         <div className="flow-gradient relative overflow-hidden px-5 pb-8 pt-[max(1.1rem,env(safe-area-inset-top))] lg:hidden">
           <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
