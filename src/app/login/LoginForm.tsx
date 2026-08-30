@@ -84,18 +84,19 @@ export default function LoginForm() {
   ];
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-page lg:flex lg:overflow-hidden">
-      {/* Desktop brand panel — approved split mockup */}
+    <div className="login-light h-full min-h-0 min-w-0 overflow-x-hidden overflow-y-auto bg-[#F4F7FB] lg:flex lg:overflow-hidden">
+      {/* Desktop — approved split mockup */}
       <div className="flow-gradient relative hidden h-full w-[48%] shrink-0 overflow-hidden lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-11">
-        <div className="pointer-events-none absolute -left-16 top-24 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-8 top-24 text-white/[0.12]">
+        <div className="pointer-events-none absolute -left-16 top-24 h-56 w-56 rounded-full bg-white/20 blur-3xl" />
+        <div className="pointer-events-none absolute right-6 top-16 h-40 w-40 rounded-full bg-white/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-8 top-24 text-white/[0.14]">
           <Fingerprint className="h-72 w-72" strokeWidth={1.15} />
         </div>
         <div
-          className="pointer-events-none absolute bottom-0 right-0 h-[46%] w-[72%] bg-navy/40"
+          className="pointer-events-none absolute bottom-0 right-0 h-[46%] w-[72%] bg-[#081C33]/45"
           style={{ clipPath: "polygon(22% 100%, 100% 18%, 100% 100%)" }}
         />
-        <div className="pointer-events-none absolute -bottom-10 right-[18%] h-36 w-36 rounded-full bg-flow/30 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-8 right-[16%] h-32 w-32 rounded-full bg-[#16B878]/35 blur-2xl" />
 
         <div className="relative flex items-center gap-2.5">
           <Fingerprint className="h-7 w-7 text-white" strokeWidth={1.75} />
@@ -121,51 +122,48 @@ export default function LoginForm() {
         <div className="relative h-6" />
       </div>
 
-      {/* Form column */}
       <div className="flex w-full min-w-0 flex-col lg:h-full lg:min-h-0 lg:w-[52%] lg:items-center lg:justify-center">
-        {/* Mobile hero — compact, form never climbs over Welcome */}
-        <div className="flow-gradient relative overflow-hidden px-5 pb-8 pt-[max(1.1rem,env(safe-area-inset-top))] lg:hidden">
-          <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
-          <div className="absolute -left-10 bottom-4 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+        {/* Mobile hero — approved mockup */}
+        <div className="flow-gradient relative overflow-hidden px-5 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))] lg:hidden">
+          <div className="absolute -right-6 -top-8 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
+          <div className="absolute left-8 top-24 h-24 w-24 rounded-full bg-white/15 blur-2xl" />
           <div className="relative flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 backdrop-blur">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/18 ring-1 ring-white/25 backdrop-blur">
               <Fingerprint className="h-6 w-6 text-white" />
             </div>
             <div>
-              <span className="block text-lg font-bold text-white">
-                HR<span className="text-brand-200">Mate</span>
-              </span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/65">
+              <span className="block text-[1.35rem] font-bold tracking-tight text-white">HRMate</span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/70">
                 Smart HRMS
               </span>
             </div>
           </div>
-          <h1 className="relative mt-5 text-[1.7rem] font-bold leading-tight text-white">Welcome back</h1>
-          <p className="relative mt-1.5 text-[13.5px] text-white/80">Sign in to punch in and get to work.</p>
+          <h1 className="relative mt-7 text-[2rem] font-bold leading-tight text-white">Welcome back</h1>
+          <p className="relative mt-2 text-[15px] text-white/85">Sign in to punch in and get to work.</p>
           <svg
-            className="pointer-events-none absolute -bottom-px left-0 w-full text-page"
-            viewBox="0 0 400 28"
+            className="pointer-events-none absolute -bottom-px left-0 w-full text-[#F4F7FB]"
+            viewBox="0 0 400 36"
             preserveAspectRatio="none"
             aria-hidden
           >
-            <path fill="currentColor" d="M0 28C80 4 320 4 400 28H0Z" />
+            <path fill="currentColor" d="M0 36C90 2 310 2 400 36H0Z" />
           </svg>
         </div>
 
-        <div className="px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1 lg:flex lg:w-full lg:justify-center lg:px-10 lg:py-12">
-          <div className="card mx-auto w-full max-w-[22.5rem] p-5 shadow-pop lg:max-w-[24rem] lg:p-8">
+        <div className="-mt-1 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 lg:mt-0 lg:flex lg:w-full lg:justify-center lg:px-10 lg:py-12">
+          <div className="card mx-auto w-full max-w-[22.5rem] p-5 lg:max-w-[24rem] lg:p-8">
             <div className="hidden text-center lg:block">
-              <h2 className="text-[1.65rem] font-bold tracking-tight text-ink">Welcome back</h2>
+              <h2 className="text-[1.65rem] font-bold tracking-tight text-ink">Welcome back,</h2>
               <p className="mt-1 text-[13.5px] text-muted">Sign in to your workspace</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-1 rounded-full bg-[#EEF3F8] p-1 lg:mt-6">
+            <div className="flex gap-2 lg:mt-6">
               <button
                 type="button"
                 onClick={() => setMode("password")}
                 className={classNames(
-                  "rounded-full py-2.5 text-[13px] font-semibold transition",
-                  mode === "password" ? "bg-white text-ink shadow-sm" : "text-muted"
+                  "h-11 flex-1 rounded-full text-[13.5px] font-semibold transition",
+                  mode === "password" ? "login-pill-on" : "login-pill-off"
                 )}
               >
                 Password
@@ -174,8 +172,8 @@ export default function LoginForm() {
                 type="button"
                 onClick={() => setMode("passkey")}
                 className={classNames(
-                  "rounded-full py-2.5 text-[13px] font-semibold transition",
-                  mode === "passkey" ? "bg-white text-ink shadow-sm" : "text-muted"
+                  "h-11 flex-1 rounded-full text-[13.5px] font-semibold transition",
+                  mode === "passkey" ? "login-pill-on" : "login-pill-off"
                 )}
               >
                 Passkey
@@ -185,11 +183,11 @@ export default function LoginForm() {
             {mode === "password" ? (
               <form onSubmit={handlePasswordLogin} className="mt-5 space-y-3.5">
                 <div>
-                  <label className="label sr-only lg:not-sr-only" htmlFor="email">
+                  <label className="label hidden lg:block" htmlFor="email">
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#617083]" />
                     <input
                       id="email"
                       type="email"
@@ -204,11 +202,11 @@ export default function LoginForm() {
                   </div>
                 </div>
                 <div>
-                  <label className="label sr-only lg:not-sr-only" htmlFor="password">
+                  <label className="label hidden lg:block" htmlFor="password">
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#617083]" />
                     <input
                       id="password"
                       type="password"
@@ -238,12 +236,12 @@ export default function LoginForm() {
               </form>
             ) : (
               <div className="mt-5 space-y-4">
-                <div className="rounded-[15px] border border-line bg-page p-5 text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[14px] bg-brand-50">
-                    <Fingerprint className="h-7 w-7 text-brand-600" />
+                <div className="rounded-[15px] border border-[#DDE6EF] bg-[#F4F7FB] p-5 text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#E7F1FF]">
+                    <Fingerprint className="h-7 w-7 text-[#1556B8]" />
                   </div>
-                  <p className="text-sm font-semibold text-ink">Use your device passkey</p>
-                  <p className="mt-1 text-xs text-muted">Face ID, fingerprint, Windows Hello or a security key</p>
+                  <p className="text-sm font-semibold text-[#172334]">Use your device passkey</p>
+                  <p className="mt-1 text-xs text-[#617083]">Face ID, fingerprint, Windows Hello or a security key</p>
                 </div>
                 {error && (
                   <p className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-600">{error}</p>
@@ -264,7 +262,7 @@ export default function LoginForm() {
               </div>
             )}
 
-            <p className="mt-5 flex items-center justify-center gap-1.5 text-[12px] font-medium text-flow-deep">
+            <p className="mt-5 flex items-center justify-center gap-1.5 text-[12px] font-medium text-[#07945D]">
               <ShieldCheck className="h-3.5 w-3.5" /> Secure workspace
             </p>
           </div>

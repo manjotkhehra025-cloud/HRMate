@@ -186,3 +186,44 @@ body {
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Login always matches the approved light mockup — even if the phone is in dark mode. */
+.login-light {
+  background: #f4f7fb !important;
+  color: #172334 !important;
+}
+.login-light .card,
+html[data-theme="dark"] .login-light .card {
+  background: #ffffff !important;
+  border-color: #dde6ef !important;
+  color: #172334 !important;
+  border-radius: 18px;
+  box-shadow: 0 7px 24px rgba(11, 37, 69, 0.14);
+}
+.login-light .input,
+html[data-theme="dark"] .login-light .input {
+  background: #ffffff !important;
+  color: #172334 !important;
+  border-color: #c9d5e2 !important;
+}
+.login-light .text-ink,
+html[data-theme="dark"] .login-light .text-ink {
+  color: #172334 !important;
+}
+.login-light .text-muted,
+html[data-theme="dark"] .login-light .text-muted {
+  color: #617083 !important;
+}
+.login-light .bg-white,
+html[data-theme="dark"] .login-light .bg-white {
+  background-color: #ffffff !important;
+}
+.login-pill-on {
+  background: #ffffff !important;
+  color: #172334 !important;
+  box-shadow: 0 1.2px 8px rgba(18, 58, 99, 0.10);
+}
+.login-pill-off {
+  background: #e7f1ff !important;
+  color: #617083 !important;
+}
