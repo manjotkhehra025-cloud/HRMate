@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Clock, Navigation, AlertTriangle, CheckCircle2, LogIn, LogOut } from "lucide-react";
+import {
+  MapPin,
+  Fingerprint,
+  Navigation,
+  AlertTriangle,
+  CheckCircle2,
+  CalendarDays,
+} from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
 
@@ -19,9 +26,9 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const [record, setRecord] = useState(today);
   const [punching, setPunching] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "locating" | "outside" | "error">("idle");
+  const [slowGps, setSlowGps] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     setRecord(today);
@@ -41,12 +48,17 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+    if (geoState !== "locating") {
+      setSlowGps(false);
+      return;
+    }
+    const t = setTimeout(() => setSlowGps(true), 4000);
+    return () => clearTimeout(t);
+  }, [geoState]);
 
   const punchedIn = record?.punch_in_at && !record?.punch_out_at;
   const punchedOut = record?.punch_in_at && record?.punch_out_at;
+  const gpsOk = record?.punch_in_lat != null;
 
   function getLocation(): Promise<{ lat: number; lng: number }> {
     return new Promise((resolve, reject) => {
@@ -99,167 +111,136 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     return null;
   }
 
-  const status = punchedOut
-    ? { label: "Shift complete", className: "bg-emerald-50 text-emerald-700 ring-emerald-600/15" }
+  const heading = punchedOut
+    ? "Shift complete"
     : punchedIn
-      ? { label: "On duty", className: "bg-amber-50 text-amber-700 ring-amber-600/15" }
-      : { label: "Not punched in", className: "bg-slate-100 text-slate-600 ring-slate-400/15" };
+      ? "You are punched in"
+      : "You haven't punched in";
+  const sub = punchedOut
+    ? "See you tomorrow."
+    : punchedIn
+      ? "Remember to punch out before you leave."
+      : "Punch in when you reach the factory.";
 
   return (
-    <div className="card relative p-5 sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-brand-100/70 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-violet-100/50 blur-2xl" />
+    <div className="card p-5 sm:p-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-[12px] font-medium text-muted">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {new Date().toLocaleDateString("en-IN", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              timeZone: IST,
+            })}
+          </p>
+          <h2 className="mt-1 text-[22px] font-bold tracking-[-0.4px] text-ink sm:text-[24px]">{heading}</h2>
+          <p className="mt-1 text-[13px] text-muted">{sub}</p>
 
-      <div className="relative">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Today&apos;s attendance
-            </p>
-            <p className="mt-1 text-sm font-medium text-slate-700">
-              {new Date().toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                timeZone: IST,
-              })}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${status.className}`}
-          >
-            {punchedIn && (
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {gpsOk && (
+              <span className="badge bg-[#E1F8EF] text-[#06613E] ring-1 ring-[#07945D]/20">
+                GPS verified
               </span>
             )}
-            {status.label}
-          </span>
-        </div>
-
-        <div className="mt-5 flex items-end justify-between gap-3">
-          <div>
-            <p className="font-mono text-4xl font-semibold tabular-nums tracking-tight text-slate-900 sm:text-5xl">
-              {new Date(now).toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-                timeZone: IST,
-              })}
-            </p>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
-              <Clock className="h-3.5 w-3.5" />
-              Live · IST
-            </p>
+            {punchedIn && (
+              <span className="badge bg-[#E1F8EF] text-[#06613E] ring-1 ring-[#07945D]/20">Present</span>
+            )}
+            {punchedOut && (
+              <span className="badge bg-brand-50 text-brand-700 ring-1 ring-brand-500/20">Completed</span>
+            )}
+            <span className="badge bg-[#F4F7FB] text-muted ring-1 ring-line">
+              <MapPin className="h-3 w-3" /> {factory.name} · {factory.radius}m
+            </span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-100">
-            <MapPin className="h-3.5 w-3.5" />
-            {factory.name}
-          </div>
-        </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-slate-100 bg-white/70 p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-              <LogIn className="h-4 w-4 text-emerald-500" /> Punch In
+          <div className="mt-4 grid max-w-sm grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-kicker text-muted">Punch in</p>
+              <p className="mt-0.5 text-[20px] font-bold tabular-nums text-ink">
+                {record?.punch_in_at ? formatTime(record.punch_in_at) : "—"}
+              </p>
             </div>
-            <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">
-              {record?.punch_in_at ? formatTime(record.punch_in_at) : "—"}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-100 bg-white/70 p-4">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-              <LogOut className="h-4 w-4 text-sky-500" /> Punch Out
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-kicker text-muted">Punch out</p>
+              <p className="mt-0.5 text-[20px] font-bold tabular-nums text-ink">
+                {record?.punch_out_at ? formatTime(record.punch_out_at) : "—"}
+              </p>
             </div>
-            <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">
-              {record?.punch_out_at ? formatTime(record.punch_out_at) : "—"}
-            </p>
           </div>
-        </div>
 
-        <button
-          onClick={punch}
-          disabled={punching || punchedOut}
-          className={
-            punchedIn
-              ? "btn-danger mt-5 h-14 w-full text-base"
-              : punchedOut
-                ? "btn-success mt-5 h-14 w-full text-base"
-                : "flow-gradient mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-btn text-base font-semibold text-white shadow-flow"
-          }
-        >
-          {punching ? (
-            <>
-              <Spinner className="h-5 w-5" /> Locating GPS…
-            </>
-          ) : punchedIn ? (
-            <>
-              <LogOut className="h-5 w-5" /> Punch Out
-            </>
-          ) : punchedOut ? (
-            <>
-              <CheckCircle2 className="h-5 w-5" /> Completed
-            </>
-          ) : (
-            <>
-              <LogIn className="h-5 w-5" /> Punch In
-            </>
+          {!gpsOk && !punching && (
+            <p className="mt-3 text-[12px] text-muted">No location yet.</p>
           )}
-        </button>
-
-        {geoState === "locating" && (
-          <p className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-            <Navigation className="h-3.5 w-3.5 animate-pulse text-brand-500" />
-            Acquiring your location…
-          </p>
-        )}
-        {geoState === "outside" && (
-          <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {error}
-          </p>
-        )}
-        {geoState === "error" && (
-          <p className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 px-3 py-2.5 text-xs text-rose-600">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {error}
-          </p>
-        )}
-        {message && (
-          <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
-            <CheckCircle2 className="h-3.5 w-3.5" /> {message}
-          </p>
-        )}
-
-        {record?.punch_in_lat != null && (
-          <div className="mt-4 rounded-2xl border border-line bg-[#F8FAFD] px-4 py-3 text-xs">
-            <p className="font-semibold text-emerald-700">GPS verified</p>
-            <p className="tabular-nums text-muted">
-              {Number(record.punch_in_lat).toFixed(5)}, {Number(record.punch_in_lng).toFixed(5)}
-            </p>
+          {gpsOk && (
             <a
-              className="mt-1 inline-block font-semibold text-brand-600"
+              className="mt-3 inline-block text-[12px] font-semibold text-brand-600"
               href={`https://www.google.com/maps?q=${record.punch_in_lat},${record.punch_in_lng}`}
               target="_blank"
               rel="noreferrer"
             >
               Open in Google Maps
             </a>
-          </div>
-        )}
-        {(record?.shift_name || record?.shift_id) && (
-          <p className="mt-3 rounded-xl border border-line px-3 py-2 text-xs text-ink">
-            Shift {record.shift_name || "assigned"}
-            {record.shift_start ? ` · ${record.shift_start}` : ""}
-            {record.shift_hours ? ` · ${record.shift_hours} hours` : ""}
-          </p>
-        )}
-        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-400">
-          <span>Must be inside the factory geofence</span>
-          <span>Radius {factory.radius}m</span>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col items-center self-center sm:self-auto">
+          <button
+            type="button"
+            onClick={punch}
+            disabled={punching || punchedOut}
+            aria-label={punchedIn ? "Punch out" : punchedOut ? "Completed" : "Punch in"}
+            className={
+              punchedOut
+                ? "flex h-24 w-24 flex-col items-center justify-center rounded-full bg-[#E1F8EF] text-flow-deep sm:h-[112px] sm:w-[112px]"
+                : punchedIn
+                  ? "flex h-24 w-24 flex-col items-center justify-center rounded-full bg-[#FDECEC] text-[#C52B35] shadow-[0_8px_18px_rgba(197,43,53,0.16)] sm:h-[112px] sm:w-[112px]"
+                  : "flow-gradient flex h-24 w-24 flex-col items-center justify-center rounded-full text-white shadow-glow sm:h-[112px] sm:w-[112px]"
+            }
+          >
+            {punching ? (
+              <Spinner className="h-8 w-8" />
+            ) : punchedOut ? (
+              <CheckCircle2 className="h-9 w-9" />
+            ) : (
+              <Fingerprint className="h-9 w-9" />
+            )}
+            <span className="mt-1 text-[11px] font-bold">
+              {punching ? "GPS…" : punchedIn ? "Punch out" : punchedOut ? "Done" : "Punch in"}
+            </span>
+          </button>
+          {(geoState === "error" || geoState === "outside") && (
+            <button
+              type="button"
+              onClick={punch}
+              className="mt-2 text-[12px] font-semibold text-brand-600"
+            >
+              Try again
+            </button>
+          )}
         </div>
       </div>
+
+      {geoState === "locating" && (
+        <p className="mt-4 flex items-center gap-2 text-xs text-muted">
+          <Navigation className="h-3.5 w-3.5 animate-pulse text-brand-500" />
+          {slowGps
+            ? "Your location is taking too long. Step near a window or outside and try again."
+            : "Acquiring your location…"}
+        </p>
+      )}
+      {(geoState === "outside" || geoState === "error") && (
+        <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
+      {message && (
+        <p className="mt-4 flex items-center gap-2 rounded-xl bg-[#E1F8EF] px-3 py-2.5 text-xs text-[#06613E]">
+          <CheckCircle2 className="h-3.5 w-3.5" /> {message}
+        </p>
+      )}
     </div>
   );
 }
