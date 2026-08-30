@@ -57,7 +57,7 @@ export default function Sidebar({
       <aside
         className={classNames(
           "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#1A3A55] transition-transform duration-300",
-          open ? "translate-x-0" : "-translate-x-full"
+          open ? "translate-x-0" : "pointer-events-none -translate-x-full"
         )}
         style={{ background: "linear-gradient(180deg, #0B2743 0%, #081C31 100%)" }}
       >

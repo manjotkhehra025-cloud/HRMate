@@ -137,7 +137,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="fixed inset-0 z-0 flex flex-col bg-[var(--background)]">
+    <div>
       <Sidebar
         user={user}
         nav={labeledNav}
@@ -158,7 +158,8 @@ export default function AppShell({
         onLogout={logout}
       />
 
-      <header className={`relative z-20 flex h-[62px] shrink-0 items-center gap-3 border-b border-line bg-white px-4 pt-[env(safe-area-inset-top)] sm:px-6 ${desktopOpen ? "lg:pl-72" : ""}`}>
+      <div className={desktopOpen ? "lg:pl-72" : ""}>
+        <header className="sticky top-0 z-20 flex h-[62px] items-center gap-3 border-b border-line bg-white px-4 pt-[env(safe-area-inset-top)] sm:px-6">
           <button
             onClick={() => setGridOpen(true)}
             className="rounded-btn p-2 text-muted hover:bg-[#F3F7FB]"
@@ -277,12 +278,7 @@ export default function AppShell({
           </div>
         </header>
 
-      <div
-        id="app-scroll"
-        className={`min-h-0 flex-1 overflow-y-scroll overflow-x-hidden overscroll-y-contain ${desktopOpen ? "lg:pl-72" : ""}`}
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <main className="mx-auto max-w-7xl px-4 py-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
+        <main className="mx-auto max-w-7xl px-4 py-5 pb-32 sm:px-6 sm:py-6 lg:px-8 lg:pb-10">
           {children}
         </main>
       </div>
