@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Users, MapPin, CalendarDays } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { formatDate, formatTime } from "@/lib/utils";
 import { WEEKDAYS, departmentScope, weeklyOffLabel } from "@/lib/staff";
@@ -15,6 +15,7 @@ interface Member {
   department: string;
   designation: string;
   weekly_off?: number;
+  avatar?: string;
   today_in: number | null;
   today_out: number | null;
 }

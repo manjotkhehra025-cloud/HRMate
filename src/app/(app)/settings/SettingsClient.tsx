@@ -25,7 +25,8 @@ import {
   LogOut,
   Save,
 } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
+import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import GeofenceMap from "@/components/GeofenceMap";
 import { Spinner } from "@/components/ui";
 import { timeAgo } from "@/lib/utils";
@@ -112,6 +113,7 @@ export default function SettingsClient({
     designation: string;
     phone?: string;
     color: string;
+    avatar?: string;
   };
   canSettings: boolean;
   vapidPublicKey: string;
@@ -139,6 +141,7 @@ export default function SettingsClient({
   const [name, setName] = useState(initialUser.name);
   const [phone, setPhone] = useState(initialUser.phone || "");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [curPw, setCurPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -237,6 +240,20 @@ export default function SettingsClient({
     else if (Notification.permission === "granted" && prefs.notify_enabled) setPushState("on");
     else setPushState("off");
   }, [prefs.notify_enabled]);
+
+  async function onPhoto(file: File) {
+    setUploadingPhoto(true);
+    try {
+      const stamp = await postAvatar(file);
+      setUser((u) => ({ ...u, avatar: stamp }));
+      flash("Photo saved");
+      router.refresh();
+    } catch (e: any) {
+      flash(e.message, true);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -575,16 +592,25 @@ export default function SettingsClient({
       )}
 
       {/* Gradient profile card */}
-      <div className="flow-gradient overflow-clip rounded-[18px] p-5 text-white shadow-glow">
+      <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow">
         <div className="flex items-center gap-4">
-          <Avatar name={user.name} color={user.color} size={64} className="ring-2 ring-white/40" />
-          <div className="min-w-0">
+          <Avatar
+            name={user.name}
+            color={user.color}
+            size={64}
+            src={avatarSrc(user.id, user.avatar)}
+            className="ring-2 ring-white/40"
+          />
+          <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-bold">{user.name}</p>
             <p className="truncate text-sm text-white/80">{user.email}</p>
             <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
               {roleLabel} · {factory.name}
             </p>
           </div>
+        </div>
+        <div className="mt-4">
+          <PhotoPicker prefix="settings" tone="onGradient" disabled={uploadingPhoto} onPicked={onPhoto} />
         </div>
       </div>
 

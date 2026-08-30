@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Send, ThumbsUp, MessageSquare, Trash2, Loader2 } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { timeAgo } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ interface Post {
   author_name: string;
   author_color: string;
   author_designation: string;
+  author_avatar?: string;
   like_count: number;
   comment_count: number;
   liked_by_me: number;
@@ -21,10 +22,12 @@ interface Post {
 interface Comment {
   id: string;
   post_id: string;
+  user_id: string;
   content: string;
   created_at: number;
   author_name: string;
   author_color: string;
+  author_avatar?: string;
 }
 
 export default function WallClient({
@@ -138,7 +141,7 @@ export default function WallClient({
           return (
             <div key={p.id} className="card p-5 animate-fade-in">
               <div className="flex items-start gap-3">
-                <Avatar name={p.author_name} color={p.author_color} size={42} />
+                <Avatar name={p.author_name} color={p.author_color} size={42} src={avatarSrc(p.user_id, p.author_avatar)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <div>
@@ -185,7 +188,7 @@ export default function WallClient({
                     <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
                       {postComments.map((c) => (
                         <div key={c.id} className="flex items-start gap-2.5">
-                          <Avatar name={c.author_name} color={c.author_color} size={28} />
+                          <Avatar name={c.author_name} color={c.author_color} size={28} src={avatarSrc(c.user_id, c.author_avatar)} />
                           <div className="flex-1 rounded-xl bg-slate-50 px-3 py-2">
                             <p className="text-xs font-semibold text-slate-700">{c.author_name}</p>
                             <p className="text-sm text-slate-600">{c.content}</p>

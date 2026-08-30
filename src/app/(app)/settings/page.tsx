@@ -27,6 +27,7 @@ export default function SettingsPage() {
           designation: user.designation,
           phone: user.phone || "",
           color: user.color,
+          avatar: user.avatar || "",
         }}
         canSettings={perms.isSuperAdmin || perms.has("admin.settings")}
         vapidPublicKey={getVapidPublicKey()}

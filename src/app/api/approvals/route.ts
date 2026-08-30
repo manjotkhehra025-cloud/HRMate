@@ -19,7 +19,7 @@ export async function GET() {
       .prepare(
         `SELECT lr.*, lt.name AS leave_type_name, lt.color AS leave_type_color,
               u.name AS user_name, u.color AS user_color, u.department AS user_department,
-              u.staff_type AS user_staff_type
+              u.staff_type AS user_staff_type, u.avatar AS user_avatar, u.id AS user_id
        FROM leave_requests lr
        JOIN leave_types lt ON lt.id = lr.leave_type_id
        JOIN users u ON u.id = lr.user_id
@@ -45,7 +45,8 @@ export async function GET() {
     user.role === "super_admin"
       ? (db
           .prepare(
-            `SELECT cr.*, u.name AS requester_name, u.color AS requester_color
+            `SELECT cr.*, u.name AS requester_name, u.color AS requester_color,
+                    u.avatar AS requester_avatar, u.id AS requester_id
              FROM change_requests cr JOIN users u ON u.id = cr.requested_by
              WHERE cr.status = 'pending' ORDER BY cr.created_at DESC`
           )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UserCog } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/permission-constants";
 import PermissionPanel from "./PermissionPanel";
@@ -13,6 +13,7 @@ interface User {
   email: string;
   role: string;
   color: string;
+  avatar?: string;
 }
 
 export default function PermissionsTab() {
@@ -58,7 +59,7 @@ export default function PermissionsTab() {
               onClick={() => setSelected(u.id)}
               className="card flex items-center gap-3 p-4 text-left transition hover:shadow-pop"
             >
-              <Avatar name={u.name} color={u.color} size={40} />
+              <Avatar name={u.name} color={u.color} size={40} src={avatarSrc(u.id, u.avatar)} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-800">{u.name}</p>
                 <p className="truncate text-xs text-slate-400">{u.email}</p>

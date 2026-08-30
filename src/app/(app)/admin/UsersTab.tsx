@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Plus, X, Fingerprint, UserCog } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
+import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/permission-constants";
 import { MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
@@ -21,6 +22,7 @@ interface User {
   staff_type?: string;
   manager_scope?: string;
   weekly_off?: number;
+  avatar?: string;
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -45,6 +47,8 @@ export default function UsersTab({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [managePermsFor, setManagePermsFor] = useState<string | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -114,8 +118,16 @@ export default function UsersTab({
         setError(data.error || "Failed to create user");
         return;
       }
+      if (pendingPhoto && data.id) {
+        try {
+          await postAvatar(pendingPhoto, data.id);
+        } catch {
+          /* user exists; photo can be set from Edit */
+        }
+      }
       setMessage("User created ✓");
       setShowForm(false);
+      setPendingPhoto(null);
       resetForm();
       load();
     } finally {
@@ -172,7 +184,7 @@ export default function UsersTab({
         <h2 className="text-sm font-semibold text-slate-800">
           Team members <span className="text-slate-400">({users.length})</span>
         </h2>
-        <button onClick={() => { setShowForm(true); resetForm(); }} className="btn-primary px-3 py-2 text-xs">
+        <button onClick={() => { setShowForm(true); setPendingPhoto(null); resetForm(); }} className="btn-primary px-3 py-2 text-xs">
           <Plus className="h-3.5 w-3.5" /> Add user
         </button>
       </div>
@@ -270,7 +282,7 @@ export default function UsersTab({
         <div className="card divide-y divide-slate-50">
           {users.map((u) => (
             <div key={u.id} className="flex items-center gap-4 p-4">
-              <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={40} />
+              <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={40} src={avatarSrc(u.id, u.avatar)} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-semibold text-slate-800">{u.name}</p>
@@ -340,6 +352,32 @@ export default function UsersTab({
               <button type="button" onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-4 w-4" />
               </button>
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <Avatar
+                name={editing.name}
+                color={editing.color || ROLE_COLORS[editing.role]}
+                size={72}
+                src={avatarSrc(editing.id, editing.avatar)}
+              />
+              <PhotoPicker
+                prefix="edit-user"
+                disabled={uploadingPhoto || saving}
+                onPicked={async (file) => {
+                  setUploadingPhoto(true);
+                  setError("");
+                  try {
+                    const stamp = await postAvatar(file, editing.id);
+                    setEditing({ ...editing, avatar: stamp });
+                    setUsers((list) => list.map((x) => (x.id === editing.id ? { ...x, avatar: stamp } : x)));
+                    setMessage("Photo saved ✓");
+                  } catch (e: any) {
+                    setError(e.message || "Photo upload failed");
+                  } finally {
+                    setUploadingPhoto(false);
+                  }
+                }}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

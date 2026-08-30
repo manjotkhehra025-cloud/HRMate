@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
+import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner } from "@/components/ui";
 import { timeAgo } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
@@ -84,20 +85,12 @@ export default function ProfileClient({
       .catch(() => {});
   }, []);
 
-  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  async function onPhoto(file: File) {
     setPickerOpen(false);
     setUploading(true);
     try {
-      const blob = await compressImage(file);
-      const fd = new FormData();
-      fd.append("file", blob, "avatar.jpg");
-      const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Upload failed");
-      setUser((u) => ({ ...u, avatar: d.avatar }));
+      const stamp = await postAvatar(file);
+      setUser((u) => ({ ...u, avatar: stamp }));
       flash("Photo saved");
       router.refresh();
     } catch (e: any) {
@@ -212,35 +205,9 @@ export default function ProfileClient({
             >
               {uploading ? <Spinner className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
             </button>
-            <input
-              id="avatar-camera"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={onPhoto}
-            />
-            <input
-              id="avatar-gallery"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onPhoto}
-            />
           </div>
-          <div className="mt-4 grid w-full grid-cols-2 gap-2">
-            <label
-              htmlFor="avatar-camera"
-              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-btn bg-white/15 px-2 py-2 text-[12px] font-semibold text-white ring-1 ring-white/25"
-            >
-              <Camera className="h-3.5 w-3.5" /> {t("takePhoto")}
-            </label>
-            <label
-              htmlFor="avatar-gallery"
-              className="flex cursor-pointer items-center justify-center gap-1.5 rounded-btn bg-white/15 px-2 py-2 text-[12px] font-semibold text-white ring-1 ring-white/25"
-            >
-              <ImageIcon className="h-3.5 w-3.5" /> {t("chooseGallery")}
-            </label>
+          <div className="mt-4 w-full">
+            <PhotoPicker prefix="profile" tone="onGradient" disabled={uploading} onPicked={onPhoto} />
           </div>
           <p className="mt-4 text-lg font-bold">{user.name}</p>
           <p className="text-sm text-white/80">{user.email}</p>
@@ -334,7 +301,7 @@ export default function ProfileClient({
           <div className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg rounded-t-[18px] border-t border-line bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-pop">
             <p className="mb-3 text-sm font-semibold text-ink">{t("addPhoto")}</p>
             <label
-              htmlFor="avatar-camera"
+              htmlFor="profile-camera"
               className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
@@ -343,7 +310,7 @@ export default function ProfileClient({
               {t("takePhoto")}
             </label>
             <label
-              htmlFor="avatar-gallery"
+              htmlFor="profile-gallery"
               className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-flow-deep">
@@ -363,35 +330,4 @@ export default function ProfileClient({
       )}
     </div>
   );
-}
-
-function compressImage(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const max = 480;
-      const scale = Math.min(1, max / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Could not process photo"));
-        return;
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (b) => {
-          URL.revokeObjectURL(url);
-          if (!b) reject(new Error("Could not process photo"));
-          else resolve(b);
-        },
-        "image/jpeg",
-        0.85
-      );
-    };
-    img.onerror = () => reject(new Error("Invalid image"));
-    img.src = url;
-  });
 }

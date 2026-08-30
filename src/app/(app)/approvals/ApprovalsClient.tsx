@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle2, XCircle, CalendarDays, Clock, CheckSquare } from "lucide-react";
-import Avatar from "@/components/Avatar";
+import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { formatDate, timeAgo } from "@/lib/utils";
 
@@ -11,6 +11,8 @@ interface LeaveReq {
   user_name: string;
   user_color: string;
   user_department: string;
+  user_id?: string;
+  user_avatar?: string;
   leave_type_name: string;
   leave_type_color: string;
   start_date: string;
@@ -24,6 +26,8 @@ interface ManualReq {
   user_name: string;
   user_color: string;
   user_department: string;
+  user_id?: string;
+  user_avatar?: string;
   date: string;
   type: string;
   time: string;
@@ -101,7 +105,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
           {(tab === "all" || tab === "leaves") &&
             leaves.map((l) => (
               <div key={`l_${l.id}`} className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                <Avatar name={l.user_name} color={l.user_color} size={44} />
+                <Avatar name={l.user_name} color={l.user_color} size={44} src={avatarSrc(l.user_id, l.user_avatar)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-slate-800">{l.user_name}</p>
@@ -141,7 +145,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
           {(tab === "all" || tab === "manual") &&
             manual.map((m) => (
               <div key={`m_${m.id}`} className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                <Avatar name={m.user_name} color={m.user_color} size={44} />
+                <Avatar name={m.user_name} color={m.user_color} size={44} src={avatarSrc(m.user_id, m.user_avatar)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-slate-800">{m.user_name}</p>

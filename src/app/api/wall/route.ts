@@ -11,6 +11,7 @@ export async function GET() {
   const posts = db
     .prepare(
       `SELECT p.*, u.name AS author_name, u.color AS author_color, u.designation AS author_designation,
+        u.avatar AS author_avatar,
         (SELECT COUNT(*) FROM wall_likes l WHERE l.post_id = p.id) AS like_count,
         (SELECT COUNT(*) FROM wall_comments c WHERE c.post_id = p.id) AS comment_count,
         EXISTS(SELECT 1 FROM wall_likes l2 WHERE l2.post_id = p.id AND l2.user_id = ?) AS liked_by_me
@@ -21,7 +22,7 @@ export async function GET() {
 
   const comments = db
     .prepare(
-      `SELECT c.*, u.name AS author_name, u.color AS author_color
+      `SELECT c.*, u.name AS author_name, u.color AS author_color, u.avatar AS author_avatar
        FROM wall_comments c JOIN users u ON u.id = c.user_id
        ORDER BY c.created_at ASC`
     )

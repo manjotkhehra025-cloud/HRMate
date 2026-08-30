@@ -14,7 +14,7 @@ export async function GET() {
   const users = db
     .prepare(
       `SELECT u.id, u.email, u.name, u.role, u.department, u.designation, u.color, u.active,
-        u.weekly_off, u.staff_type,
+        u.weekly_off, u.staff_type, u.avatar,
         (SELECT punch_in_at FROM attendance a WHERE a.user_id = u.id AND a.date = ?) AS today_in,
         (SELECT punch_out_at FROM attendance a WHERE a.user_id = u.id AND a.date = ?) AS today_out
        FROM users u WHERE u.active = 1 ORDER BY u.name`
