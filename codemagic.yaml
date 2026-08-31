@@ -1,11 +1,11 @@
 workflows:
   android-release:
-    name: HRMate Android Release Build (APK & AAB)
+    name: HRMate Native Android Release (APK & AAB)
     max_build_duration: 30
     instance_type: linux_x2
     environment:
       vars:
-        PACKAGE_NAME: "org.duckdns.gdfoods.twa"
+        PACKAGE_NAME: "com.gdfoods.hrmate"
       java: 17
     triggering:
       events:
@@ -31,16 +31,7 @@ workflows:
       - name: Build Android Release AAB & APK
         script: |
           cd android
-          echo "Generating Gradle Wrapper with Gradle 8.5..."
-          gradle wrapper --gradle-version 8.5 || true
-          chmod +x gradlew || true
-          if [ -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Building with Gradle Wrapper..."
-            ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
-          else
-            echo "Building directly with System Gradle..."
-            gradle bundleRelease assembleRelease --no-daemon --stacktrace
-          fi
+          gradle bundleRelease assembleRelease --no-daemon --stacktrace || (gradle wrapper --gradle-version 8.5 && chmod +x gradlew && ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace)
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
       - android/app/build/outputs/apk/release/*.apk

@@ -1,33 +1,33 @@
-import { NextResponse } from "next/server";
-import db from "@/lib/db";
-
-export const dynamic = "force-dynamic";
+import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // Read SHA256 fingerprints from settings or use default
-  const row = db.prepare("SELECT value FROM settings WHERE key = 'assetlinks_sha256'").get() as { value?: string } | undefined;
-  const fingerprints = row?.value
-    ? row.value.split(",").map((s) => s.trim()).filter(Boolean)
-    : [
-        // Default placeholder or Play Store signing fingerprint
-        "14:6D:E9:01:07:46:3E:CE:21:2F:4E:86:4B:0F:8B:0A:0E:9B:43:77:4A:E8:4A:37:F9:96:A8:B4:4D:2E:8D:67"
-      ];
-
-  const assetlinks = [
+  const assetLinks = [
     {
       relation: ["delegate_permission/common.handle_all_urls"],
       target: {
         namespace: "android_app",
         package_name: "com.gdfoods.hrmate",
-        sha256_cert_fingerprints: fingerprints,
-      },
+        sha256_cert_fingerprints: [
+          "6F:60:81:B7:30:2E:37:6A:3F:A8:D7:A2:21:C4:C4:79:8E:E9:F5:26:B3:3E:F5:AC:B4:47:C6:DA:FA:7A:07:DF"
+        ]
+      }
     },
+    {
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: {
+        namespace: "android_app",
+        package_name: "org.duckdns.gdfoods.twa",
+        sha256_cert_fingerprints: [
+          "6F:60:81:B7:30:2E:37:6A:3F:A8:D7:A2:21:C4:C4:79:8E:E9:F5:26:B3:3E:F5:AC:B4:47:C6:DA:FA:7A:07:DF"
+        ]
+      }
+    }
   ];
 
-  return NextResponse.json(assetlinks, {
+  return NextResponse.json(assetLinks, {
     headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=3600",
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=86400',
     },
   });
 }
