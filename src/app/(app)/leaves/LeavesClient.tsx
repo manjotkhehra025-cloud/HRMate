@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { CalendarDays, Send, Plus, X } from "lucide-react";
-import { Spinner, StatusBadge, EmptyState } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { Spinner, EmptyState } from "@/components/ui";
+import { classNames, formatDate } from "@/lib/utils";
 
 interface LeaveType {
   id: string;
@@ -26,6 +26,20 @@ interface LeaveRequest {
   reason: string;
   status: string;
   created_at: number;
+}
+
+function statusPill(status: string) {
+  if (status === "approved") return "bg-[#E1F8EF] text-[#06613E]";
+  if (status === "pending") return "bg-[#FFF1E8] text-[#C2410C]";
+  if (status === "rejected") return "bg-rose-50 text-rose-700";
+  return "bg-[#F4F7FB] text-[#617083]";
+}
+
+function statusLabel(status: string) {
+  if (status === "approved") return "Approved";
+  if (status === "pending") return "Pending";
+  if (status === "rejected") return "Rejected";
+  return status;
 }
 
 export default function LeavesClient({
@@ -93,19 +107,73 @@ export default function LeavesClient({
       }
       setSuccess(`Leave request submitted (${data.days} day${data.days > 1 ? "s" : ""}) ✓`);
       setReason("");
-      setShowForm(false);
       load();
     } finally {
       setSubmitting(false);
     }
   }
 
+  if (!canView) return null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334] lg:text-[30px]">Leaves</h1>
+          <p className="mt-1 text-[14px] text-[#8A97A8]">Balances, apply, and track requests.</p>
+        </div>
+        {canApply && (
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white lg:hidden"
+          >
+            <Plus className="h-4 w-4" /> Apply leave
+          </button>
+        )}
+        {canApply && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(true);
+              document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="hidden h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white lg:flex"
+          >
+            <Plus className="h-4 w-4" /> Apply leave
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {visibleBalance.map((b) => {
+          const total = Math.max(1, b.days_per_year);
+          const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
+          const hint =
+            b.reset_period === "month"
+              ? `${b.balance} left this month`
+              : b.id === "lt_comp"
+                ? `${b.balance} left · earned on weekly off`
+                : `${b.balance} left / ${b.used} used`;
+          return (
+            <div key={b.id} className="card p-4">
+              <p className="truncate text-[13px] font-semibold text-[#172334]">{b.name}</p>
+              <p className="mt-1 text-[13px] text-[#8A97A8]">{hint}</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF4]">
+                <div className="h-full rounded-full" style={{ width: `${leftPct}%`, background: b.color || "#1E6FE0" }} />
+              </div>
+              {b.reset_period === "month" && (
+                <p className="mt-2 text-[11px] text-[#8A97A8]">Unused lapses at month-end</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       {openMissed.length > 0 && canApply && (
-        <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-[14px] bg-[#F5A623] px-4 py-3 text-sm font-medium text-[#172334]">
           <p className="font-semibold">Apply leave in 2 days</p>
-          <ul className="mt-1 space-y-1 text-[13px]">
+          <ul className="mt-1 space-y-1 text-[13px] font-normal">
             {openMissed.map((m) => (
               <li key={m.date}>
                 No punch on {formatDate(m.date)}. Apply by {formatDate(m.deadline)} or you will be marked absent.
@@ -115,7 +183,7 @@ export default function LeavesClient({
           </ul>
           <button
             type="button"
-            className="mt-2 text-xs font-semibold text-amber-800 underline"
+            className="mt-2 text-xs font-bold underline"
             onClick={() => {
               setShowForm(true);
               setStartDate(openMissed[0].date);
@@ -127,76 +195,21 @@ export default function LeavesClient({
         </div>
       )}
 
-      <div className="flow-gradient overflow-hidden rounded-[18px] p-5 text-white shadow-glow">
-        <p className="text-sm text-white/80">Leave balance</p>
-        <p className="text-lg font-bold">Track your available leave</p>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {visibleBalance.slice(0, 4).map((b) => (
-            <div key={b.id} className="rounded-xl bg-white/95 p-3 text-ink">
-              <p className="text-[11px] text-muted">{b.name}</p>
-              <p className="text-xl font-bold">{b.balance}</p>
-              <p className="text-[11px] text-muted">days</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3">
-      {/* Left: balances */}
-      <div className="space-y-6 lg:col-span-1">
-        <div className="card p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-800">All types</h2>
-            {canApply && (
-              <button
-                onClick={() => setShowForm((s) => !s)}
-                className="btn-primary shrink-0 px-3 py-2 text-xs"
-              >
-                <Plus className="h-3.5 w-3.5" /> Apply
-              </button>
-            )}
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {visibleBalance.map((b) => {
-              const pct = b.days_per_year > 0 ? Math.round((b.balance / b.days_per_year) * 100) : 0;
-              return (
-                <div key={b.id} className="rounded-2xl border border-slate-100 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-1">
-                    <span className="min-w-0 text-sm font-medium text-slate-700">{b.name}</span>
-                    <span className="text-xs text-slate-400">
-                      {b.used}/{b.days_per_year} used
-                      {b.reset_period === "month" ? " this month" : ""}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-slate-900">{b.balance}</span>
-                    <span className="text-xs text-slate-400">
-                      days left
-                      {b.reset_period === "month"
-                        ? " · lapses month-end"
-                        : b.id === "lt_comp"
-                          ? " · earned on weekly off"
-                          : ""}
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pct}%`, backgroundColor: b.color }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {showForm && canApply && (
-          <form onSubmit={submit} className="card space-y-4 p-6 animate-fade-in">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {canApply && (
+          <form
+            id="leave-apply"
+            onSubmit={submit}
+            className={classNames("card space-y-4 p-5 lg:col-span-2", !showForm && "hidden lg:block")}
+          >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">Apply for leave</h3>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-[15px] font-semibold text-[#172334]">Apply for leave</h2>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-[#8A97A8] hover:text-[#172334] lg:hidden"
+                aria-label="Close"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -250,66 +263,61 @@ export default function LeavesClient({
               />
             </div>
 
-            {error && (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>
-            )}
-            {success && (
-              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p>
-            )}
+            {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
+            {success && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p>}
 
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
-              {submitting ? <Spinner className="h-4 w-4" /> : <><Send className="h-4 w-4" /> Submit request</>}
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {submitting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Submit
             </button>
           </form>
         )}
-      </div>
 
-      {/* Right: requests */}
-      <div className="card p-6 lg:col-span-2">
-        <h2 className="text-sm font-semibold text-slate-800">My leave requests</h2>
-
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Spinner className="h-6 w-6 text-brand-500" />
-          </div>
-        ) : requests.length === 0 ? (
-          <div className="mt-4">
-            <EmptyState
-              icon={<CalendarDays className="h-8 w-8" />}
-              title="No leave requests yet"
-              subtitle="When you apply for leave, your requests will show up here."
-            />
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {requests.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-start gap-4 rounded-2xl border border-slate-100 p-4"
-              >
-                <div
-                  className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl text-white"
-                  style={{ backgroundColor: r.leave_type_color }}
-                >
-                  <span className="text-sm font-bold leading-none">{r.days}</span>
-                  <span className="text-[9px] uppercase">days</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-800">{r.leave_type_name}</p>
-                    <StatusBadge status={r.status} />
+        <div className={classNames("card p-5", canApply ? "lg:col-span-3" : "lg:col-span-5")}>
+          <h2 className="text-[15px] font-semibold text-[#172334]">My requests</h2>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Spinner className="h-6 w-6 text-brand-500" />
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="mt-4">
+              <EmptyState
+                icon={<CalendarDays className="h-8 w-8" />}
+                title="No leave requests yet"
+                subtitle="When you apply for leave, your requests will show up here."
+              />
+            </div>
+          ) : (
+            <ul className="mt-3 divide-y divide-[#F0F4F8]">
+              {requests.map((r) => (
+                <li key={r.id} className="flex items-start gap-3 py-3">
+                  <div
+                    className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-[12px] text-white"
+                    style={{ backgroundColor: r.leave_type_color || "#1E6FE0" }}
+                  >
+                    <span className="text-sm font-bold leading-none">{r.days}</span>
+                    <span className="text-[9px] uppercase">days</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {formatDate(r.start_date)} → {formatDate(r.end_date)}
-                  </p>
-                  <p className="mt-1 break-words text-sm text-slate-600">{r.reason}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="truncate text-[13px] font-semibold text-[#172334]">
+                        {r.leave_type_name}{" "}
+                        <span className="font-medium text-[#8A97A8]">
+                          {formatDate(r.start_date)}
+                          {r.start_date !== r.end_date ? ` – ${formatDate(r.end_date)}` : ""}
+                        </span>
+                      </p>
+                      <span className={classNames("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", statusPill(r.status))}>
+                        {statusLabel(r.status)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 break-words text-[13px] text-[#617083]">{r.reason}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
