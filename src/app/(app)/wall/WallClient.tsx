@@ -105,33 +105,31 @@ export default function WallClient({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div>
+    <div className="space-y-5">
+      <div className="hidden lg:block">
         <h1 className="text-[26px] font-bold tracking-tight text-[#172334] lg:text-[30px]">Social Wall</h1>
         <p className="mt-1 text-[14px] text-[#8A97A8]">Announcements, shout-outs and team updates.</p>
       </div>
 
       {canPost && (
-        <form onSubmit={submitPost} className="card p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <Avatar name={me.name} color={me.color} size={40} src={avatarSrc(userId, me.avatar)} />
+        <form onSubmit={submitPost} className="card overflow-hidden p-0">
+          <div className="flex items-start gap-3 p-4 sm:p-5">
+            <Avatar name={me.name} color={me.color} size={44} src={avatarSrc(userId, me.avatar)} />
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Share an update…"
-              className="min-h-[88px] w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] px-4 py-3 text-[14px] text-[#172334] outline-none focus:border-[#1E6FE0]"
+              className="min-h-[96px] w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] px-4 py-3 text-[15px] text-[#172334] outline-none focus:border-[#1E6FE0]"
               rows={3}
             />
           </div>
-          <div className="mt-3 flex justify-end">
-            <button
-              type="submit"
-              disabled={posting || !content.trim()}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white disabled:opacity-50 sm:w-auto sm:min-w-[120px]"
-            >
-              {posting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Post
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={posting || !content.trim()}
+            className="flex h-12 w-full items-center justify-center gap-2 bg-[#1E6FE0] text-[15px] font-semibold text-white disabled:opacity-50"
+          >
+            {posting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Post
+          </button>
         </form>
       )}
 
@@ -146,7 +144,8 @@ export default function WallClient({
           subtitle="Be the first to share something with your team."
         />
       ) : (
-        posts.map((p) => {
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {posts.map((p) => {
           const postComments = comments.filter((c) => c.post_id === p.id);
           const isOpen = openComments === p.id;
           return (
@@ -249,7 +248,8 @@ export default function WallClient({
               </div>
             </article>
           );
-        })
+        })}
+        </div>
       )}
     </div>
   );
