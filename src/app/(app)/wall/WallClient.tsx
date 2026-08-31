@@ -144,17 +144,17 @@ export default function WallClient({
           subtitle="Be the first to share something with your team."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="columns-2 gap-3 sm:gap-4">
         {posts.map((p) => {
           const postComments = comments.filter((c) => c.post_id === p.id);
           const isOpen = openComments === p.id;
           return (
-            <article key={p.id} className="card p-5">
-              <div className="flex items-start gap-3">
+            <article key={p.id} className="card mb-3 break-inside-avoid p-3 sm:mb-4 sm:p-5">
+              <div className="flex items-start gap-2 sm:gap-3">
                 <Avatar
                   name={p.author_name}
                   color={p.author_color}
-                  size={42}
+                  size={36}
                   src={avatarSrc(p.user_id, p.author_avatar)}
                 />
                 <div className="min-w-0 flex-1">
