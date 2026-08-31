@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.duckdns.gdfoods.twa'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "org.duckdns.gdfoods.twa"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        manifestPlaceholders = [
+            hostName: "gdfoods.duckdns.org",
+            defaultUrl: "https://gdfoods.duckdns.org",
+            launcherName: "HRMate",
+            assetStatements: '[{"relation": ["delegate_permission/common.handle_all_urls"], "target": {"namespace": "android_app", "package_name": "org.duckdns.gdfoods.twa", "sha256_cert_fingerprints": ["6F:60:81:B7:30:2E:37:6A:3F:A8:D7:A2:21:C4:C4:79:8E:E9:F5:26:B3:3E:F5:AC:B4:47:C6:DA:FA:7A:07:DF"]}}]'
+        ]
+    }
+
+    signingConfigs {
+        release {
+            def ksPath = System.getenv("CM_KEYSTORE_PATH") ?: "hrmate-release.keystore"
+            def ksFile = file(ksPath)
+            if (!ksFile.exists()) {
+                ksFile = file("../../hrmate-release.keystore")
+            }
+            if (!ksFile.exists()) {
+                ksFile = file("hrmate-release.keystore")
+            }
+            storeFile ksFile
+            storePassword System.getenv("CM_KEYSTORE_PASSWORD") ?: "hrmatepassword123"
+            keyAlias System.getenv("CM_KEY_ALIAS") ?: "hrmate"
+            keyPassword System.getenv("CM_KEY_PASSWORD") ?: "hrmatepassword123"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

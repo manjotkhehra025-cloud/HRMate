@@ -1,37 +1,51 @@
 workflows:
   android-release:
-    name: Build Android APK & AAB (Google Play Release)
+    name: HRMate Android Release Build (APK & AAB)
     max_build_duration: 30
     instance_type: linux_x2
     environment:
-      android_signing:
-        - hrmate_keystore
-      node: 20
+      vars:
+        PACKAGE_NAME: "org.duckdns.gdfoods.twa"
       java: 17
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
     scripts:
-      - name: Install Dependencies
+      - name: Check Java & Environment
         script: |
-          npm install -g @bubblewrap/cli
-      - name: Build Android Package
+          java -version
+      - name: Decode Custom Keystore if provided
         script: |
-          npx @bubblewrap/cli init --manifest=https://gdfoods.duckdns.org/manifest.json --directory=android-build
-          cd android-build
-          if [ -n "$CM_KEYSTORE_PATH" ]; then
-            npx @bubblewrap/cli build --signingKeyPath="$CM_KEYSTORE_PATH" --signingKeyAlias="$CM_KEY_ALIAS"
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo "Decoding CM_KEYSTORE environment variable..."
+            echo "$CM_KEYSTORE" | base64 --decode > android/app/hrmate-release.keystore
           else
-            npx @bubblewrap/cli build --skipSigning
+            echo "Using repository release keystore (android/app/hrmate-release.keystore)"
+          fi
+      - name: Build Android Release AAB & APK
+        script: |
+          cd android
+          if command -v gradle >/dev/null 2>&1; then
+            gradle wrapper
+            chmod +x gradlew
+            ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+          else
+            ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
           fi
     artifacts:
-      - "android-build/*.apk"
-      - "android-build/*.aab"
-      - "android-build/app/build/outputs/**/*.apk"
-      - "android-build/app/build/outputs/**/*.aab"
-      - "*.apk"
-      - "*.aab"
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
     publishing:
       email:
         recipients:
           - manjotkhehra025@gmail.com
         notify:
-          success: true
           failure: true
+          success: true
