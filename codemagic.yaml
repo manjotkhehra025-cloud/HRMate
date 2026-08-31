@@ -1,0 +1,37 @@
+workflows:
+  android-release:
+    name: Build Android APK & AAB (Google Play Release)
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      android_signing:
+        - hrmate_keystore
+      node: 20
+      java: 17
+    scripts:
+      - name: Install Dependencies
+        script: |
+          npm install -g @bubblewrap/cli
+      - name: Build Android Package
+        script: |
+          npx @bubblewrap/cli init --manifest=https://gdfoods.duckdns.org/manifest.json --directory=android-build
+          cd android-build
+          if [ -n "$CM_KEYSTORE_PATH" ]; then
+            npx @bubblewrap/cli build --signingKeyPath="$CM_KEYSTORE_PATH" --signingKeyAlias="$CM_KEY_ALIAS"
+          else
+            npx @bubblewrap/cli build --skipSigning
+          fi
+    artifacts:
+      - "android-build/*.apk"
+      - "android-build/*.aab"
+      - "android-build/app/build/outputs/**/*.apk"
+      - "android-build/app/build/outputs/**/*.aab"
+      - "*.apk"
+      - "*.aab"
+    publishing:
+      email:
+        recipients:
+          - manjotkhehra025@gmail.com
+        notify:
+          success: true
+          failure: true
