@@ -199,7 +199,7 @@ export default function ProfileClient({
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2">
+        <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2 lg:row-start-1">
           <div className="flex items-center gap-3">
             <Avatar name={user.name} color={user.color} size={72} src={photo} className="ring-2 ring-white/40" />
             <div className="min-w-0 flex-1">
@@ -214,35 +214,7 @@ export default function ProfileClient({
           </div>
         </div>
 
-        <form onSubmit={savePassword} className="card space-y-3 p-5">
-          <h2 className="text-[15px] font-semibold text-[#172334]">{t("changePassword")}</h2>
-          <div>
-            <label className="label">{t("currentPassword")}</label>
-            <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">{t("newPassword")}</label>
-            <input type="password" className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} minLength={8} required />
-          </div>
-          <div>
-            <label className="label">{t("confirmPassword")}</label>
-            <input
-              type="password"
-              className="input"
-              value={confirmPw}
-              onChange={(e) => setConfirmPw(e.target.value)}
-              minLength={8}
-              required
-            />
-          </div>
-          <button type="submit" disabled={savingPw} className="btn-primary">
-            {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-          </button>
-        </form>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <form onSubmit={saveProfile} className="card space-y-4 p-5 lg:col-span-2">
+        <form onSubmit={saveProfile} className="card space-y-4 p-5 lg:col-span-2 lg:row-start-2">
           <h2 className="text-[15px] font-semibold text-[#172334]">Profile details</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -287,12 +259,38 @@ export default function ProfileClient({
               )}
             </div>
           </div>
-          <button type="submit" disabled={saving} className="btn-primary w-full sm:w-auto">
+          <button type="submit" disabled={saving} className="btn-primary w-full sm:ml-auto sm:w-auto">
             {saving ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
           </button>
         </form>
 
-        <div className="card space-y-4 p-5">
+        <form onSubmit={savePassword} className="card space-y-3 p-5 lg:col-start-3 lg:row-start-1">
+          <h2 className="text-[15px] font-semibold text-[#172334]">{t("changePassword")}</h2>
+          <div>
+            <label className="label">{t("currentPassword")}</label>
+            <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
+          </div>
+          <div>
+            <label className="label">{t("newPassword")}</label>
+            <input type="password" className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} minLength={8} required />
+          </div>
+          <div>
+            <label className="label">{t("confirmPassword")}</label>
+            <input
+              type="password"
+              className="input"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <button type="submit" disabled={savingPw} className="btn-primary">
+            {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
+          </button>
+        </form>
+
+        <div className="card space-y-4 p-5 lg:col-start-3 lg:row-start-2">
           <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[#172334]">
             <Fingerprint className="h-4 w-4 text-[#1E6FE0]" /> {t("passkeys")}
           </h2>
