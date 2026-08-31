@@ -5,6 +5,8 @@ import { getVapidPublicKey } from "@/lib/push";
 import SettingsClient from "./SettingsClient";
 
 export const metadata = { title: "Settings — HRMate" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function SettingsPage() {
   const user = getSessionUser()!;
@@ -12,28 +14,22 @@ export default function SettingsPage() {
   const factory = getFactoryConfig();
 
   return (
-    <div className="space-y-6">
-      <div className="hidden lg:block">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-sub">Display, notifications, leave, shifts and attendance area.</p>
-      </div>
-      <SettingsClient
-        user={{
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          department: user.department,
-          designation: user.designation,
-          phone: user.phone || "",
-          color: user.color,
-          avatar: user.avatar || "",
-        }}
-        canSettings={perms.isSuperAdmin || perms.has("admin.settings")}
-        canProfileFull={perms.isSuperAdmin || perms.has("profile.full")}
-        vapidPublicKey={getVapidPublicKey()}
-        factoryName={factory.name}
-      />
-    </div>
+    <SettingsClient
+      user={{
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        designation: user.designation,
+        phone: user.phone || "",
+        color: user.color,
+        avatar: user.avatar || "",
+      }}
+      canSettings={perms.isSuperAdmin || perms.has("admin.settings")}
+      canProfileFull={perms.isSuperAdmin || perms.has("profile.full")}
+      vapidPublicKey={getVapidPublicKey()}
+      factoryName={factory.name}
+    />
   );
 }

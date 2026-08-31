@@ -592,6 +592,11 @@ export default function SettingsClient({
   const roleLabel = user.role.replace("_", " ");
 
   return (
+    <div className="space-y-5">
+      <div className="hidden lg:block">
+        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Settings</h1>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">Display, notifications, leave, shifts and attendance area.</p>
+      </div>
     <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2">
       {(toast || err) && (
         <p
@@ -1115,6 +1120,7 @@ export default function SettingsClient({
         </>
       )}
 
+    </div>
     </div>
   );
 }

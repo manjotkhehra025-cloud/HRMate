@@ -75,7 +75,7 @@ export default function PhotoPicker({
 
   const btn =
     tone === "onGradient"
-      ? "flex min-h-[40px] min-w-0 cursor-pointer flex-wrap items-center justify-center gap-1 rounded-btn bg-white/15 px-1.5 py-2 text-center text-[11px] font-semibold leading-snug text-white ring-1 ring-white/25"
+      ? "flex min-h-[44px] min-w-0 cursor-pointer flex-wrap items-center justify-center gap-1.5 rounded-[12px] bg-white px-3 py-2 text-center text-[13px] font-semibold leading-snug text-[#172334]"
       : "flex min-h-[40px] min-w-0 cursor-pointer flex-wrap items-center justify-center gap-1 rounded-btn border border-line bg-white px-1.5 py-2 text-center text-[11px] font-semibold leading-snug text-ink";
 
   return (
