@@ -87,7 +87,7 @@ function Row({
       onClick={onClick}
       className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[#F8FAFD]"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center text-[#1E6FE0]">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -609,13 +609,12 @@ export default function SettingsClient({
         </p>
       )}
 
-      {/* Gradient profile card */}
-      <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow">
-        <div className="flex items-center gap-4">
+      <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2">
+        <div className="flex items-center gap-3">
           <Avatar
             name={user.name}
             color={user.color}
-            size={64}
+            size={72}
             src={avatarSrc(user.id, user.avatar)}
             className="ring-2 ring-white/40"
           />
@@ -626,16 +625,11 @@ export default function SettingsClient({
               {roleLabel} · {factory.name}
             </p>
           </div>
-        </div>
-        <div className="mt-4">
-          <PhotoPicker prefix="settings" tone="onGradient" disabled={uploadingPhoto} onPicked={onPhoto} />
+          <PhotoPicker prefix="settings" tone="onGradient" layout="stack" disabled={uploadingPhoto} onPicked={onPhoto} />
         </div>
       </div>
 
-      <section className="card">
-        <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
-          {t("account")}
-        </p>
+      <section className="card lg:col-span-2">
         <Row
           icon={<User className="h-5 w-5" />}
           title={t("myProfile")}
@@ -755,12 +749,7 @@ export default function SettingsClient({
             )}
           </div>
         )}
-      </section>
 
-      <section className="card">
-        <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
-          {t("display")}
-        </p>
         <Row
           icon={<Languages className="h-5 w-5" />}
           title={t("language")}
@@ -853,12 +842,6 @@ export default function SettingsClient({
             {geoMsg && <p className="break-words text-sm text-ink">{geoMsg}</p>}
           </div>
         )}
-      </section>
-
-      <section className="card">
-        <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
-          {t("notifications")}
-        </p>
         <Row
           icon={pushState === "on" ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
           title={t("notifications")}
