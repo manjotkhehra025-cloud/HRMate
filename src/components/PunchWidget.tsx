@@ -11,6 +11,8 @@ import {
   CalendarDays,
   Clock,
   Building2,
+  Sparkles,
+  Radio,
 } from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
@@ -132,106 +134,81 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     return null;
   }
 
-  const heading = punchedOut
-    ? "Shift Completed"
-    : punchedIn
-      ? "Currently Punched In"
-      : "Ready to Punch In";
-  const sub = punchedOut
-    ? "Great work today! See you tomorrow."
-    : punchedIn
-      ? "You are logged in. Remember to punch out before leaving."
-      : "Punch in when you reach the workplace.";
-
   return (
-    <div className="card relative overflow-hidden p-6 sm:p-7 border border-[#E3EAF1] shadow-[0_4px_20px_rgba(18,58,99,0.06)]">
-      {/* Decorative background circle */}
-      <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-[#1E6FE0]/5 to-[#16B878]/5 blur-2xl" />
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B192C] via-[#1E3E62] to-[#0A2647] p-5 text-white shadow-xl sm:p-7">
+      {/* Background glow effects */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-52 w-52 rounded-full bg-[#10B981]/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-12 -bottom-12 h-52 w-52 rounded-full bg-[#1E6FE0]/20 blur-3xl" />
 
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1 space-y-3">
-          {/* Top meta tags */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E7F1FF] px-3 py-1 text-[12px] font-semibold text-[#1E6FE0]">
-              <CalendarDays className="h-3.5 w-3.5" />
-              {new Date().toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                timeZone: IST,
-              })}
-            </span>
-
-            {currentTime && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F7FB] px-3 py-1 text-[12px] font-bold tabular-nums text-[#172334] border border-[#E3EAF1]">
-                <Clock className="h-3.5 w-3.5 text-[#617083]" />
-                {currentTime}
-              </span>
-            )}
-
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#F4F7FB] px-3 py-1 text-[12px] font-medium text-[#617083] border border-[#E3EAF1]">
-              <Building2 className="h-3.5 w-3.5 text-[#1E6FE0]" />
-              {factory.name} ({factory.radius}m)
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-[22px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-              {heading}
-            </h2>
-            <p className="mt-1 text-[13.5px] text-[#617083]">{sub}</p>
-          </div>
-
-          {/* Punch Timestamps */}
-          <div className="grid max-w-md grid-cols-2 gap-3 pt-2">
-            <div className="rounded-[14px] bg-[#F8FAFD] border border-[#E3EAF1] p-3.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A97A8]">
-                Punch In Time
-              </span>
-              <p className="mt-1 text-[20px] font-bold tabular-nums text-[#172334]">
-                {record?.punch_in_at ? formatTime(record.punch_in_at) : "—"}
-              </p>
-              {record?.punch_in_at && (
-                <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[#16B878]">
-                  <CheckCircle2 className="h-3 w-3" /> Recorded
-                </span>
-              )}
-            </div>
-
-            <div className="rounded-[14px] bg-[#F8FAFD] border border-[#E3EAF1] p-3.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A97A8]">
-                Punch Out Time
-              </span>
-              <p className="mt-1 text-[20px] font-bold tabular-nums text-[#172334]">
-                {record?.punch_out_at ? formatTime(record.punch_out_at) : "—"}
-              </p>
-              {record?.punch_out_at ? (
-                <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E6FE0]">
-                  <CheckCircle2 className="h-3 w-3" /> Recorded
-                </span>
-              ) : (
-                <span className="mt-1 inline-block text-[11px] text-[#8A97A8]">Pending</span>
-              )}
-            </div>
-          </div>
-
-          {gpsOk && (
-            <div className="pt-1">
-              <a
-                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#1E6FE0] hover:underline"
-                href={`https://www.google.com/maps?q=${record.punch_in_lat},${record.punch_in_lng}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MapPin className="h-3.5 w-3.5" /> View Punch Geolocation on Map
-              </a>
-            </div>
-          )}
+      {/* Header Info Pills */}
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11.5px] font-semibold text-white/90 backdrop-blur-md">
+            <Radio className="h-3.5 w-3.5 text-[#10B981] animate-pulse" />
+            Live Geofence
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11.5px] font-medium text-white/90 backdrop-blur-md">
+            <Building2 className="h-3.5 w-3.5 text-[#38BDF8]" />
+            {factory.name} ({factory.radius}m)
+          </span>
         </div>
 
-        {/* Big Action Punch Button */}
-        <div className="flex shrink-0 flex-col items-center justify-center pt-2 lg:pt-0">
+        {currentTime && (
+          <div className="flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1 text-[12px] font-bold tabular-nums text-emerald-300 ring-1 ring-white/10">
+            <Clock className="h-3.5 w-3.5 text-emerald-400" />
+            {currentTime}
+          </div>
+        )}
+      </div>
+
+      {/* Main Punch Interaction Section */}
+      <div className="relative z-10 mt-6 flex flex-col items-center justify-between gap-6 sm:flex-row">
+        {/* Status Text & Timestamps */}
+        <div className="w-full min-w-0 flex-1 text-center sm:text-left">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+            <Sparkles className="h-3 w-3" />
+            {punchedOut ? "Shift Finished" : punchedIn ? "Active Shift" : "Ready to Start"}
+          </div>
+
+          <h2 className="mt-1.5 text-[22px] font-black tracking-tight text-white sm:text-[26px]">
+            {punchedOut
+              ? "Great Work Today! 🎉"
+              : punchedIn
+              ? "You are Punched In"
+              : "Mark Today's Attendance"}
+          </h2>
+          <p className="mt-1 text-[13px] text-slate-300">
+            {punchedOut
+              ? "Attendance recorded for today. Have a restful evening."
+              : punchedIn
+              ? "Live hours tracking active. Remember to punch out at end of shift."
+              : "Tap the button below to register your GPS check-in."}
+          </p>
+
+          {/* Time metrics mini cards */}
+          <div className="mt-4 grid grid-cols-2 gap-2.5 max-w-sm mx-auto sm:mx-0">
+            <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                In Time
+              </span>
+              <p className="mt-0.5 text-[18px] font-black tabular-nums text-emerald-300">
+                {record?.punch_in_at ? formatTime(record.punch_in_at) : "—"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                Out Time
+              </span>
+              <p className="mt-0.5 text-[18px] font-black tabular-nums text-sky-300">
+                {record?.punch_out_at ? formatTime(record.punch_out_at) : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Punch Button (Big Floating Disc) */}
+        <div className="flex shrink-0 flex-col items-center justify-center">
           <button
             type="button"
             onClick={punch}
@@ -239,57 +216,72 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             aria-label={punchedIn ? "Punch out" : punchedOut ? "Completed" : "Punch in"}
             className={
               punchedOut
-                ? "flex h-28 w-28 flex-col items-center justify-center rounded-full bg-[#E1F8EF] text-[#06613E] ring-4 ring-[#16B878]/20 cursor-default"
+                ? "flex h-28 w-28 flex-col items-center justify-center rounded-full bg-emerald-900/60 text-emerald-300 ring-4 ring-emerald-500/30 cursor-default"
                 : punchedIn
-                  ? "flex h-28 w-28 flex-col items-center justify-center rounded-full bg-[#FDECEC] text-[#C52B35] ring-4 ring-[#C52B35]/20 shadow-[0_8px_24px_rgba(197,43,53,0.22)] transition-all hover:scale-105 active:scale-95"
-                  : "flow-gradient flex h-28 w-28 flex-col items-center justify-center rounded-full text-white shadow-glow ring-4 ring-[#1E6FE0]/25 transition-all hover:scale-105 active:scale-95"
+                ? "group relative flex h-28 w-28 flex-col items-center justify-center rounded-full bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 text-white shadow-[0_8px_30px_rgba(244,63,94,0.4)] ring-4 ring-white/20 transition-all hover:scale-105 active:scale-95"
+                : "group relative flex h-28 w-28 flex-col items-center justify-center rounded-full bg-gradient-to-tr from-[#059669] via-[#10B981] to-[#34D399] text-white shadow-[0_8px_30px_rgba(16,185,129,0.5)] ring-4 ring-white/25 transition-all hover:scale-105 active:scale-95"
             }
           >
+            {/* Pulsing ring animation */}
+            {!punchedOut && !punching && (
+              <span className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-25" />
+            )}
+
             {punching ? (
               <Spinner className="h-9 w-9 text-white" />
             ) : punchedOut ? (
               <CheckCircle2 className="h-10 w-10" />
             ) : (
-              <Fingerprint className="h-10 w-10" />
+              <Fingerprint className="h-10 w-10 transition-transform group-hover:scale-110" />
             )}
-            <span className="mt-1.5 text-[12px] font-bold tracking-wide">
+            <span className="mt-1.5 text-[11px] font-extrabold tracking-wide uppercase">
               {punching ? "Locating…" : punchedIn ? "Punch Out" : punchedOut ? "Completed" : "Punch In"}
             </span>
           </button>
 
-          {(geoState === "error" || geoState === "outside") && (
-            <button
-              type="button"
-              onClick={punch}
-              className="mt-3 text-[13px] font-semibold text-[#1E6FE0] hover:underline"
+          {gpsOk && (
+            <a
+              className="mt-3 inline-flex items-center gap-1 text-[11.5px] font-semibold text-emerald-300 hover:underline"
+              href={`https://www.google.com/maps?q=${record.punch_in_lat},${record.punch_in_lng}`}
+              target="_blank"
+              rel="noreferrer"
             >
-              Retry GPS Punch
-            </button>
+              <MapPin className="h-3.5 w-3.5" /> View Punch Map
+            </a>
           )}
         </div>
       </div>
 
-      {/* Status alerts */}
+      {/* Status Alerts */}
       {geoState === "locating" && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#E7F1FF] px-4 py-2.5 text-[13px] font-medium text-[#1E6FE0]">
-          <Navigation className="h-4 w-4 animate-pulse text-[#1E6FE0]" />
+        <div className="relative z-10 mt-5 flex items-center gap-2 rounded-2xl bg-sky-500/20 border border-sky-400/30 p-3 text-[12.5px] font-semibold text-sky-200">
+          <Navigation className="h-4 w-4 animate-spin text-sky-300" />
           {slowGps
-            ? "Acquiring GPS fix. If taking too long, move near a window or check location permissions."
-            : "Acquiring precision factory GPS coordinates…"}
+            ? "Acquiring precision GPS fix... Make sure device location is set to High Accuracy."
+            : "Verifying factory coordinates with GPS..."}
         </div>
       )}
 
       {(geoState === "outside" || geoState === "error") && (
-        <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-[#FFF4E0] px-4 py-3 text-[13px] font-medium text-[#995B00] border border-[#F5A623]/30">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#D98200]" />
-          <div>{error}</div>
+        <div className="relative z-10 mt-5 flex items-start justify-between gap-2.5 rounded-2xl bg-rose-500/20 border border-rose-400/30 p-3 text-[12.5px] font-semibold text-rose-200">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={punch}
+            className="shrink-0 rounded-lg bg-rose-500/40 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-500"
+          >
+            Retry
+          </button>
         </div>
       )}
 
       {message && (
-        <div className="mt-4 flex items-center gap-2.5 rounded-xl bg-[#E1F8EF] px-4 py-3 text-[13px] font-semibold text-[#06613E] border border-[#16B878]/30">
-          <CheckCircle2 className="h-4 w-4 text-[#16B878]" />
-          {message}
+        <div className="relative z-10 mt-5 flex items-center gap-2 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 p-3 text-[12.5px] font-semibold text-emerald-200">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <span>{message}</span>
         </div>
       )}
     </div>

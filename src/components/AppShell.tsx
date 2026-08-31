@@ -19,6 +19,7 @@ import {
   User,
   BarChart3,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
 import MobileNav from "./MobileNav";
@@ -105,11 +106,15 @@ export default function AppShell({
   }));
 
   async function loadNotifs() {
-    const res = await fetch("/api/notifications");
-    if (res.ok) {
-      const data = await res.json();
-      setNotifs(data.notifications);
-      setUnreadCount(data.unread);
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifs(data.notifications || []);
+        setUnreadCount(data.unread || 0);
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -161,13 +166,14 @@ export default function AppShell({
         onLogout={logout}
       />
 
-      {/* Modern Top Header */}
+      {/* Modern App Top Bar */}
       <header
         className={classNames(
-          "sticky top-0 z-20 flex h-[68px] min-w-0 shrink-0 items-center justify-between border-b border-[#E3EAF1] bg-white/95 px-4 backdrop-blur-md transition-[padding] duration-300 sm:px-6 lg:px-8",
+          "sticky top-0 z-30 flex h-[64px] min-w-0 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white/95 px-3.5 backdrop-blur-md transition-[padding] duration-300 sm:px-6 lg:px-8",
           desktopOpen ? "lg:pl-[304px]" : ""
         )}
       >
+        {/* Left: Mobile App Brand / Title */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -177,20 +183,31 @@ export default function AppShell({
                 setGridOpen(true);
               }
             }}
-            className="rounded-[12px] border border-[#E3EAF1] p-2 text-[#617083] transition hover:bg-[#F4F7FB] hover:text-[#172334]"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-[#0F172A] transition active:scale-95 hover:bg-[#F1F5F9]"
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="min-w-0">
-            <h2 className="truncate text-[18px] font-bold tracking-tight text-[#172334]">
-              {currentLabel}
-            </h2>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0F172A] via-[#1E3E62] to-[#1E6FE0] text-white shadow-sm">
+                <Sparkles className="h-4 w-4 text-[#10B981]" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-[16px] font-extrabold tracking-tight text-[#0F172A] leading-tight sm:text-[18px]">
+                  {currentLabel}
+                </h1>
+                <p className="hidden text-[11px] font-medium text-[#64748B] sm:block">
+                  GD Foods Moga
+                </p>
+              </div>
+            </Link>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3.5">
+        {/* Right: Notification & Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Notifications */}
           <div className="relative">
             <button
@@ -198,12 +215,12 @@ export default function AppShell({
                 setNotifOpen((o) => !o);
                 if (!notifOpen) loadNotifs();
               }}
-              className="relative flex h-10 w-10 items-center justify-center rounded-[12px] border border-[#E3EAF1] bg-white text-[#617083] transition hover:bg-[#F4F7FB] hover:text-[#172334]"
+              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] text-[#0F172A] transition active:scale-95 hover:bg-[#F1F5F9]"
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E11D48] px-1 text-[10.5px] font-bold text-white ring-2 ring-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#EF4444] px-1 text-[10px] font-extrabold text-white ring-2 ring-white animate-bounce">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -212,12 +229,12 @@ export default function AppShell({
             {notifOpen && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setNotifOpen(false)} />
-                <div className="fixed right-3 top-[68px] z-30 w-[min(24rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-[18px] border border-[#E3EAF1] bg-white shadow-pop sm:right-6">
-                  <div className="flex items-center justify-between border-b border-[#F0F4F8] bg-[#F8FAFD] px-4 py-3">
+                <div className="fixed right-3 top-[68px] z-30 w-[min(24rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-2xl sm:right-6">
+                  <div className="flex items-center justify-between border-b border-[#F1F5F9] bg-[#F8FAFC] px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <p className="text-[14px] font-bold text-[#172334]">{t("notifications")}</p>
+                      <p className="text-[14px] font-bold text-[#0F172A]">{t("notifications")}</p>
                       {unreadCount > 0 && (
-                        <span className="rounded-full bg-[#E7F1FF] px-2 py-0.5 text-[11px] font-bold text-[#1E6FE0]">
+                        <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 text-[11px] font-bold text-[#0284C7]">
                           {unreadCount} new
                         </span>
                       )}
@@ -231,10 +248,10 @@ export default function AppShell({
                       </button>
                     )}
                   </div>
-                  <div className="max-h-96 overflow-y-auto divide-y divide-[#F0F4F8]">
+                  <div className="max-h-96 overflow-y-auto divide-y divide-[#F1F5F9]">
                     {notifs.length === 0 ? (
-                      <div className="flex flex-col items-center gap-2 py-10 text-[#8A97A8]">
-                        <BellOff className="h-7 w-7 text-[#C5D0DC]" />
+                      <div className="flex flex-col items-center gap-2 py-10 text-[#94A3B8]">
+                        <BellOff className="h-7 w-7 text-[#CBD5E1]" />
                         <p className="text-[13px] font-medium">{t("noNotifications")}</p>
                       </div>
                     ) : (
@@ -244,21 +261,21 @@ export default function AppShell({
                           href={n.link || "/dashboard"}
                           onClick={() => setNotifOpen(false)}
                           className={classNames(
-                            "block px-4 py-3 transition hover:bg-[#F8FAFD]",
-                            !n.read && "bg-[#E7F1FF]/30"
+                            "block px-4 py-3 transition hover:bg-[#F8FAFC]",
+                            !n.read && "bg-[#E0F2FE]/40"
                           )}
                         >
                           <div className="flex items-start gap-2.5">
                             <span
                               className={classNames(
                                 "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                                n.read ? "bg-[#C5D0DC]" : "bg-[#1E6FE0] ring-4 ring-[#1E6FE0]/20"
+                                n.read ? "bg-[#CBD5E1]" : "bg-[#10B981] ring-4 ring-[#10B981]/20"
                               )}
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="text-[13.5px] font-semibold text-[#172334]">{n.title}</p>
-                              <p className="line-clamp-2 text-[12.5px] text-[#617083]">{n.body}</p>
-                              <p className="mt-1 text-[11px] text-[#8A97A8]">{timeAgo(n.created_at)}</p>
+                              <p className="text-[13.5px] font-semibold text-[#0F172A]">{n.title}</p>
+                              <p className="line-clamp-2 text-[12.5px] text-[#64748B]">{n.body}</p>
+                              <p className="mt-1 text-[11px] text-[#94A3B8]">{timeAgo(n.created_at)}</p>
                             </div>
                           </div>
                         </Link>
@@ -270,49 +287,52 @@ export default function AppShell({
             )}
           </div>
 
-          {/* User Menu */}
+          {/* User Profile Pill */}
           <div className="relative">
             <button
               onClick={() => setUserMenu((o) => !o)}
-              className="flex items-center gap-2.5 rounded-[14px] border border-[#E3EAF1] bg-white p-1.5 pr-3 transition hover:bg-[#F4F7FB] hover:border-[#CBD6E2]"
+              className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 pr-2 transition active:scale-95 hover:bg-[#F1F5F9]"
               title={t("myProfile")}
             >
-              <Avatar name={user.name} color={user.color} size={34} src={photo} />
+              <div className="relative">
+                <Avatar name={user.name} color={user.color} size={34} src={photo} />
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[#10B981] ring-2 ring-white" />
+              </div>
               <div className="hidden text-left sm:block">
-                <p className="text-[13px] font-bold leading-tight text-[#172334]">{user.name}</p>
-                <p className="text-[11px] font-medium text-[#8A97A8]">
+                <p className="text-[13px] font-bold leading-tight text-[#0F172A]">{user.name}</p>
+                <p className="text-[11px] font-medium text-[#64748B]">
                   {user.designation || user.role.replace("_", " ")}
                 </p>
               </div>
-              <ChevronDown className="hidden h-4 w-4 text-[#8A97A8] sm:block" />
+              <ChevronDown className="hidden h-4 w-4 text-[#94A3B8] sm:block" />
             </button>
 
             {userMenu && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setUserMenu(false)} />
-                <div className="fixed right-3 top-[68px] z-30 w-56 overflow-hidden rounded-[18px] border border-[#E3EAF1] bg-white py-1.5 shadow-pop sm:right-6 animate-fade-in">
-                  <div className="border-b border-[#F0F4F8] px-3.5 py-2.5">
-                    <p className="truncate text-[13px] font-bold text-[#172334]">{user.name}</p>
-                    <p className="truncate text-[11px] text-[#8A97A8]">{user.email}</p>
+                <div className="fixed right-3 top-[68px] z-30 w-56 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white py-1.5 shadow-2xl sm:right-6 animate-fade-in">
+                  <div className="border-b border-[#F1F5F9] px-3.5 py-2.5">
+                    <p className="truncate text-[13px] font-bold text-[#0F172A]">{user.name}</p>
+                    <p className="truncate text-[11px] text-[#64748B]">{user.email}</p>
                   </div>
                   <Link
                     href="/profile"
                     onClick={() => setUserMenu(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] font-medium text-[#172334] hover:bg-[#F8FAFD]"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] font-medium text-[#0F172A] hover:bg-[#F8FAFC]"
                   >
                     <User className="h-4 w-4 text-[#1E6FE0]" /> {t("myProfile")}
                   </Link>
                   <Link
                     href="/settings"
                     onClick={() => setUserMenu(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] font-medium text-[#172334] hover:bg-[#F8FAFD]"
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] font-medium text-[#0F172A] hover:bg-[#F8FAFC]"
                   >
                     <Settings className="h-4 w-4 text-[#1E6FE0]" /> {t("settings")}
                   </Link>
-                  <div className="border-t border-[#F0F4F8] my-1" />
+                  <div className="border-t border-[#F1F5F9] my-1" />
                   <button
                     onClick={logout}
-                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13.5px] font-semibold text-[#C52B35] hover:bg-rose-50"
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13.5px] font-semibold text-[#EF4444] hover:bg-rose-50"
                   >
                     <LogOut className="h-4 w-4" /> {t("logout")}
                   </button>
@@ -323,11 +343,11 @@ export default function AppShell({
         </div>
       </header>
 
-      {/* Main Body */}
+      {/* Main App Scrollable Body */}
       <div
         id="app-body"
         className={classNames(
-          "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-[padding] duration-300",
+          "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-[padding] duration-300 pb-24 lg:pb-10",
           desktopOpen ? "lg:pl-72" : ""
         )}
         style={{
@@ -338,11 +358,12 @@ export default function AppShell({
           overscrollBehaviorX: "none",
         }}
       >
-        <main className="mx-auto min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <main className="mx-auto min-w-0 max-w-6xl px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8">
           {children}
         </main>
       </div>
 
+      {/* Modern Fixed Bottom Mobile App Bar */}
       <MobileNav nav={labeledNav} onMore={() => setGridOpen(true)} />
     </div>
   );
