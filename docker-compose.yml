@@ -1,28 +1,28 @@
+version: "3.8"
+
 services:
   hrmate:
-    build: .
-    container_name: hrmate
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      TZ: Asia/Kolkata
+      PORT: 3000
+      HRMATE_DOMAIN: dfoods.duckdns.org
+      HRMATE_RP_ID: dfoods.duckdns.org
+      HRMATE_ORIGIN: https://dfoods.duckdns.org
       HRMATE_DB: /app/data/hrmate.db
-      HRMATE_DOMAIN: gdfoods.duckdns.org
-      HRMATE_RP_ID: gdfoods.duckdns.org
-      HRMATE_ORIGIN: https://gdfoods.duckdns.org
-      # Generate your own VAPID keys for push notifications (see DEPLOY.md) and set:
-      # NEXT_PUBLIC_VAPID_PUBLIC_KEY: ""
-      # VAPID_PRIVATE_KEY: ""
+      # Optional custom VAPID keys for Web Push. Leave empty to use demo keys.
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
     volumes:
       - hrmate_data:/app/data
-    expose:
-      - "3000"
     networks:
-      - web
+      - hrmate_net
 
   caddy:
-    image: caddy:2-alpine
-    container_name: hrmate-caddy
+    image: caddy:2.8-alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -32,15 +32,16 @@ services:
       - ./verify:/srv/verify:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - hrmate_net
     depends_on:
       - hrmate
-    networks:
-      - web
-
-networks:
-  web:
 
 volumes:
   hrmate_data:
   caddy_data:
   caddy_config:
+
+networks:
+  hrmate_net:
+    driver: bridge

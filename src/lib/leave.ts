@@ -28,12 +28,54 @@ export function usedInPeriod(
 }
 
 export function balancesForUser(userId: string) {
+  const user = db
+    .prepare("SELECT id, staff_type, created_at FROM users WHERE id = ?")
+    .get(userId) as { id: string; staff_type?: string; created_at?: number } | undefined;
+
+  const isYellowCard = user?.staff_type === "yellow_card";
   const types = db.prepare("SELECT * FROM leave_types ORDER BY sort").all() as any[];
   const extras = db
     .prepare("SELECT leave_type_id, extra_days FROM leave_balances WHERE user_id = ?")
     .all(userId) as { leave_type_id: string; extra_days: number }[];
   const extraMap: Record<string, number> = {};
   for (const e of extras) extraMap[e.leave_type_id] = e.extra_days;
+
+  if (isYellowCard) {
+    // Yellow card employees only get Earned Leave (EL): 15 days/year, 1.25 per month accrual
+    const elType = types.find(
+      (t) => t.id === "lt_earned" || t.name.toLowerCase().includes("earned")
+    ) || {
+      id: "lt_earned",
+      name: "Earned Leave (EL)",
+      color: "#16B878",
+      days_per_year: 15,
+      reset_period: "year",
+    };
+
+    const currentMonthNum = parseInt(istParts().month, 10) || 1; // 1 to 12
+    const totalYearDays = 15;
+    const accruedDays = Math.round(currentMonthNum * 1.25 * 100) / 100;
+    const extra = extraMap[elType.id] || 0;
+    const used = usedInPeriod(userId, elType.id, "year");
+    const totalAccrued = accruedDays + extra;
+
+    return [
+      {
+        ...elType,
+        id: elType.id || "lt_earned",
+        name: "Earned Leave (EL)",
+        color: elType.color || "#16B878",
+        reset_period: "year",
+        extra,
+        used,
+        days_per_year: totalYearDays,
+        accrued_days: totalAccrued,
+        accrual_rate: "1.25/month",
+        period_label: "1.25/month (15/year)",
+        balance: Math.max(0, Math.round((totalAccrued - used) * 100) / 100),
+      },
+    ];
+  }
 
   return types.map((t) => {
     const reset = t.reset_period === "month" ? "month" : "year";

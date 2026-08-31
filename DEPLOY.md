@@ -1,10 +1,10 @@
-# 🚀 Deploying HRMate to your VPS (gdfoods.duckdns.org)
+# 🚀 Deploying HRMate to your VPS (dfoods.duckdns.org)
 
 > **Fastest way:** a one-shot script does everything (removes old Nginx, installs
 > Docker, clones the repo and launches HRMate behind Caddy with HTTPS).
 >
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/manjotkhehra025-cloud/HRMate/arena/01a04984-hrmate/deploy.sh | sudo bash
+> curl -fsSL https://raw.githubusercontent.com/manjotkhehra025-cloud/HRMate/arena/01a056d6-hrmate/deploy.sh | sudo bash
 > ```
 >
 > Read on for the manual, step-by-step instructions.
@@ -13,7 +13,7 @@ This guide takes HRMate from this repo to a live, HTTPS-enabled site on your
 Google Cloud VPS, served behind **Caddy** (automatic Let's Encrypt certificates)
 in **Docker**.
 
-Your DuckDNS domain `gdfoods.duckdns.org` already points to your VPS IP — so
+Your DuckDNS domain `dfoods.duckdns.org` already points to your VPS IP — so
 Caddy will automatically obtain a valid SSL certificate on first start.
 
 ---

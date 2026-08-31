@@ -12,7 +12,7 @@
 # ============================================================
 set -euo pipefail
 
-DOMAIN="gdfoods.duckdns.org"
+DOMAIN="dfoods.duckdns.org"
 BRANCH="arena/01a04984-hrmate"
 REPO="https://github.com/manjotkhehra025-cloud/HRMate.git"
 INSTALL_DIR="/opt/hrmate"

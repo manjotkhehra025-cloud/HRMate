@@ -12,9 +12,9 @@ import db from "./db";
 import { randomId } from "./crypto";
 import { getSessionUser, createSession } from "./auth";
 
-export const RP_ID = process.env.HRMATE_RP_ID || "localhost";
+export const RP_ID = process.env.HRMATE_RP_ID || "dfoods.duckdns.org";
 export const RP_NAME = "HRMate";
-export const EXPECTED_ORIGIN = process.env.HRMATE_ORIGIN || "http://localhost:3000";
+export const EXPECTED_ORIGIN = process.env.HRMATE_ORIGIN || "https://dfoods.duckdns.org";
 
 export function getUserPasskeys(userId: string) {
   return db

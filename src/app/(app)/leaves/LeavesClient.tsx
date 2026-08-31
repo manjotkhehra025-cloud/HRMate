@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { CalendarDays, Send, Plus, X, AlertTriangle, CheckCircle2, Clock, Filter } from "lucide-react";
+import { CalendarDays, Send, Plus, X, AlertTriangle, CheckCircle2, Clock, Filter, ShieldAlert } from "lucide-react";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
 
@@ -14,6 +14,8 @@ interface LeaveType {
   balance: number;
   reset_period?: string;
   period_label?: string;
+  accrued_days?: number;
+  accrual_rate?: string;
 }
 interface LeaveRequest {
   id: string;
@@ -72,8 +74,7 @@ export default function LeavesClient({
   const [success, setSuccess] = useState("");
   const [openMissed, setOpenMissed] = useState<{ date: string; deadline: string }[]>([]);
 
-  const visibleBalance =
-    staffType === "yellow_card" ? balance.filter((b) => b.id !== "lt_comp") : balance;
+  const isYellowCard = staffType === "yellow_card";
 
   async function load() {
     setLoading(true);
@@ -85,6 +86,9 @@ export default function LeavesClient({
       setOpenMissed(data.openMissed || []);
       setApprovers(data.approvers || []);
       setApproverFallback(!!data.approver_fallback);
+      if (data.balance?.length === 1) {
+        setLeaveType(data.balance[0].id);
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +155,9 @@ export default function LeavesClient({
         <div>
           <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Leaves Management</h1>
           <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Check available leave quotas, submit new applications, and track past requests.
+            {isYellowCard
+              ? "Yellow card staff quota: 15 days Earned Leave (EL) per year, accrued at 1.25 days per month."
+              : "Check available leave quotas, submit new applications, and track past requests."}
           </p>
         </div>
         {canApply && (
@@ -168,34 +174,48 @@ export default function LeavesClient({
         )}
       </div>
 
+      {/* Yellow Card Notice Banner if Yellow Card */}
+      {isYellowCard && (
+        <div className="rounded-[14px] bg-[#E7F1FF] border border-[#1E6FE0]/30 p-4 flex items-center gap-3">
+          <ShieldAlert className="h-5 w-5 text-[#1E6FE0] shrink-0" />
+          <p className="text-[13.5px] font-medium text-[#0A2037]">
+            <span className="font-bold">Yellow Card Policy:</span> You are eligible for{" "}
+            <span className="font-bold text-[#1E6FE0]">15 days of Earned Leave (EL) per year</span> (accrued at{" "}
+            <span className="font-bold text-[#16B878]">1.25 days per month</span>).
+          </p>
+        </div>
+      )}
+
       {/* Leave Balance Cards */}
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        {visibleBalance.map((b) => {
+      <div className={classNames("grid gap-3.5", isYellowCard ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4")}>
+        {balance.map((b) => {
           const total = Math.max(1, b.days_per_year);
           const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
           return (
             <div key={b.id} className="card p-5 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <p className="truncate text-[13.5px] font-bold text-[#172334]">{b.name}</p>
+                <p className="truncate text-[14px] font-bold text-[#172334]">{b.name}</p>
                 <span
                   className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: b.color || "#1E6FE0" }}
+                  style={{ backgroundColor: b.color || "#16B878" }}
                 />
               </div>
               <p className="mt-2 text-[32px] font-bold tabular-nums leading-none text-[#172334]">
-                {b.balance}
+                {b.balance} <span className="text-[13px] font-normal text-[#8A97A8]">days left</span>
               </p>
-              <p className="mt-1.5 text-[12px] font-semibold text-[#8A97A8]">
-                {b.reset_period === "month"
-                  ? `${b.balance} remaining this month`
-                  : b.id === "lt_comp"
-                    ? `${b.balance} earned on weekly off`
-                    : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
+              <p className="mt-2 text-[12px] font-semibold text-[#8A97A8]">
+                {isYellowCard
+                  ? `Accrued: ${b.accrued_days ?? b.balance} days (1.25/mo) · Used: ${b.used} of 15`
+                  : b.reset_period === "month"
+                    ? `${b.balance} remaining this month`
+                    : b.id === "lt_comp"
+                      ? `${b.balance} earned on weekly off`
+                      : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
               </p>
               <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-[#E8EEF4]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${leftPct}%`, background: b.color || "#1E6FE0" }}
+                  style={{ width: `${leftPct}%`, background: b.color || "#16B878" }}
                 />
               </div>
               {b.reset_period === "month" && (
@@ -252,7 +272,9 @@ export default function LeavesClient({
             <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
               <div>
                 <h2 className="text-[16px] font-bold text-[#172334]">Apply For Leave</h2>
-                <p className="text-[12px] text-[#8A97A8]">Submit request for manager review</p>
+                <p className="text-[12px] text-[#8A97A8]">
+                  {isYellowCard ? "Yellow Card (Earned Leave)" : "Submit request for manager review"}
+                </p>
               </div>
               <button
                 type="button"
@@ -273,7 +295,7 @@ export default function LeavesClient({
                 required
               >
                 <option value="">Select Leave Type…</option>
-                {visibleBalance.map((b) => (
+                {balance.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name} ({b.balance} days available)
                   </option>
@@ -406,7 +428,7 @@ export default function LeavesClient({
                 <li key={r.id} className="flex items-start gap-4 py-4 transition hover:bg-[#F8FAFD] rounded-[12px] px-2">
                   <div
                     className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[14px] text-white shadow-sm"
-                    style={{ backgroundColor: r.leave_type_color || "#1E6FE0" }}
+                    style={{ backgroundColor: r.leave_type_color || "#16B878" }}
                   >
                     <span className="text-[16px] font-bold leading-none">{r.days}</span>
                     <span className="text-[9px] uppercase font-semibold">days</span>
