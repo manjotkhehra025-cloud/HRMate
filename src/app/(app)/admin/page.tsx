@@ -14,7 +14,7 @@ export default function AdminPage() {
       <div className="hidden lg:block">
         <h1 className="page-title">Admin Panel</h1>
         <p className="page-sub">
-          Manage users and permissions. Attendance area lives in Settings.
+          Users are Super Admin, Admin and Manager. Official and yellow-card staff live under Employees.
         </p>
       </div>
       <AdminClient

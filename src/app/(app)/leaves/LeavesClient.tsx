@@ -65,6 +65,7 @@ export default function LeavesClient({
   const [reason, setReason] = useState("");
   const [approverId, setApproverId] = useState("");
   const [approvers, setApprovers] = useState<ApproverOpt[]>([]);
+  const [approverFallback, setApproverFallback] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -81,6 +82,7 @@ export default function LeavesClient({
       setRequests(data.requests);
       setOpenMissed(data.openMissed || []);
       setApprovers(data.approvers || []);
+      setApproverFallback(!!data.approver_fallback);
     } finally {
       setLoading(false);
     }
@@ -265,22 +267,28 @@ export default function LeavesClient({
             </div>
             <div>
               <label className="label">Send for approval to</label>
-              <select
-                value={approverId}
-                onChange={(e) => setApproverId(e.target.value)}
-                className="input"
-                required
-              >
-                <option value="">Select who should approve…</option>
-                {approvers.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
+              {approverFallback ? (
+                <p className="rounded-xl bg-[#F4F7FB] px-3 py-2 text-[13px] text-[#617083]">
+                  Senior Manager Production / AGM IDs are not created yet. Super Admin will approve.
+                </p>
+              ) : (
+                <select
+                  value={approverId}
+                  onChange={(e) => setApproverId(e.target.value)}
+                  className="input"
+                  required
+                >
+                  <option value="">Select who should approve…</option>
+                  {approvers.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               <p className="mt-1 text-[11px] text-[#8A97A8]">
-                Lab, Quality, Production → Senior Manager Production. Electric (official + yellow card) and
-                Maintenance → AGM. If one is on leave, pick the other. Super Admin for managers.
+                Production, Lab, Store, Quality → Senior Manager Production. Electric, Maintenance, Instrument
+                → Assistant General Manager. If one is on leave, pick the other.
               </p>
             </div>
             <div>

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import db from "@/lib/db";
 import { requireUser, unauthorized, json } from "@/lib/api";
-import { listApproverOptions } from "@/lib/workflow";
+import { approverFallback, listApproverOptions } from "@/lib/workflow";
 
 export async function GET(req: NextRequest) {
   const user = requireUser();
@@ -40,5 +40,6 @@ export async function GET(req: NextRequest) {
     weekly_off: user.weekly_off ?? 6,
     leaveCover,
     approvers: listApproverOptions(user.id),
+    approver_fallback: approverFallback(user.id),
   });
 }

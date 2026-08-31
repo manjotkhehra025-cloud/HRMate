@@ -1,5 +1,10 @@
 import db from "./db";
-import { departmentScope, isLeadershipRole, type ManagerScope } from "./staff";
+import {
+  departmentScope,
+  isApproverDesignation,
+  isLeadershipRole,
+  type ManagerScope,
+} from "./staff";
 import { notify, notifyMany } from "./notify";
 import { randomId } from "./crypto";
 
@@ -30,54 +35,76 @@ export function approverLabel(u: {
   designation?: string;
   manager_scope?: string;
 }) {
+  if (isApproverDesignation(u.designation)) {
+    const d = (u.designation || "").trim();
+    if (/agm/i.test(d) && !/assistant/i.test(d)) return `${u.name} — Assistant General Manager`;
+    return `${u.name} — ${d}`;
+  }
   if (u.role === "super_admin") return `${u.name} — Super Admin`;
-  if (u.manager_scope === "operations") return `${u.name} — Senior Manager Production`;
-  if (u.manager_scope === "engineering") return `${u.name} — Assistant General Manager`;
   return `${u.name} — ${u.designation || "Manager"}`;
 }
 
-/** Managers + Super Admins the requester can pick. Never auto-selects. */
-export function listApproverOptions(excludeUserId: string): ApproverOption[] {
-  const rows = db
+type ApproverRow = {
+  id: string;
+  name: string;
+  role: string;
+  designation: string;
+  manager_scope: string;
+  active?: number;
+};
+
+function loadActivePeople(excludeUserId?: string): ApproverRow[] {
+  return db
     .prepare(
-      `SELECT id, name, role, designation, manager_scope
-       FROM users
-       WHERE active = 1 AND role IN ('manager', 'super_admin') AND id != ?
-       ORDER BY CASE role WHEN 'manager' THEN 0 ELSE 1 END, name`
+      `SELECT id, name, role, designation, manager_scope, active
+       FROM users WHERE active = 1 ${excludeUserId ? "AND id != ?" : ""}
+       ORDER BY name`
     )
-    .all(excludeUserId) as {
-    id: string;
-    name: string;
-    role: string;
-    designation: string;
-    manager_scope: string;
-  }[];
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    role: r.role,
-    label: approverLabel(r),
-  }));
+    .all(...(excludeUserId ? [excludeUserId] : [])) as ApproverRow[];
+}
+
+function designatedApprovers(excludeUserId: string): ApproverRow[] {
+  return loadActivePeople(excludeUserId).filter((r) => isApproverDesignation(r.designation));
+}
+
+/** Only Senior Manager Production + AGM. If those IDs do not exist yet, Super Admin. */
+export function listApproverOptions(excludeUserId: string): ApproverOption[] {
+  const designated = designatedApprovers(excludeUserId);
+  if (designated.length) {
+    return designated.map((r) => ({
+      id: r.id,
+      name: r.name,
+      role: r.role,
+      label: approverLabel(r),
+    }));
+  }
+  return loadActivePeople(excludeUserId)
+    .filter((r) => r.role === "super_admin")
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      role: r.role,
+      label: approverLabel(r),
+    }));
+}
+
+export function approverFallback(excludeUserId: string): boolean {
+  return designatedApprovers(excludeUserId).length === 0;
 }
 
 export function getApprover(id: string, requesterId: string) {
-  if (!id || id === requesterId) return null;
+  const designated = designatedApprovers(requesterId);
+  if (designated.length) {
+    return designated.find((d) => d.id === id) || null;
+  }
+  const fallbackId = id || superAdminIds().find((x) => x !== requesterId) || superAdminIds()[0];
+  if (!fallbackId || fallbackId === requesterId) return null;
   const u = db
     .prepare(
       `SELECT id, name, role, designation, manager_scope, active FROM users WHERE id = ?`
     )
-    .get(id) as
-    | {
-        id: string;
-        name: string;
-        role: string;
-        designation: string;
-        manager_scope: string;
-        active: number;
-      }
-    | undefined;
-  if (!u || !u.active) return null;
-  if (u.role !== "manager" && u.role !== "super_admin") return null;
+    .get(fallbackId) as ApproverRow | undefined;
+  if (!u || !u.active || u.role !== "super_admin") return null;
   return u;
 }
 

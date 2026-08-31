@@ -4,7 +4,15 @@ import { randomId, hashPassword } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { roleDefaults, ROLES } from "@/lib/permissions";
-import { DEPARTMENTS, STAFF_CAPS, departmentScope, parseWeeklyOff, type StaffType } from "@/lib/staff";
+import {
+  DEPARTMENTS,
+  STAFF_CAPS,
+  departmentScope,
+  isLeadershipRole,
+  parseWeeklyOff,
+  scopeFromDesignation,
+  type StaffType,
+} from "@/lib/staff";
 
 function counts() {
   const rows = db
@@ -50,12 +58,12 @@ export async function POST(req: NextRequest) {
   const { name, email, password, role, department, designation, color } = body;
   const staff_type: StaffType = body.staff_type === "yellow_card" ? "yellow_card" : "official";
   const weekly_off = parseWeeklyOff(body.weekly_off, role === "super_admin" ? 0 : 6);
-  const manager_scope =
-    role === "manager"
-      ? body.manager_scope === "engineering" || body.manager_scope === "operations"
+  const manager_scope = isLeadershipRole(role)
+    ? scopeFromDesignation(designation || "") ||
+      (body.manager_scope === "engineering" || body.manager_scope === "operations"
         ? body.manager_scope
-        : departmentScope(department || "")
-      : "";
+        : departmentScope(department || ""))
+    : "";
 
   if (!name || !email || !password) return error("Name, email and password are required");
   if (!ROLES.includes(role)) return error("Invalid role");
@@ -74,7 +82,7 @@ export async function POST(req: NextRequest) {
     return error(`Official staff limit is ${STAFF_CAPS.official}.`);
   }
 
-  const id = randomId("u_");
+  const id = isLeadershipRole(role) ? randomId("u_") : randomId("e_");
   db.prepare(
     `INSERT INTO users (id, email, password_hash, name, role, department, designation, color, staff_type, manager_scope, weekly_off, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -134,12 +142,15 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  const nextScope =
-    (role ?? target.role) === "manager"
-      ? manager_scope === "engineering" || manager_scope === "operations"
+  const nextRole = role ?? target.role;
+  const nextDesig = designation ?? target.designation;
+  const nextDept = department ?? target.department;
+  const nextScope = isLeadershipRole(nextRole)
+    ? scopeFromDesignation(nextDesig || "") ||
+      (manager_scope === "engineering" || manager_scope === "operations"
         ? manager_scope
-        : departmentScope(department ?? target.department)
-      : "";
+        : departmentScope(nextDept || ""))
+    : "";
 
   const nextOff =
     weekly_off === undefined || weekly_off === null

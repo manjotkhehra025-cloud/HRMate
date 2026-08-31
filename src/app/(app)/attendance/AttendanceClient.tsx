@@ -76,6 +76,7 @@ export default function AttendanceClient({
   const [mReason, setMReason] = useState("");
   const [mApprover, setMApprover] = useState("");
   const [approvers, setApprovers] = useState<{ id: string; name: string; label: string }[]>([]);
+  const [approverFallback, setApproverFallback] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
 
@@ -89,6 +90,7 @@ export default function AttendanceClient({
       if (typeof data.weekly_off === "number") setWeeklyOff(data.weekly_off);
       setLeaveCover(data.leaveCover || []);
       setApprovers(data.approvers || []);
+      setApproverFallback(!!data.approver_fallback);
     } finally {
       setLoading(false);
     }
@@ -279,9 +281,33 @@ export default function AttendanceClient({
         </div>
         {showManual && canManual && (
           <form onSubmit={submitManual} className="space-y-3 border-t border-line px-5 py-4">
-            <p className="text-xs text-muted">
-              Request for {selected}. Production / Lab go to Senior Manager. Electric (official and yellow card) go to AGM.
-            </p>
+            <p className="text-xs text-muted">Request for {selected}.</p>
+            {approverFallback ? (
+              <p className="rounded-xl bg-[#F4F7FB] px-3 py-2 text-[13px] text-[#617083]">
+                Senior Manager Production / AGM IDs are not created yet. Super Admin will approve.
+              </p>
+            ) : (
+              <div>
+                <label className="label">Send for approval to</label>
+                <select
+                  value={mApprover}
+                  onChange={(e) => setMApprover(e.target.value)}
+                  className="input"
+                  required
+                >
+                  <option value="">Select who should approve…</option>
+                  {approvers.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-muted">
+                  Production, Lab, Store, Quality → Senior Manager Production. Electric, Maintenance, Instrument
+                  → Assistant General Manager. If one is on leave, pick the other.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
               {(["in", "out", "both"] as const).map((k) => (
                 <button

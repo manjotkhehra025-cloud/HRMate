@@ -5,7 +5,7 @@ import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { businessDays } from "@/lib/utils";
 import { balancesForUser, usedInPeriod } from "@/lib/leave";
-import { getApprover, listApproverOptions, notifyLeaveApprovers } from "@/lib/workflow";
+import { approverFallback, getApprover, listApproverOptions, notifyLeaveApprovers } from "@/lib/workflow";
 import { parseWeeklyOff } from "@/lib/staff";
 import { listGraceDays } from "@/lib/jobs";
 
@@ -29,7 +29,14 @@ export async function GET() {
   const openMissed = listGraceDays(user.id, parseWeeklyOff(user.weekly_off, 6));
   const approvers = listApproverOptions(user.id);
 
-  return json({ requests, types, balance, openMissed, approvers });
+  return json({
+    requests,
+    types,
+    balance,
+    openMissed,
+    approvers,
+    approver_fallback: approverFallback(user.id),
+  });
 }
 
 export async function POST(req: NextRequest) {

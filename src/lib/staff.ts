@@ -17,6 +17,11 @@ export const WEEKDAYS = [
   { value: 6, label: "Saturday" },
 ] as const;
 
+export const APPROVER_DESIGNATIONS = [
+  "Senior Manager Production",
+  "Assistant General Manager",
+] as const;
+
 export const MANAGER_SCOPES: { value: "operations" | "engineering"; label: string; hint: string }[] = [
   {
     value: "operations",
@@ -25,8 +30,8 @@ export const MANAGER_SCOPES: { value: "operations" | "engineering"; label: strin
   },
   {
     value: "engineering",
-    label: "AGM Engineering",
-    hint: "Electric, Electrician, Maintenance, Instrument",
+    label: "Assistant General Manager",
+    hint: "Electric, Maintenance, Instrument",
   },
 ];
 
@@ -34,12 +39,28 @@ export const DEPARTMENTS: { name: string; scope: "engineering" | "operations" }[
   { name: "Production", scope: "operations" },
   { name: "Store", scope: "operations" },
   { name: "Lab", scope: "operations" },
+  { name: "Quality", scope: "operations" },
   { name: "Production & Quality", scope: "operations" },
   { name: "Maintenance", scope: "engineering" },
   { name: "Instrument", scope: "engineering" },
-  { name: "Electrician", scope: "engineering" },
   { name: "Electric", scope: "engineering" },
 ];
+
+export function isApproverDesignation(designation: string | null | undefined): boolean {
+  const d = (designation || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (!d) return false;
+  if (d === "senior manager production") return true;
+  if (d === "assistant general manager") return true;
+  if (d === "agm" || d === "agm engineering") return true;
+  return false;
+}
+
+export function scopeFromDesignation(designation: string): ManagerScope {
+  const d = (designation || "").trim().toLowerCase();
+  if (d.includes("assistant general") || d === "agm" || d.includes("agm")) return "engineering";
+  if (d.includes("senior manager")) return "operations";
+  return "";
+}
 
 export function departmentScope(department: string): "engineering" | "operations" | "" {
   const d = (department || "").trim().toLowerCase();

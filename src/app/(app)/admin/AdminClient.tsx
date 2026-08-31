@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, UserCog } from "lucide-react";
+import { Users, UserCog, Shield } from "lucide-react";
 import UsersTab from "./UsersTab";
 import PermissionsTab from "./PermissionsTab";
 
@@ -16,7 +16,8 @@ export default function AdminClient({
   canSettings?: boolean;
 }) {
   const tabs = [
-    { key: "users", label: "Users", icon: <Users className="h-4 w-4" />, show: canUsers },
+    { key: "users", label: "Users", icon: <Shield className="h-4 w-4" />, show: canUsers },
+    { key: "employees", label: "Employees", icon: <Users className="h-4 w-4" />, show: canUsers },
     { key: "permissions", label: "Permissions", icon: <UserCog className="h-4 w-4" />, show: canPermissions },
   ].filter((t) => t.show);
 
@@ -39,7 +40,10 @@ export default function AdminClient({
       </div>
 
       <div className={tab === "users" ? "" : "hidden"}>
-        <UsersTab isSuperAdmin={isSuperAdmin} canPermissions={canPermissions} />
+        <UsersTab kind="control" isSuperAdmin={isSuperAdmin} canPermissions={canPermissions} />
+      </div>
+      <div className={tab === "employees" ? "" : "hidden"}>
+        <UsersTab kind="staff" isSuperAdmin={isSuperAdmin} canPermissions={canPermissions} />
       </div>
       <div className={tab === "permissions" ? "" : "hidden"}>
         <PermissionsTab />

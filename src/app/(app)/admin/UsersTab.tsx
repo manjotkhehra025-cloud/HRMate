@@ -6,7 +6,7 @@ import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/permission-constants";
-import { MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
+import { APPROVER_DESIGNATIONS, DEPARTMENTS, MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
 import PermissionPanel from "./PermissionPanel";
 
 interface User {
@@ -33,12 +33,15 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function UsersTab({
+  kind,
   isSuperAdmin,
   canPermissions,
 }: {
+  kind: "control" | "staff";
   isSuperAdmin: boolean;
   canPermissions: boolean;
 }) {
+  const isControl = kind === "control";
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -55,25 +58,16 @@ export default function UsersTab({
     name: "",
     email: "",
     password: "",
-    role: "employee",
+    role: isControl ? "manager" : "employee",
     department: "Production",
-    designation: "",
+    designation: isControl ? "Senior Manager Production" : "",
     staff_type: "official",
     manager_scope: "operations",
     weekly_off: 6,
   });
   const [caps, setCaps] = useState({ total: 70, yellow_card: 50, official: 20 });
   const [counts, setCounts] = useState({ total: 0, yellow: 0, official: 0 });
-  const DEPARTMENTS = [
-    "Production",
-    "Store",
-    "Lab",
-    "Production & Quality",
-    "Maintenance",
-    "Instrument",
-    "Electrician",
-    "Electric",
-  ];
+  const deptNames = DEPARTMENTS.map((d) => d.name);
 
   async function load() {
     const res = await fetch("/api/admin/users");
@@ -93,14 +87,16 @@ export default function UsersTab({
       name: "",
       email: "",
       password: "",
-      role: "employee",
+      role: isControl ? "manager" : "employee",
       department: "Production",
-      designation: "",
+      designation: isControl ? "Senior Manager Production" : "",
       staff_type: "official",
       manager_scope: "operations",
       weekly_off: 6,
     });
   }
+
+  const visibleUsers = users.filter((u) => (isControl ? u.role !== "employee" : u.role === "employee"));
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
@@ -111,7 +107,7 @@ export default function UsersTab({
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, role: isControl ? form.role : "employee" }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -182,10 +178,11 @@ export default function UsersTab({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="min-w-0 text-sm font-semibold text-slate-800">
-          Team members <span className="text-slate-400">({users.length})</span>
+          {isControl ? "Users (control)" : "Employees"}{" "}
+          <span className="text-slate-400">({visibleUsers.length})</span>
         </h2>
         <button onClick={() => { setShowForm(true); setPendingPhoto(null); resetForm(); }} className="btn-primary shrink-0 px-3 py-2 text-xs">
-          <Plus className="h-3.5 w-3.5" /> Add user
+          <Plus className="h-3.5 w-3.5" /> {isControl ? "Add user" : "Add employee"}
         </button>
       </div>
 
@@ -195,7 +192,7 @@ export default function UsersTab({
       {showForm && (
         <form onSubmit={createUser} className="card space-y-4 p-5 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800">New user</h3>
+            <h3 className="text-sm font-semibold text-slate-800">{isControl ? "New user" : "New employee"}</h3>
             <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
               <X className="h-4 w-4" />
             </button>
@@ -222,24 +219,44 @@ export default function UsersTab({
             </div>
             <div>
               <label className="label">Role</label>
-              <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                <option value="employee">Employee</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-                {isSuperAdmin && <option value="super_admin">Super Admin</option>}
-              </select>
+              {isControl ? (
+                <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+                </select>
+              ) : (
+                <select className="input" value="employee" disabled>
+                  <option value="employee">Employee</option>
+                </select>
+              )}
             </div>
             <div>
               <label className="label">Department</label>
-              <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
-                {DEPARTMENTS.map((d) => (
+              <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required>
+                {deptNames.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
             </div>
             <div>
               <label className="label">Designation</label>
-              <input className="input" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="Operator" />
+              {isControl ? (
+                <select
+                  className="input"
+                  value={form.designation}
+                  onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                  required
+                >
+                  {APPROVER_DESIGNATIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+              ) : (
+                <input className="input" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="Operator" />
+              )}
             </div>
             <div>
               <label className="label">Staff type</label>
@@ -262,9 +279,9 @@ export default function UsersTab({
                 ))}
               </select>
             </div>
-            {form.role === "manager" && (
+            {isControl && form.role === "manager" && (
               <div>
-                <label className="label">Manages (by designation)</label>
+                <label className="label">Manages</label>
                 <select className="input" value={form.manager_scope} onChange={(e) => setForm({ ...form, manager_scope: e.target.value })}>
                   {MANAGER_SCOPES.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -276,7 +293,7 @@ export default function UsersTab({
             )}
           </div>
           <button type="submit" disabled={saving} className="btn-primary">
-            {saving ? <Spinner className="h-4 w-4" /> : "Create user"}
+            {saving ? <Spinner className="h-4 w-4" /> : isControl ? "Create user" : "Create employee"}
           </button>
         </form>
       )}
@@ -287,7 +304,7 @@ export default function UsersTab({
         </div>
       ) : (
         <div className="card divide-y divide-slate-50">
-          {users.map((u) => (
+          {visibleUsers.map((u) => (
             <div key={u.id} className="flex flex-wrap items-center gap-2 p-4 sm:gap-3">
               <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={40} src={avatarSrc(u.id, u.avatar)} />
               <div className="min-w-0 flex-1 basis-36">
@@ -300,7 +317,12 @@ export default function UsersTab({
                     <span className="badge bg-amber-50 text-[10px] text-amber-700">Yellow card</span>
                   )}
                 </div>
-                <p className="truncate text-xs text-slate-400">{u.email}</p>
+                <p className="truncate text-xs text-slate-400">
+                  {u.email}
+                  {u.department ? ` · ${u.department}` : ""}
+                  {u.designation ? ` · ${u.designation}` : ""}
+                  {u.staff_type === "yellow_card" ? " · Yellow card" : " · Official"}
+                </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
               <div className="hidden items-center gap-1.5 text-xs text-slate-400 sm:flex">
@@ -399,11 +421,21 @@ export default function UsersTab({
               </div>
               <div>
                 <label className="label">Role</label>
-                <select className="input" value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value })} disabled={editing.role === "super_admin" && !isSuperAdmin}>
-                  <option value="employee">Employee</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                  {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+                <select
+                  className="input"
+                  value={editing.role}
+                  onChange={(e) => setEditing({ ...editing, role: e.target.value })}
+                  disabled={editing.role === "super_admin" && !isSuperAdmin}
+                >
+                  {isControl ? (
+                    <>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                      {isSuperAdmin && <option value="super_admin">Super Admin</option>}
+                    </>
+                  ) : (
+                    <option value="employee">Employee</option>
+                  )}
                 </select>
               </div>
               <div>
@@ -412,11 +444,34 @@ export default function UsersTab({
               </div>
               <div>
                 <label className="label">Department</label>
-                <input className="input" value={editing.department} onChange={(e) => setEditing({ ...editing, department: e.target.value })} />
+                <select className="input" value={editing.department} onChange={(e) => setEditing({ ...editing, department: e.target.value })}>
+                  {editing.department && !deptNames.includes(editing.department) && (
+                    <option value={editing.department}>{editing.department}</option>
+                  )}
+                  {deptNames.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label">Designation</label>
-                <input className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })} />
+                {isControl ? (
+                  <select className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })}>
+                    {APPROVER_DESIGNATIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                    <option value="Admin">Admin</option>
+                    <option value="Super Admin">Super Admin</option>
+                    {editing.designation &&
+                      !(APPROVER_DESIGNATIONS as readonly string[]).includes(editing.designation) &&
+                      editing.designation !== "Admin" &&
+                      editing.designation !== "Super Admin" && (
+                        <option value={editing.designation}>{editing.designation}</option>
+                      )}
+                  </select>
+                ) : (
+                  <input className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })} />
+                )}
               </div>
               <div>
                 <label className="label">Weekly off</label>
