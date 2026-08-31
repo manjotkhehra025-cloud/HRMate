@@ -3,17 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
-import {
-  Camera,
-  Fingerprint,
-  Image as ImageIcon,
-  KeyRound,
-  Plus,
-  Save,
-  ShieldCheck,
-  Smartphone,
-  Trash2,
-} from "lucide-react";
+import { Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner } from "@/components/ui";
@@ -63,7 +53,6 @@ export default function ProfileClient({
   const [confirmPw, setConfirmPw] = useState("");
   const [savingPw, setSavingPw] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
 
   function flash(msg: string, isErr = false) {
     setToast(isErr ? "" : msg);
@@ -95,7 +84,6 @@ export default function ProfileClient({
   }, []);
 
   async function onPhoto(file: File) {
-    setPickerOpen(false);
     setUploading(true);
     try {
       const stamp = await postAvatar(file);
@@ -196,174 +184,144 @@ export default function ProfileClient({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="space-y-5">
+      <div className="hidden lg:block">
+        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">My profile</h1>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">Photo, name, phone, password and passkeys.</p>
+      </div>
+
       {(toast || err) && (
-        <p className={`lg:col-span-3 rounded-xl px-3 py-2 text-sm font-medium ${err ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>
+        <p
+          className={`rounded-xl px-3 py-2 text-sm font-medium ${err ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}
+        >
           {err || toast}
         </p>
       )}
 
-      <div className="flow-gradient rounded-[18px] p-6 text-white shadow-glow lg:col-span-1">
-        <div className="flex flex-col items-center text-center">
-          <div className="relative">
-            <Avatar name={user.name} color={user.color} size={96} src={photo} className="ring-2 ring-white/40" />
-            <button
-              type="button"
-              onClick={() => !uploading && setPickerOpen(true)}
-              disabled={uploading}
-              aria-label={t("addPhoto")}
-              className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-600 shadow"
-            >
-              {uploading ? <Spinner className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-            </button>
-          </div>
-          <div className="mt-4 w-full">
-            <PhotoPicker prefix="profile" tone="onGradient" disabled={uploading} onPicked={onPhoto} />
-          </div>
-          <p className="mt-4 text-lg font-bold">{user.name}</p>
-          <p className="text-sm text-white/80">{user.email}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
-            {user.role.replace("_", " ")}
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={saveProfile} className="card space-y-4 p-6 lg:col-span-2">
-        <h2 className="text-sm font-semibold text-ink">{t("myProfile")}</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label">{t("name")}</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">{t("phone")}</label>
-            <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
-          <div>
-            <label className="label">{t("email")}</label>
-            {canFull ? (
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            ) : (
-              <input className="input bg-[#F4F7FB]" value={user.email} disabled />
-            )}
-          </div>
-          <div>
-            <label className="label">{t("department")}</label>
-            {canFull ? (
-              <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
-                {department && !DEPARTMENTS.some((d) => d.name === department) && (
-                  <option value={department}>{department}</option>
-                )}
-                {DEPARTMENTS.map((d) => (
-                  <option key={d.name} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
-            )}
-          </div>
-          <div>
-            <label className="label">{t("designation")}</label>
-            {canFull ? (
-              <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
-            ) : (
-              <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
-            )}
-          </div>
-        </div>
-        <button type="submit" disabled={saving} className="btn-primary">
-          {saving ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-        </button>
-      </form>
-
-      <form onSubmit={savePassword} className="card space-y-4 p-6 lg:col-span-1">
-        <h2 className="text-sm font-semibold text-ink">{t("changePassword")}</h2>
-        <div>
-          <label className="label">{t("currentPassword")}</label>
-          <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
-        </div>
-        <div>
-          <label className="label">{t("newPassword")}</label>
-          <input type="password" className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} minLength={8} required />
-        </div>
-        <div>
-          <label className="label">{t("confirmPassword")}</label>
-          <input type="password" className="input" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} minLength={8} required />
-        </div>
-        <button type="submit" disabled={savingPw} className="btn-primary">
-          {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-        </button>
-      </form>
-
-      <div className="card space-y-4 p-6 lg:col-span-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
-            <Fingerprint className="h-4 w-4 shrink-0 text-brand-500" /> {t("passkeys")}
-          </h2>
-          <button onClick={registerPasskey} disabled={registering} className="btn-primary shrink-0 px-3 py-2 text-xs">
-            {registering ? <Spinner /> : <><Plus className="h-3.5 w-3.5" /> Add passkey</>}
-          </button>
-        </div>
-        {passkeys.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line py-10 text-center">
-            <KeyRound className="h-8 w-8 text-slate-300" />
-            <p className="text-sm text-muted">No passkeys yet.</p>
-          </div>
-        ) : (
-          passkeys.map((pk) => (
-            <div key={pk.id} className="flex items-center gap-3 rounded-2xl border border-line p-3">
-              <Smartphone className="h-5 w-5 text-brand-600" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{pk.device_name}</p>
-                <p className="text-xs text-muted">Added {timeAgo(pk.created_at)}</p>
-              </div>
-              <ShieldCheck className="h-4 w-4 text-emerald-500" />
-              <button onClick={() => removePasskey(pk.id)} className="rounded-lg p-2 text-slate-300 hover:text-rose-500">
-                <Trash2 className="h-4 w-4" />
-              </button>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2">
+          <div className="flex items-center gap-3">
+            <Avatar name={user.name} color={user.color} size={72} src={photo} className="ring-2 ring-white/40" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-lg font-bold">{user.name}</p>
+              <p className="truncate text-sm text-white/80">{user.email}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
+                {user.role.replace("_", " ")}
+                {user.designation ? ` · ${user.designation}` : ""}
+              </p>
             </div>
-          ))
-        )}
+            <PhotoPicker prefix="profile" tone="onGradient" layout="stack" disabled={uploading} onPicked={onPhoto} />
+          </div>
+        </div>
+
+        <form onSubmit={savePassword} className="card space-y-3 p-5">
+          <h2 className="text-[15px] font-semibold text-[#172334]">{t("changePassword")}</h2>
+          <div>
+            <label className="label">{t("currentPassword")}</label>
+            <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
+          </div>
+          <div>
+            <label className="label">{t("newPassword")}</label>
+            <input type="password" className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} minLength={8} required />
+          </div>
+          <div>
+            <label className="label">{t("confirmPassword")}</label>
+            <input
+              type="password"
+              className="input"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <button type="submit" disabled={savingPw} className="btn-primary">
+            {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
+          </button>
+        </form>
       </div>
 
-      {pickerOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-navy/40"
-            onClick={() => setPickerOpen(false)}
-          />
-          <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-50 mx-auto w-full max-w-lg rounded-t-[18px] border-t border-line bg-white p-4 shadow-pop lg:bottom-0 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <p className="mb-3 text-sm font-semibold text-ink">{t("addPhoto")}</p>
-            <label
-              htmlFor="profile-camera"
-              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
-                <Camera className="h-5 w-5" />
-              </span>
-              {t("takePhoto")}
-            </label>
-            <label
-              htmlFor="profile-gallery"
-              className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-ink hover:bg-[#F8FAFD]"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-flow-deep">
-                <ImageIcon className="h-5 w-5" />
-              </span>
-              {t("chooseGallery")}
-            </label>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(false)}
-              className="mt-2 w-full rounded-btn py-3 text-sm font-semibold text-muted hover:bg-[#F3F7FB]"
-            >
-              {t("cancel")}
-            </button>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <form onSubmit={saveProfile} className="card space-y-4 p-5 lg:col-span-2">
+          <h2 className="text-[15px] font-semibold text-[#172334]">Profile details</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">{t("name")}</label>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div>
+              <label className="label">{t("phone")}</label>
+              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div>
+              <label className="label">{t("email")}</label>
+              {canFull ? (
+                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              ) : (
+                <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+              )}
+            </div>
+            <div>
+              <label className="label">{t("department")}</label>
+              {canFull ? (
+                <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  {department && !DEPARTMENTS.some((d) => d.name === department) && (
+                    <option value={department}>{department}</option>
+                  )}
+                  {DEPARTMENTS.map((d) => (
+                    <option key={d.name} value={d.name}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+              )}
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label">{t("designation")}</label>
+              {canFull ? (
+                <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+              ) : (
+                <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
+              )}
+            </div>
           </div>
-        </>
-      )}
+          <button type="submit" disabled={saving} className="btn-primary w-full sm:w-auto">
+            {saving ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
+          </button>
+        </form>
+
+        <div className="card space-y-4 p-5">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[#172334]">
+            <Fingerprint className="h-4 w-4 text-[#1E6FE0]" /> {t("passkeys")}
+          </h2>
+          <p className="text-[13px] text-[#8A97A8]">Face ID / fingerprint on this phone.</p>
+          <button onClick={registerPasskey} disabled={registering} className="btn-primary w-full">
+            {registering ? <Spinner /> : <Plus className="h-3.5 w-3.5" />} Add passkey
+          </button>
+          {passkeys.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-[#E3EAF1] py-8 text-center">
+              <KeyRound className="h-8 w-8 text-[#C5D0DC]" />
+              <p className="text-sm text-[#8A97A8]">No passkeys yet.</p>
+            </div>
+          ) : (
+            passkeys.map((pk) => (
+              <div key={pk.id} className="flex items-center gap-3 rounded-[14px] border border-[#E3EAF1] p-3">
+                <Smartphone className="h-5 w-5 text-[#1E6FE0]" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[#172334]">{pk.device_name}</p>
+                  <p className="text-xs text-[#8A97A8]">Added {timeAgo(pk.created_at)}</p>
+                </div>
+                <ShieldCheck className="h-4 w-4 text-[#16B878]" />
+                <button onClick={() => removePasskey(pk.id)} className="rounded-lg p-2 text-[#8A97A8] hover:text-[#C52B35]">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
