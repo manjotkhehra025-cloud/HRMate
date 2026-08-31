@@ -190,7 +190,7 @@ export default function WallClient({
                         p.liked_by_me ? "text-[#1E6FE0]" : "text-[#8A97A8] hover:bg-[#F4F7FB]"
                       )}
                     >
-                      <ThumbsUp className={classNames("h-4 w-4", p.liked_by_me && "fill-[#1E6FE0]")} />
+                      <ThumbsUp className={classNames("h-4 w-4", p.liked_by_me ? "fill-[#1E6FE0]" : "")} />
                       {p.like_count > 0 ? p.like_count : "Like"}
                     </button>
                     <button
