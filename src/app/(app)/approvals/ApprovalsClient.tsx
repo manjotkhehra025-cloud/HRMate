@@ -77,19 +77,26 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Pending Approvals</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Review, authorize, or decline employee leave requests and manual punch adjustments.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-6 w-6 text-[#1E6FE0]" />
+              <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+                Pending Approvals
+              </h1>
+            </div>
+            <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+              Review, authorize, or decline employee leave requests and manual punch adjustments.
+            </p>
+          </div>
+          {total > 0 && (
+            <span className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-3 py-1 text-[12px] font-bold text-[#D98200]">
+              {total} pending {total === 1 ? "action" : "actions"}
+            </span>
+          )}
         </div>
-        {total > 0 && (
-          <span className="rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-3 py-1 text-[12px] font-bold text-[#D98200]">
-            {total} pending {total === 1 ? "action" : "actions"}
-          </span>
-        )}
       </div>
 
       {/* Filter Tabs Bar */}

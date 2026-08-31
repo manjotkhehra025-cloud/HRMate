@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2, ShieldAlert } from "lucide-react";
+import { Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2, ShieldAlert, User } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner } from "@/components/ui";
@@ -190,10 +190,16 @@ export default function ProfileClient({
 
   return (
     <div className="space-y-6">
-      <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">My profile</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">
-          Manage your personal details, staff category, password, and biometric passkeys.
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex items-center gap-2">
+          <User className="h-6 w-6 text-[#1E6FE0]" />
+          <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+            My Profile & Security
+          </h1>
+        </div>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+          Manage your personal information, staff category, password, and biometric passkeys.
         </p>
       </div>
 
@@ -347,7 +353,7 @@ export default function ProfileClient({
 
           {passkeys.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-[14px] border border-dashed border-[#E3EAF1] py-7 text-center">
-              <KeyRound className="h-7 w-7 text-[#C5D0DC]" />
+              <KeyRound className="mx-auto h-7 w-7 text-[#C5D0DC]" />
               <p className="text-[13px] text-[#8A97A8]">No passkeys registered on this account.</p>
             </div>
           ) : (

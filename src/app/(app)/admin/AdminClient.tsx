@@ -26,14 +26,17 @@ export default function AdminClient({
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Administration & Access</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Manage administrative personnel, operations staff, third-party workers, and granular role permissions.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex items-center gap-2">
+          <Shield className="h-6 w-6 text-[#1E6FE0]" />
+          <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+            Administration & User Access
+          </h1>
         </div>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+          Manage administrative personnel, operations staff, Yellow Card workers, and granular role permissions.
+        </p>
       </div>
 
       {/* Tabs */}

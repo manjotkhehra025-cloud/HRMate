@@ -340,14 +340,17 @@ export default function SettingsClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Settings & Preferences</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Customize display preferences, manage biometric passkeys, notifications, and factory geofencing.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex items-center gap-2">
+          <Sliders className="h-6 w-6 text-[#1E6FE0]" />
+          <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+            Settings & System Preferences
+          </h1>
         </div>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+          Display styling, biometrics, language preferences, geofence radius, and workplace configuration.
+        </p>
       </div>
 
       {(toast || err) && (

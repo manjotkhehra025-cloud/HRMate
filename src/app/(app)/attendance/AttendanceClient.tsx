@@ -13,6 +13,7 @@ import {
   MapPin,
   Sparkles,
   Info,
+  X,
 } from "lucide-react";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { formatDate, formatTime, istParts } from "@/lib/utils";
@@ -213,23 +214,38 @@ export default function AttendanceClient({
 
   return (
     <div className="space-y-6">
-      {/* Desktop Page Title */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Attendance</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Monthly calendar, punch records, and manual punch requests.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-6 w-6 text-[#1E6FE0]" />
+              <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+                Attendance & Logs
+              </h1>
+            </div>
+            <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+              Monthly calendar, punch records, grace periods, and manual punch requests.
+            </p>
+          </div>
+
+          {canManual && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowManual((s) => !s);
+                if (!showManual) {
+                  setTimeout(() => {
+                    document.getElementById("manual-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 100);
+                }
+              }}
+              className="flex h-10 sm:h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[13px] sm:text-[14px] font-bold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
+            >
+              <Clock className="h-4 w-4" /> {showManual ? "Hide Manual Punch" : "Request Manual Punch"}
+            </button>
+          )}
         </div>
-        {canManual && (
-          <button
-            type="button"
-            onClick={() => setShowManual((s) => !s)}
-            className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
-          >
-            <Clock className="h-4 w-4" /> {showManual ? "Hide Manual Punch" : "Request Manual Punch"}
-          </button>
-        )}
       </div>
 
       {/* KPI Stats Bar */}
@@ -408,8 +424,9 @@ export default function AttendanceClient({
         {/* Manual Punch Form (Desktop Sidebar or Toggle) */}
         {showManual && canManual && (
           <form
+            id="manual-form"
             onSubmit={submitManual}
-            className="card space-y-4 p-5 sm:p-6 lg:col-span-5 animate-fade-in"
+            className="card space-y-4 p-5 sm:p-6 lg:col-span-5 animate-fade-in border border-[#E3EAF1] shadow-card"
           >
             <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
               <div>
@@ -419,9 +436,9 @@ export default function AttendanceClient({
               <button
                 type="button"
                 onClick={() => setShowManual(false)}
-                className="text-[12px] font-semibold text-[#8A97A8] hover:text-[#172334]"
+                className="rounded-lg p-1 text-[#8A97A8] hover:bg-[#EEF2F7] hover:text-[#172334]"
               >
-                Close
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -557,7 +574,12 @@ export default function AttendanceClient({
           </div>
           {canManual && !showManual && (
             <button
-              onClick={() => setShowManual(true)}
+              onClick={() => {
+                setShowManual(true);
+                setTimeout(() => {
+                  document.getElementById("manual-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 100);
+              }}
               className="btn-secondary text-[12.5px] py-1.5"
             >
               <Clock className="h-3.5 w-3.5 text-[#1E6FE0]" /> Manual Request

@@ -86,14 +86,17 @@ export default function ReportsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Analytics & Reports</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Monthly attendance trends, employee breakdown, and report exports.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-6 w-6 text-[#1E6FE0]" />
+          <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+            Analytics & Reports
+          </h1>
         </div>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+          Monthly attendance trends, department breakdowns, and exportable payroll reports.
+        </p>
       </div>
 
       {/* Control Bar: Month Switcher + Exports */}

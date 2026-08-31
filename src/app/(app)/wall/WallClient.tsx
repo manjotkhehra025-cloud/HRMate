@@ -107,14 +107,17 @@ export default function WallClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="hidden lg:flex items-center justify-between">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Social Feed & Announcements</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            Company updates, peer appreciation, milestone announcements, and team thoughts.
-          </p>
+      {/* Top Header - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-6 w-6 text-[#1E6FE0]" />
+          <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+            Social Feed & Announcements
+          </h1>
         </div>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+          Company updates, peer appreciation, milestone announcements, and team thoughts.
+        </p>
       </div>
 
       {/* Post Creator */}
@@ -130,7 +133,7 @@ export default function WallClient({
                 className="w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] p-3.5 text-[14px] text-[#172334] outline-none transition focus:border-[#1E6FE0] focus:bg-white focus:ring-2 focus:ring-[#1E6FE0]/15"
                 rows={3}
               />
-              <div className="mt-2.5 flex items-center justify-between">
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[12px] font-medium text-[#8A97A8]">
                   Visible to all registered organization staff
                 </span>
