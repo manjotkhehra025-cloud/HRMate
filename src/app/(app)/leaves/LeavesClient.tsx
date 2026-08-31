@@ -130,20 +130,11 @@ export default function LeavesClient({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="hidden items-start justify-between gap-3 lg:flex">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334] lg:text-[30px]">Leaves</h1>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Leaves</h1>
           <p className="mt-1 text-[14px] text-[#8A97A8]">Balances, apply, and track requests.</p>
         </div>
-        {canApply && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white lg:hidden"
-          >
-            <Plus className="h-4 w-4" /> Apply leave
-          </button>
-        )}
         {canApply && (
           <button
             type="button"
@@ -151,14 +142,14 @@ export default function LeavesClient({
               setShowForm(true);
               document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
-            className="hidden h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white lg:flex"
+            className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white"
           >
             <Plus className="h-4 w-4" /> Apply leave
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {visibleBalance.map((b) => {
           const total = Math.max(1, b.days_per_year);
           const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
@@ -171,7 +162,8 @@ export default function LeavesClient({
           return (
             <div key={b.id} className="card p-4">
               <p className="truncate text-[13px] font-semibold text-[#172334]">{b.name}</p>
-              <p className="mt-1 text-[13px] text-[#8A97A8]">{hint}</p>
+              <p className="mt-1 text-[28px] font-bold tabular-nums leading-none text-[#172334]">{b.balance}</p>
+              <p className="mt-1 text-[12px] text-[#8A97A8]">{hint}</p>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF4]">
                 <div className="h-full rounded-full" style={{ width: `${leftPct}%`, background: b.color || "#1E6FE0" }} />
               </div>
