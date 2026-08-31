@@ -19,6 +19,7 @@ workflows:
       - name: Check Java & Environment
         script: |
           java -version
+          if command -v gradle >/dev/null 2>&1; then gradle -version; fi
       - name: Decode Custom Keystore if provided
         script: |
           if [ -n "$CM_KEYSTORE" ]; then
@@ -30,12 +31,20 @@ workflows:
       - name: Build Android Release AAB & APK
         script: |
           cd android
-          if command -v gradle >/dev/null 2>&1; then
-            gradle wrapper
-            chmod +x gradlew
+          # Ensure gradle wrapper jar exists
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Downloading gradle-wrapper.jar..."
+            mkdir -p gradle/wrapper
+            curl -sSL "https://repo.maven.apache.org/maven2/org/gradle/gradle-wrapper/8.5/gradle-wrapper-8.5.jar" -o gradle/wrapper/gradle-wrapper.jar || \
+            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar || true
+          fi
+          chmod +x gradlew || true
+          if [ -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Building with Gradle Wrapper (Gradle 8.5)..."
             ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
           else
-            ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
+            echo "Building with System Gradle..."
+            gradle bundleRelease assembleRelease --no-daemon --stacktrace
           fi
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
