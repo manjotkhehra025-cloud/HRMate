@@ -16,40 +16,44 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const date = body.date as string;
   const reason = (body.reason as string) || "";
-  if (!date || !reason.trim()) {
-    return error("Date and reason are required");
+  if (!reason.trim()) {
+    return error("Reason is required");
   }
 
-  const punches: { type: "punch_in" | "punch_out"; time: string }[] = [];
+  const punches: { type: "punch_in" | "punch_out"; time: string; date: string }[] = [];
+  const inDate = String(body.punch_in_date || body.date || "");
+  const outDate = String(body.punch_out_date || body.date || "");
 
-  if (body.punch_in) punches.push({ type: "punch_in", time: body.punch_in });
-  if (body.punch_out) punches.push({ type: "punch_out", time: body.punch_out });
+  if (body.punch_in) punches.push({ type: "punch_in", time: body.punch_in, date: inDate });
+  if (body.punch_out) punches.push({ type: "punch_out", time: body.punch_out, date: outDate });
 
   // Back-compat: single { type, time }
   if (punches.length === 0 && body.type && body.time) {
     if (body.type !== "punch_in" && body.type !== "punch_out") {
       return error("Type must be punch_in or punch_out");
     }
-    punches.push({ type: body.type, time: body.time });
+    punches.push({ type: body.type, time: body.time, date: String(body.date || "") });
   }
 
   if (punches.length === 0) {
     return error("Enter a punch-in time, punch-out time, or both");
   }
+  if (punches.some((p) => !/^\d{4}-\d{2}-\d{2}$/.test(p.date))) {
+    return error("Pick a date for each punch");
+  }
 
   try {
-    for (const p of punches) istTimestamp(date, p.time);
+    for (const p of punches) istTimestamp(p.date, p.time);
   } catch {
     return error("Invalid date or time");
   }
 
   if (body.punch_in && body.punch_out) {
-    const inTs = istTimestamp(date, body.punch_in);
-    const outTs = istTimestamp(date, body.punch_out);
+    const inTs = istTimestamp(inDate, body.punch_in);
+    const outTs = istTimestamp(outDate, body.punch_out);
     if (outTs <= inTs) {
-      return error("Punch out time must be after punch in time");
+      return error("Punch out must be after punch in (next day is allowed for 24-hour shifts)");
     }
   }
 
@@ -62,16 +66,16 @@ export async function POST(req: NextRequest) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const p of punches) {
-    insert.run(randomId("mp_"), user.id, date, p.type, p.time, reason.trim(), Date.now(), stage, approver.id);
+    insert.run(randomId("mp_"), user.id, p.date, p.type, p.time, reason.trim(), Date.now(), stage, approver.id);
   }
 
   const summary = punches
-    .map((p) => `${p.type === "punch_in" ? "in" : "out"} ${p.time}`)
+    .map((p) => `${p.type === "punch_in" ? "in" : "out"} ${p.date} ${p.time}`)
     .join(", ");
   notifyPunchApprovers(
     { id: user.id, name: user.name, department: user.department, staff_type: user.staff_type },
     summary,
-    date,
+    punches[0].date,
     stage,
     approver.id
   );

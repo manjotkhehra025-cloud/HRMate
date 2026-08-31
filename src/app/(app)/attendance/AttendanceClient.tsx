@@ -73,6 +73,8 @@ export default function AttendanceClient({
   const [mKind, setMKind] = useState<"in" | "out" | "both">("in");
   const [mIn, setMIn] = useState("09:00");
   const [mOut, setMOut] = useState("18:00");
+  const [mInDate, setMInDate] = useState(today);
+  const [mOutDate, setMOutDate] = useState(today);
   const [mReason, setMReason] = useState("");
   const [mApprover, setMApprover] = useState("");
   const [approvers, setApprovers] = useState<{ id: string; name: string; label: string }[]>([]);
@@ -102,6 +104,11 @@ export default function AttendanceClient({
     window.addEventListener(ATTENDANCE_EVENT, onChange);
     return () => window.removeEventListener(ATTENDANCE_EVENT, onChange);
   }, [month]);
+
+  useEffect(() => {
+    setMInDate(selected);
+    setMOutDate(selected);
+  }, [selected]);
 
   const byDate = useMemo(() => {
     const m: Record<string, any> = {};
@@ -156,9 +163,11 @@ export default function AttendanceClient({
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: selected,
+          date: mKind === "out" ? mOutDate : mInDate,
           punch_in: mKind === "out" ? undefined : mIn || undefined,
           punch_out: mKind === "in" ? undefined : mOut || undefined,
+          punch_in_date: mKind === "out" ? undefined : mInDate,
+          punch_out_date: mKind === "in" ? undefined : mOutDate,
           reason: mReason,
           approver_id: mApprover,
         }),
@@ -320,12 +329,42 @@ export default function AttendanceClient({
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={mKind === "both" ? "grid grid-cols-1 gap-3 sm:grid-cols-2" : "grid grid-cols-1 gap-3 sm:grid-cols-2"}>
               {mKind !== "out" && (
-                <input type="time" className="input" value={mIn} onChange={(e) => setMIn(e.target.value)} />
+                <div>
+                  <label className="label">Punch in date</label>
+                  <input
+                    type="date"
+                    className="input"
+                    required
+                    value={mInDate}
+                    onChange={(e) => setMInDate(e.target.value)}
+                  />
+                </div>
+              )}
+              {mKind !== "out" && (
+                <div>
+                  <label className="label">Punch in time</label>
+                  <input type="time" className="input" required value={mIn} onChange={(e) => setMIn(e.target.value)} />
+                </div>
               )}
               {mKind !== "in" && (
-                <input type="time" className="input" value={mOut} onChange={(e) => setMOut(e.target.value)} />
+                <div>
+                  <label className="label">Punch out date</label>
+                  <input
+                    type="date"
+                    className="input"
+                    required
+                    value={mOutDate}
+                    onChange={(e) => setMOutDate(e.target.value)}
+                  />
+                </div>
+              )}
+              {mKind !== "in" && (
+                <div>
+                  <label className="label">Punch out time</label>
+                  <input type="time" className="input" required value={mOut} onChange={(e) => setMOut(e.target.value)} />
+                </div>
               )}
             </div>
             <textarea className="input min-h-[70px]" required value={mReason} onChange={(e) => setMReason(e.target.value)} placeholder="Reason" />
