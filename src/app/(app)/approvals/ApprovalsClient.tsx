@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, CalendarDays, Clock, CheckSquare } from "lucide-react";
+import { CheckCircle2, XCircle, CalendarDays, Clock, CheckSquare, Sparkles, User, AlertCircle } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate, timeAgo } from "@/lib/utils";
@@ -69,19 +69,30 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
   const total = leaves.length + manual.length + changes.length;
   const tabs: { key: "all" | "leaves" | "manual" | "changes"; label: string; count: number }[] = [
-    { key: "all", label: "All", count: total },
-    { key: "leaves", label: "Leaves", count: leaves.length },
-    { key: "manual", label: "Manual", count: manual.length },
-    ...(changes.length ? [{ key: "changes" as const, label: "Changes", count: changes.length }] : []),
+    { key: "all", label: "All Requests", count: total },
+    { key: "leaves", label: "Leave Requests", count: leaves.length },
+    { key: "manual", label: "Manual Punch", count: manual.length },
+    ...(changes.length ? [{ key: "changes" as const, label: "Admin Changes", count: changes.length }] : []),
   ];
 
   return (
-    <div className="space-y-5">
-      <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Approvals</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">Review leave and manual punch requests.</p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="hidden lg:flex items-center justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Pending Approvals</h1>
+          <p className="mt-1 text-[14px] text-[#8A97A8]">
+            Review, authorize, or decline employee leave requests and manual punch adjustments.
+          </p>
+        </div>
+        {total > 0 && (
+          <span className="rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-3 py-1 text-[12px] font-bold text-[#D98200]">
+            {total} pending {total === 1 ? "action" : "actions"}
+          </span>
+        )}
       </div>
 
+      {/* Filter Tabs Bar */}
       <div className="flex gap-1 overflow-x-auto rounded-[14px] bg-[#EEF2F7] p-1" style={{ touchAction: "pan-x" }}>
         {tabs.map((t) => (
           <button
@@ -89,15 +100,15 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
             type="button"
             onClick={() => setTab(t.key)}
             className={classNames(
-              "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[12px] px-3 py-2.5 text-[13px] font-semibold",
-              tab === t.key ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
+              "flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-[12px] px-4 py-2.5 text-[13.5px] font-bold transition",
+              tab === t.key ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
             )}
           >
-            {t.label}
+            <span>{t.label}</span>
             <span
               className={classNames(
-                "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                tab === t.key ? "bg-[#E8F1FC] text-[#1E6FE0]" : "bg-white/70 text-[#8A97A8]"
+                "rounded-full px-2 py-0.5 text-[11px] font-bold",
+                tab === t.key ? "bg-[#E7F1FF] text-[#1E6FE0]" : "bg-white/70 text-[#8A97A8]"
               )}
             >
               {t.count}
@@ -107,101 +118,167 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner className="h-7 w-7 text-brand-500" />
+        <div className="flex justify-center py-20">
+          <Spinner className="h-8 w-8 text-[#1E6FE0]" />
         </div>
       ) : total === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={<CheckSquare className="h-8 w-8" />}
-            title="All caught up"
-            subtitle="There are no pending requests right now."
-          />
+        <div className="card p-12 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#E1F8EF] text-[#16B878] mb-3">
+            <CheckSquare className="h-7 w-7" />
+          </div>
+          <p className="text-[18px] font-bold text-[#172334]">All caught up!</p>
+          <p className="text-[13.5px] text-[#8A97A8] mt-1 max-w-sm mx-auto">
+            There are no pending approvals requiring your action at this time.
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Leaves */}
           {(tab === "all" || tab === "leaves") &&
             leaves.map((l) => (
-              <article key={`l_${l.id}`} className="card p-5">
-                <div className="flex items-start gap-3">
-                  <Avatar name={l.user_name} color={l.user_color} size={44} src={avatarSrc(l.user_id, l.user_avatar)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[15px] font-semibold text-[#172334]">{l.user_name}</p>
-                      <span
-                        className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                        style={{ backgroundColor: `${l.leave_type_color}22`, color: l.leave_type_color }}
-                      >
-                        {l.leave_type_name}
-                      </span>
+              <article
+                key={`l_${l.id}`}
+                className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] hover:shadow-pop transition flex flex-col justify-between"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3.5">
+                    <Avatar name={l.user_name} color={l.user_color} size={48} src={avatarSrc(l.user_id, l.user_avatar)} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[16px] font-bold text-[#172334]">{l.user_name}</p>
+                        <span
+                          className="rounded-full px-3 py-0.5 text-[11.5px] font-bold"
+                          style={{ backgroundColor: `${l.leave_type_color}22`, color: l.leave_type_color }}
+                        >
+                          {l.leave_type_name}
+                        </span>
+                        {l.user_department && (
+                          <span className="rounded-full bg-[#F4F7FB] border border-[#E3EAF1] px-2.5 py-0.5 text-[11px] font-semibold text-[#617083]">
+                            {l.user_department}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-[#617083]">
+                        <span className="flex items-center gap-1.5 font-semibold text-[#172334]">
+                          <CalendarDays className="h-4 w-4 text-[#1E6FE0]" />
+                          {formatDate(l.start_date)}
+                          {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""}
+                        </span>
+                        <span className="rounded-full bg-[#E7F1FF] px-2.5 py-0.5 text-[11.5px] font-bold text-[#1E6FE0]">
+                          {l.days} day{l.days > 1 ? "s" : ""}
+                        </span>
+                        <span className="text-[12px] text-[#8A97A8]">
+                          Requested {timeAgo(l.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[13.5px] text-[#172334]">
+                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">Reason:</span>
+                        &ldquo;{l.reason}&rdquo;
+                      </div>
                     </div>
-                    <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[#8A97A8]">
-                      <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                      {formatDate(l.start_date)}
-                      {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""} · {l.days} day
-                      {l.days > 1 ? "s" : ""}
-                    </p>
-                    <p className="mt-1.5 break-words text-[14px] text-[#617083]">{l.reason}</p>
-                    <p className="mt-1 text-[11px] text-[#8A97A8]">Requested {timeAgo(l.created_at)}</p>
                   </div>
+
+                  {canManage && (
+                    <Actions
+                      busy={busy === l.id}
+                      onApprove={() => act("leave", l.id, "approve")}
+                      onReject={() => act("leave", l.id, "reject")}
+                    />
+                  )}
                 </div>
-                {canManage && (
-                  <Actions busy={busy === l.id} onApprove={() => act("leave", l.id, "approve")} onReject={() => act("leave", l.id, "reject")} />
-                )}
               </article>
             ))}
 
+          {/* Manual Punches */}
           {(tab === "all" || tab === "manual") &&
             manual.map((m) => (
-              <article key={`m_${m.id}`} className="card p-5">
-                <div className="flex items-start gap-3">
-                  <Avatar name={m.user_name} color={m.user_color} size={44} src={avatarSrc(m.user_id, m.user_avatar)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-[15px] font-semibold text-[#172334]">{m.user_name}</p>
-                      <span className="rounded-full bg-[#E8F1FC] px-2.5 py-0.5 text-[11px] font-semibold text-[#1E6FE0]">
-                        Manual {m.type === "punch_in" ? "Punch In" : "Punch Out"}
-                      </span>
-                      {m.user_staff_type === "yellow_card" && (
-                        <span className="rounded-full bg-[#FFF1E8] px-2.5 py-0.5 text-[11px] font-semibold text-[#C2410C]">
-                          Yellow card
+              <article
+                key={`m_${m.id}`}
+                className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] hover:shadow-pop transition flex flex-col justify-between"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3.5">
+                    <Avatar name={m.user_name} color={m.user_color} size={48} src={avatarSrc(m.user_id, m.user_avatar)} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[16px] font-bold text-[#172334]">{m.user_name}</p>
+                        <span className="rounded-full bg-[#E7F1FF] px-3 py-0.5 text-[11.5px] font-bold text-[#1E6FE0]">
+                          Manual {m.type === "punch_in" ? "Punch In" : "Punch Out"}
                         </span>
-                      )}
-                      {m.user_department && (
-                        <span className="rounded-full bg-[#F4F7FB] px-2.5 py-0.5 text-[11px] font-semibold text-[#8A97A8]">
-                          {m.user_department}
+                        {m.user_staff_type === "yellow_card" && (
+                          <span className="rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-2.5 py-0.5 text-[11px] font-bold text-[#D98200]">
+                            Yellow Card
+                          </span>
+                        )}
+                        {m.user_department && (
+                          <span className="rounded-full bg-[#F4F7FB] border border-[#E3EAF1] px-2.5 py-0.5 text-[11px] font-semibold text-[#617083]">
+                            {m.user_department}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-[#617083]">
+                        <span className="flex items-center gap-1.5 font-semibold text-[#172334]">
+                          <Clock className="h-4 w-4 text-[#16B878]" />
+                          {formatDate(m.date)} at {m.time}
                         </span>
-                      )}
+                        <span className="text-[12px] text-[#8A97A8]">
+                          Requested {timeAgo(m.created_at)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[13.5px] text-[#172334]">
+                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">Reason:</span>
+                        &ldquo;{m.reason}&rdquo;
+                      </div>
                     </div>
-                    <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[#8A97A8]">
-                      <Clock className="h-3.5 w-3.5 shrink-0" />
-                      {formatDate(m.date)} · {m.time}
-                    </p>
-                    <p className="mt-1.5 break-words text-[14px] text-[#617083]">{m.reason}</p>
-                    <p className="mt-1 text-[11px] text-[#8A97A8]">Requested {timeAgo(m.created_at)}</p>
                   </div>
+
+                  {canManage && (
+                    <Actions
+                      busy={busy === m.id}
+                      onApprove={() => act("manual", m.id, "approve")}
+                      onReject={() => act("manual", m.id, "reject")}
+                    />
+                  )}
                 </div>
-                {canManage && (
-                  <Actions busy={busy === m.id} onApprove={() => act("manual", m.id, "approve")} onReject={() => act("manual", m.id, "reject")} />
-                )}
               </article>
             ))}
 
+          {/* Change Requests */}
           {(tab === "all" || tab === "changes") &&
             changes.map((c) => (
-              <article key={`c_${c.id}`} className="card p-5">
-                <div className="flex items-start gap-3">
-                  <Avatar name={c.requester_name} color={c.requester_color} size={44} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-semibold text-[#172334]">{c.requester_name}</p>
-                    <p className="text-[13px] capitalize text-[#8A97A8]">{String(c.kind).replace("_", " ")}</p>
-                    <p className="mt-1 break-all text-[14px] text-[#617083]">{JSON.stringify(c.payload)}</p>
-                    <p className="mt-1 text-[11px] text-[#8A97A8]">Requested {timeAgo(c.created_at)}</p>
+              <article
+                key={`c_${c.id}`}
+                className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] hover:shadow-pop transition flex flex-col justify-between"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3.5">
+                    <Avatar name={c.requester_name} color={c.requester_color} size={48} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] font-bold text-[#172334]">{c.requester_name}</p>
+                      <p className="text-[13px] font-semibold capitalize text-[#1E6FE0]">
+                        {String(c.kind).replace("_", " ")} Change
+                      </p>
+                      <pre className="mt-2 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[12px] text-[#172334] overflow-x-auto">
+                        {JSON.stringify(c.payload, null, 2)}
+                      </pre>
+                      <p className="mt-1.5 text-[11.5px] text-[#8A97A8]">
+                        Submitted {timeAgo(c.created_at)}
+                      </p>
+                    </div>
                   </div>
+
+                  {canManage && (
+                    <Actions
+                      busy={busy === c.id}
+                      onApprove={() => act("change", c.id, "approve")}
+                      onReject={() => act("change", c.id, "reject")}
+                    />
+                  )}
                 </div>
-                {canManage && (
-                  <Actions busy={busy === c.id} onApprove={() => act("change", c.id, "approve")} onReject={() => act("change", c.id, "reject")} />
-                )}
               </article>
             ))}
         </div>
@@ -220,12 +297,12 @@ function Actions({
   onReject: () => void;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+    <div className="flex shrink-0 items-center gap-2 pt-2 sm:pt-0">
       <button
         type="button"
         onClick={onApprove}
         disabled={busy}
-        className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[12px] bg-[#16B878] px-5 text-[14px] font-semibold text-white disabled:opacity-60 sm:h-10 sm:text-xs"
+        className="flex h-10 items-center justify-center gap-1.5 rounded-[12px] bg-[#16B878] px-4 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#07945D] active:scale-95 disabled:opacity-60"
       >
         {busy ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
         Approve
@@ -234,7 +311,7 @@ function Actions({
         type="button"
         onClick={onReject}
         disabled={busy}
-        className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[12px] bg-[#C52B35] px-5 text-[14px] font-semibold text-white disabled:opacity-60 sm:h-10 sm:text-xs"
+        className="flex h-10 items-center justify-center gap-1.5 rounded-[12px] bg-[#C52B35] px-4 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#a8242d] active:scale-95 disabled:opacity-60"
       >
         <XCircle className="h-4 w-4" /> Reject
       </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Send, ThumbsUp, MessageSquare, Trash2, Loader2 } from "lucide-react";
+import { Send, ThumbsUp, MessageSquare, Trash2, Loader2, Sparkles } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, timeAgo } from "@/lib/utils";
@@ -53,8 +53,8 @@ export default function WallClient({
   async function load() {
     const res = await fetch("/api/wall");
     const data = await res.json();
-    setPosts(data.posts);
-    setComments(data.comments);
+    setPosts(data.posts || []);
+    setComments(data.comments || []);
     setLoading(false);
   }
 
@@ -100,139 +100,170 @@ export default function WallClient({
   }
 
   async function deletePost(postId: string) {
+    if (!confirm("Are you sure you want to delete this post?")) return;
     await fetch(`/api/wall/${postId}`, { method: "DELETE" });
     load();
   }
 
   return (
-    <div className="space-y-5">
-      <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334] lg:text-[30px]">Social Wall</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">Announcements, shout-outs and team updates.</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="hidden lg:flex items-center justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Social Feed & Announcements</h1>
+          <p className="mt-1 text-[14px] text-[#8A97A8]">
+            Company updates, peer appreciation, milestone announcements, and team thoughts.
+          </p>
+        </div>
       </div>
 
+      {/* Post Creator */}
       {canPost && (
-        <form onSubmit={submitPost} className="card overflow-hidden p-0">
-          <div className="flex items-start gap-3 p-4 sm:p-5">
+        <form onSubmit={submitPost} className="card p-5 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)]">
+          <div className="flex items-start gap-3.5">
             <Avatar name={me.name} color={me.color} size={44} src={avatarSrc(userId, me.avatar)} />
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Share an update…"
-              className="min-h-[96px] w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] px-4 py-3 text-[15px] text-[#172334] outline-none focus:border-[#1E6FE0]"
-              rows={3}
-            />
+            <div className="min-w-0 flex-1">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Share an announcement, appreciation, or team update…"
+                className="w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] p-3.5 text-[14px] text-[#172334] outline-none transition focus:border-[#1E6FE0] focus:bg-white focus:ring-2 focus:ring-[#1E6FE0]/15"
+                rows={3}
+              />
+              <div className="mt-2.5 flex items-center justify-between">
+                <span className="text-[12px] font-medium text-[#8A97A8]">
+                  Visible to all registered organization staff
+                </span>
+                <button
+                  type="submit"
+                  disabled={posting || !content.trim()}
+                  className="btn-primary px-5 py-2 text-[13.5px]"
+                >
+                  {posting ? <Spinner /> : <Send className="h-4 w-4" />} Publish Post
+                </button>
+              </div>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={posting || !content.trim()}
-            className="flex h-12 w-full items-center justify-center gap-2 bg-[#1E6FE0] text-[15px] font-semibold text-white disabled:opacity-50"
-          >
-            {posting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Post
-          </button>
         </form>
       )}
 
+      {/* Posts Feed Grid */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner className="h-7 w-7 text-brand-500" />
+        <div className="flex justify-center py-20">
+          <Spinner className="h-8 w-8 text-[#1E6FE0]" />
         </div>
       ) : posts.length === 0 ? (
-        <EmptyState
-          icon={<MessageSquare className="h-8 w-8" />}
-          title="No posts yet"
-          subtitle="Be the first to share something with your team."
-        />
+        <div className="card p-12 text-center">
+          <MessageSquare className="mx-auto h-10 w-10 text-[#C5D0DC] mb-2" />
+          <p className="text-[16px] font-bold text-[#172334]">No posts published yet</p>
+          <p className="text-[13px] text-[#8A97A8] mt-1">Be the first to share an announcement or cheer your team!</p>
+        </div>
       ) : (
-        <div className="columns-2 gap-3 sm:gap-4">
-        {posts.map((p) => {
-          const postComments = comments.filter((c) => c.post_id === p.id);
-          const isOpen = openComments === p.id;
-          return (
-            <article key={p.id} className="card mb-3 break-inside-avoid p-3 sm:mb-4 sm:p-5">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <Avatar
-                  name={p.author_name}
-                  color={p.author_color}
-                  size={36}
-                  src={avatarSrc(p.user_id, p.author_avatar)}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-[14px] font-semibold text-[#172334]">{p.author_name}</p>
-                      <p className="text-[12px] text-[#8A97A8]">
-                        {p.author_designation || "Team member"} · {timeAgo(p.created_at)}
-                      </p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {posts.map((p) => {
+            const postComments = comments.filter((c) => c.post_id === p.id);
+            const isOpen = openComments === p.id;
+            return (
+              <article
+                key={p.id}
+                className="card p-5 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] flex flex-col justify-between hover:shadow-pop transition duration-150"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        name={p.author_name}
+                        color={p.author_color}
+                        size={42}
+                        src={avatarSrc(p.user_id, p.author_avatar)}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-[14.5px] font-bold text-[#172334]">{p.author_name}</p>
+                        <p className="text-[12px] text-[#8A97A8]">
+                          {p.author_designation || "Team member"} · {timeAgo(p.created_at)}
+                        </p>
+                      </div>
                     </div>
+
                     {(p.user_id === userId || canModerate) && (
                       <button
                         type="button"
                         onClick={() => deletePost(p.id)}
-                        className="rounded-lg p-1.5 text-[#8A97A8] transition hover:bg-rose-50 hover:text-rose-500"
+                        className="rounded-lg p-1.5 text-[#8A97A8] transition hover:bg-rose-50 hover:text-[#C52B35]"
                         aria-label="Delete post"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <p className="mt-2 break-words whitespace-pre-wrap text-[14px] leading-relaxed text-[#172334]">
+
+                  <p className="mt-3.5 break-words whitespace-pre-wrap text-[14px] leading-relaxed text-[#172334]">
                     {p.content}
                   </p>
+                </div>
 
-                  <div className="mt-3 flex items-center gap-2 border-t border-[#F0F4F8] pt-3">
+                {/* Interaction Footer */}
+                <div className="mt-4 border-t border-[#F0F4F8] pt-3">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => toggleLike(p.id)}
                       className={classNames(
-                        "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-semibold",
-                        p.liked_by_me ? "text-[#1E6FE0]" : "text-[#8A97A8] hover:bg-[#F4F7FB]"
+                        "flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12.5px] font-bold transition",
+                        p.liked_by_me
+                          ? "bg-[#E7F1FF] text-[#1E6FE0]"
+                          : "text-[#617083] hover:bg-[#F4F7FB] hover:text-[#172334]"
                       )}
                     >
                       <ThumbsUp className={classNames("h-4 w-4", p.liked_by_me ? "fill-[#1E6FE0]" : "")} />
-                      {p.like_count > 0 ? p.like_count : "Like"}
+                      {p.like_count > 0 ? `${p.like_count} ${p.like_count === 1 ? "Like" : "Likes"}` : "Like"}
                     </button>
+
                     <button
                       type="button"
                       onClick={() => setOpenComments(isOpen ? null : p.id)}
-                      className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#8A97A8] hover:bg-[#F4F7FB]"
+                      className="flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12.5px] font-bold text-[#617083] transition hover:bg-[#F4F7FB] hover:text-[#172334]"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      {p.comment_count > 0 ? p.comment_count : "Comment"}
+                      {postComments.length > 0
+                        ? `${postComments.length} ${postComments.length === 1 ? "Comment" : "Comments"}`
+                        : "Comment"}
                     </button>
                   </div>
 
+                  {/* Comment Thread */}
                   {isOpen && (
-                    <div className="mt-3 space-y-3 border-t border-[#F0F4F8] pt-3">
+                    <div className="mt-3.5 space-y-3 border-t border-[#F0F4F8] pt-3 animate-fade-in">
                       {postComments.map((c) => (
                         <div key={c.id} className="flex items-start gap-2.5">
                           <Avatar
                             name={c.author_name}
                             color={c.author_color}
-                            size={28}
+                            size={30}
                             src={avatarSrc(c.user_id, c.author_avatar)}
                           />
-                          <div className="flex-1 rounded-[14px] bg-[#F4F7FB] px-3 py-2">
-                            <p className="text-[12px] font-semibold text-[#172334]">{c.author_name}</p>
-                            <p className="text-[13px] text-[#617083]">{c.content}</p>
+                          <div className="min-w-0 flex-1 rounded-[14px] bg-[#F4F7FB] p-2.5">
+                            <p className="text-[12px] font-bold text-[#172334]">{c.author_name}</p>
+                            <p className="text-[13px] text-[#617083] mt-0.5">{c.content}</p>
                           </div>
                         </div>
                       ))}
-                      <div className="flex items-center gap-2">
+
+                      <div className="flex items-center gap-2 pt-1">
                         <input
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") submitComment(p.id);
                           }}
-                          placeholder="Write a comment…"
-                          className="input flex-1 py-2 text-sm"
+                          placeholder="Write a reply…"
+                          className="input flex-1 py-2 text-[13px] rounded-[10px] min-h-[38px]"
                         />
                         <button
                           type="button"
                           onClick={() => submitComment(p.id)}
-                          disabled={commenting === p.id}
-                          className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#1E6FE0] text-white"
+                          disabled={commenting === p.id || !commentText.trim()}
+                          className="flex h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-[#1E6FE0] text-white disabled:opacity-50"
                           aria-label="Send comment"
                         >
                           {commenting === p.id ? (
@@ -245,10 +276,9 @@ export default function WallClient({
                     </div>
                   )}
                 </div>
-              </div>
-            </article>
-          );
-        })}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

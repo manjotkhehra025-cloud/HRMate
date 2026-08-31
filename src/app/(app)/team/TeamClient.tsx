@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { MapPin, CalendarDays } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { MapPin, CalendarDays, Search, Users, CheckCircle2, Clock, Filter, Building2 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate, formatTime } from "@/lib/utils";
-import { WEEKDAYS, departmentScope, weeklyOffLabel } from "@/lib/staff";
+import { WEEKDAYS, departmentScope, weeklyOffLabel, DEPARTMENTS } from "@/lib/staff";
 
 interface Member {
   id: string;
@@ -46,13 +46,15 @@ export default function TeamClient({
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"today" | "leaves">(canViewAttendance ? "today" : "leaves");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDept, setSelectedDept] = useState("all");
 
   useEffect(() => {
     fetch("/api/team")
       .then((r) => r.json())
       .then((d) => {
-        setMembers(d.users);
-        setLeaves(d.leaves);
+        setMembers(d.users || []);
+        setLeaves(d.leaves || []);
         setLoading(false);
       });
   }, []);
@@ -61,67 +63,137 @@ export default function TeamClient({
   const doneCount = members.filter((m) => m.today_in && m.today_out).length;
   const absentCount = members.length - presentCount - doneCount;
 
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) => {
+      const matchSearch =
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.designation && m.designation.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.department && m.department.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchDept = selectedDept === "all" || m.department === selectedDept;
+      return matchSearch && matchDept;
+    });
+  }, [members, searchQuery, selectedDept]);
+
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner className="h-7 w-7 text-brand-500" />
+      <div className="flex justify-center py-20">
+        <Spinner className="h-8 w-8 text-[#1E6FE0]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Team</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">Who is in today and upcoming leaves.</p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="hidden lg:flex items-center justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Team Directory</h1>
+          <p className="mt-1 text-[14px] text-[#8A97A8]">
+            Real-time workplace presence, employee schedules, and upcoming leaves.
+          </p>
+        </div>
       </div>
 
-      <div className="flex rounded-[14px] bg-[#EEF2F7] p-1">
-        {canViewAttendance && (
-          <button
-            type="button"
-            onClick={() => setTab("today")}
-            className={classNames(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-[13px] font-semibold",
-              tab === "today" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
-            )}
+      {/* Tabs & Filters Bar */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex rounded-[14px] bg-[#EEF2F7] p-1 w-full sm:w-auto">
+          {canViewAttendance && (
+            <button
+              type="button"
+              onClick={() => setTab("today")}
+              className={classNames(
+                "flex items-center justify-center gap-2 rounded-[12px] px-5 py-2.5 text-[13.5px] font-bold transition",
+                tab === "today" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
+              )}
+            >
+              <MapPin className="h-4 w-4 text-[#16B878]" /> Today&apos;s Attendance
+              <span className="rounded-full bg-[#E1F8EF] px-2 py-0.5 text-[11px] font-bold text-[#06613E]">
+                {presentCount + doneCount}/{members.length}
+              </span>
+            </button>
+          )}
+          {canViewLeaves && (
+            <button
+              type="button"
+              onClick={() => setTab("leaves")}
+              className={classNames(
+                "flex items-center justify-center gap-2 rounded-[12px] px-5 py-2.5 text-[13.5px] font-bold transition",
+                tab === "leaves" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
+              )}
+            >
+              <CalendarDays className="h-4 w-4 text-[#1E6FE0]" /> Upcoming Leaves
+              <span className="rounded-full bg-[#E7F1FF] px-2 py-0.5 text-[11px] font-bold text-[#1E6FE0]">
+                {leaves.length}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Search & Dept Selector */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative min-w-[200px] flex-1 sm:flex-none">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8A97A8]" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search member…"
+              className="h-10 w-full rounded-[12px] border border-[#E3EAF1] bg-white pl-9 pr-3 text-[13px] text-[#172334] outline-none focus:border-[#1E6FE0]"
+            />
+          </div>
+
+          <select
+            value={selectedDept}
+            onChange={(e) => setSelectedDept(e.target.value)}
+            className="h-10 rounded-[12px] border border-[#E3EAF1] bg-white px-3 text-[13px] font-medium text-[#172334] outline-none focus:border-[#1E6FE0]"
           >
-            <MapPin className="h-4 w-4" /> Today
-          </button>
-        )}
-        {canViewLeaves && (
-          <button
-            type="button"
-            onClick={() => setTab("leaves")}
-            className={classNames(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-[13px] font-semibold",
-              tab === "leaves" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
-            )}
-          >
-            <CalendarDays className="h-4 w-4" /> Leaves
-          </button>
-        )}
+            <option value="all">All Departments</option>
+            {DEPARTMENTS.map((d) => (
+              <option key={d.name} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {tab === "today" ? (
         <>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="card p-4">
-              <p className="text-[12px] text-[#8A97A8]">Present</p>
-              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#16B878]">{presentCount}</p>
+          {/* Stats Bar */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="card p-4 border-l-4 border-l-[#16B878] flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Currently Present</p>
+                <p className="mt-1 text-[28px] font-bold tabular-nums text-[#16B878]">{presentCount}</p>
+              </div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-[#16B878]">
+                <Users className="h-5 w-5" />
+              </span>
             </div>
-            <div className="card p-4">
-              <p className="text-[12px] text-[#8A97A8]">Completed</p>
-              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#1E6FE0]">{doneCount}</p>
+
+            <div className="card p-4 border-l-4 border-l-[#1E6FE0] flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Completed Shift</p>
+                <p className="mt-1 text-[28px] font-bold tabular-nums text-[#1E6FE0]">{doneCount}</p>
+              </div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E7F1FF] text-[#1E6FE0]">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
             </div>
-            <div className="card p-4">
-              <p className="text-[12px] text-[#8A97A8]">Not in yet</p>
-              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#617083]">{absentCount}</p>
+
+            <div className="card p-4 border-l-4 border-l-[#617083] flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Not In Yet</p>
+                <p className="mt-1 text-[28px] font-bold tabular-nums text-[#617083]">{absentCount}</p>
+              </div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#F4F7FB] text-[#617083]">
+                <Clock className="h-5 w-5" />
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {members.map((m) => {
+          {/* Member Cards Grid */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredMembers.map((m) => {
               const present = m.today_in && !m.today_out;
               const done = m.today_in && m.today_out;
               const canOff =
@@ -132,59 +204,67 @@ export default function TeamClient({
                     m.role !== "super_admin" &&
                     viewerScope === departmentScope(m.department)));
               return (
-                <div key={m.id} className="card flex items-start gap-3 p-4">
-                  <Avatar name={m.name} color={m.color} size={48} src={avatarSrc(m.id, m.avatar)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] font-semibold text-[#172334]">{m.name}</p>
-                        <p className="truncate text-[12px] text-[#8A97A8]">
-                          {m.designation || m.role} · {m.department || "—"}
-                        </p>
-                      </div>
+                <div key={m.id} className="card p-5 flex flex-col justify-between hover:shadow-pop transition duration-150">
+                  <div className="flex items-start gap-3.5">
+                    <div className="relative shrink-0">
+                      <Avatar name={m.name} color={m.color} size={48} src={avatarSrc(m.id, m.avatar)} />
                       {present && (
-                        <span className="shrink-0 rounded-full bg-[#E1F8EF] px-2.5 py-1 text-[11px] font-semibold text-[#06613E]">
-                          In {formatTime(m.today_in!)}
-                        </span>
-                      )}
-                      {done && (
-                        <span className="shrink-0 rounded-full bg-[#E8F1FC] px-2.5 py-1 text-[11px] font-semibold text-[#1E6FE0]">
-                          Out {formatTime(m.today_out!)}
-                        </span>
-                      )}
-                      {!m.today_in && (
-                        <span className="shrink-0 rounded-full bg-[#F4F7FB] px-2.5 py-1 text-[11px] font-semibold text-[#8A97A8]">
-                          Not in yet
-                        </span>
+                        <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-[#16B878] ring-2 ring-white" />
                       )}
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {canOff ? (
-                        <select
-                          className="input h-8 min-h-0 w-[8.5rem] py-0 text-[11px]"
-                          value={m.weekly_off ?? 6}
-                          onChange={async (e) => {
-                            const weekly_off = Number(e.target.value);
-                            setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, weekly_off } : x)));
-                            await fetch("/api/team/weekly-off", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ user_id: m.id, weekly_off }),
-                            });
-                          }}
-                        >
-                          {WEEKDAYS.map((d) => (
-                            <option key={d.value} value={d.value}>
-                              Off {d.label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="rounded-full bg-[#F4F7FB] px-2 py-0.5 text-[11px] text-[#8A97A8]">
-                          Weekly off {weeklyOffLabel(m.weekly_off)}
-                        </span>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-bold text-[#172334]">{m.name}</p>
+                      <p className="truncate text-[12.5px] text-[#8A97A8]">
+                        {m.designation || m.role.replace("_", " ")}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px] font-semibold text-[#1E6FE0]">
+                        {m.department || "No Department"}
+                      </p>
                     </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-[#F0F4F8] pt-3.5 flex flex-wrap items-center justify-between gap-2">
+                    {present && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F8EF] px-3 py-1 text-[11.5px] font-bold text-[#06613E]">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> In {formatTime(m.today_in!)}
+                      </span>
+                    )}
+                    {done && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F1FC] px-3 py-1 text-[11.5px] font-bold text-[#1E6FE0]">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Out {formatTime(m.today_out!)}
+                      </span>
+                    )}
+                    {!m.today_in && (
+                      <span className="rounded-full bg-[#F4F7FB] px-3 py-1 text-[11.5px] font-semibold text-[#8A97A8]">
+                        Not in yet
+                      </span>
+                    )}
+
+                    {canOff ? (
+                      <select
+                        className="h-8 rounded-[9px] border border-[#E3EAF1] bg-[#F8FAFD] px-2 py-0 text-[11.5px] font-semibold text-[#172334] outline-none"
+                        value={m.weekly_off ?? 6}
+                        onChange={async (e) => {
+                          const weekly_off = Number(e.target.value);
+                          setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, weekly_off } : x)));
+                          await fetch("/api/team/weekly-off", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ user_id: m.id, weekly_off }),
+                          });
+                        }}
+                      >
+                        {WEEKDAYS.map((d) => (
+                          <option key={d.value} value={d.value}>
+                            Off: {d.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="rounded-full bg-[#F4F7FB] px-2.5 py-1 text-[11px] font-semibold text-[#8A97A8]">
+                        Off: {weeklyOffLabel(m.weekly_off)}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -192,27 +272,28 @@ export default function TeamClient({
           </div>
         </>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        /* Upcoming Leaves Grid */
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {leaves.length === 0 ? (
-            <div className="card sm:col-span-2">
-              <EmptyState
-                icon={<CalendarDays className="h-8 w-8" />}
-                title="No upcoming leaves"
-                subtitle="Approved leaves will appear here."
-              />
+            <div className="card p-12 text-center sm:col-span-2">
+              <CalendarDays className="mx-auto h-10 w-10 text-[#C5D0DC] mb-2" />
+              <p className="text-[15px] font-bold text-[#172334]">No upcoming leaves</p>
+              <p className="text-[13px] text-[#8A97A8] mt-1">
+                Approved leaves across the team will be displayed here.
+              </p>
             </div>
           ) : (
             leaves.map((l) => (
-              <div key={l.id} className="card flex items-center gap-3 p-4">
+              <div key={l.id} className="card flex items-center gap-4 p-5 hover:shadow-pop transition">
                 <div
-                  className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[12px] text-white"
+                  className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[14px] text-white shadow-sm"
                   style={{ backgroundColor: l.leave_type_color || "#1E6FE0" }}
                 >
-                  <span className="text-[13px] font-bold leading-none">{l.days}d</span>
+                  <span className="text-[16px] font-bold leading-none">{l.days}d</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-[#172334]">{l.user_name}</p>
-                  <p className="text-[12px] text-[#8A97A8]">
+                  <p className="truncate text-[15px] font-bold text-[#172334]">{l.user_name}</p>
+                  <p className="text-[13px] text-[#617083]">
                     {l.leave_type_name} · {formatDate(l.start_date)}
                     {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""}
                   </p>

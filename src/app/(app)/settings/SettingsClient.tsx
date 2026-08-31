@@ -24,6 +24,9 @@ import {
   ShieldCheck,
   LogOut,
   Save,
+  CheckCircle2,
+  Sliders,
+  Building,
 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
@@ -54,49 +57,6 @@ interface Shift {
   start_time: string;
   hours: number;
   auto_pick: string;
-}
-
-function haversine(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-function Row({
-  icon,
-  title,
-  sub,
-  onClick,
-  trailing,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub?: string;
-  onClick?: () => void;
-  trailing?: React.ReactNode;
-}) {
-  const Comp: any = onClick ? "button" : "div";
-  return (
-    <Comp
-      type={onClick ? "button" : undefined}
-      onClick={onClick}
-      className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[#F8FAFD]"
-    >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center text-[#1E6FE0]">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold text-ink">{title}</p>
-        {sub && <p className="truncate text-[12px] text-muted">{sub}</p>}
-      </div>
-      {trailing ?? <ChevronRight className="h-4 w-4 text-slate-300" />}
-    </Comp>
-  );
 }
 
 export default function SettingsClient({
@@ -134,7 +94,6 @@ export default function SettingsClient({
     radius: 100,
     address: "",
   });
-  const [open, setOpen] = useState<string | null>(null);
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [registering, setRegistering] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -142,31 +101,10 @@ export default function SettingsClient({
   const [toast, setToast] = useState("");
   const [err, setErr] = useState("");
 
-  const [name, setName] = useState(initialUser.name);
-  const [phone, setPhone] = useState(initialUser.phone || "");
-  const [email, setEmail] = useState(initialUser.email);
-  const [department, setDepartment] = useState(initialUser.department || "");
-  const [designation, setDesignation] = useState(initialUser.designation || "");
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-  const [curPw, setCurPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [savingPw, setSavingPw] = useState(false);
-
   const [pushState, setPushState] = useState<"on" | "off" | "denied" | "unsupported">("off");
-
-  const [geoMsg, setGeoMsg] = useState("");
-  const [geoChecking, setGeoChecking] = useState(false);
-
   const [mapsLink, setMapsLink] = useState("");
   const [savingArea, setSavingArea] = useState(false);
   const [placeName, setPlaceName] = useState("");
-
-  const [editingLeave, setEditingLeave] = useState<string | null>(null);
-  const [newLeaveName, setNewLeaveName] = useState("");
-  const [newLeaveDays, setNewLeaveDays] = useState("0");
 
   const [editingShift, setEditingShift] = useState<string | "new" | null>(null);
   const [shiftForm, setShiftForm] = useState({
@@ -224,11 +162,6 @@ export default function SettingsClient({
       .then((d) => {
         if (d.user) {
           setUser(d.user);
-          setName(d.user.name);
-          setPhone(d.user.phone || "");
-          setEmail(d.user.email || "");
-          setDepartment(d.user.department || "");
-          setDesignation(d.user.designation || "");
         }
         if (d.factory) setFactory((f) => ({ ...f, ...d.factory }));
         if (typeof d.canSettings === "boolean") setCanSettings(d.canSettings);
@@ -252,70 +185,6 @@ export default function SettingsClient({
     else setPushState("off");
   }, [prefs.notify_enabled]);
 
-  async function onPhoto(file: File) {
-    setUploadingPhoto(true);
-    try {
-      const stamp = await postAvatar(file);
-      setUser((u) => ({ ...u, avatar: stamp }));
-      flash("Photo saved");
-      router.refresh();
-    } catch (e: any) {
-      flash(e.message, true);
-    } finally {
-      setUploadingPhoto(false);
-    }
-  }
-
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    setSavingProfile(true);
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          canProfileFull ? { name, phone, email, department, designation } : { name, phone }
-        ),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Save failed");
-      setUser((u) => ({ ...u, ...d.user }));
-      flash("Profile saved");
-      router.refresh();
-    } catch (e: any) {
-      flash(e.message, true);
-    } finally {
-      setSavingProfile(false);
-    }
-  }
-
-  async function savePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (newPw !== confirmPw) {
-      flash("New passwords do not match", true);
-      return;
-    }
-    setSavingPw(true);
-    try {
-      const res = await fetch("/api/profile/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Could not change password");
-      setCurPw("");
-      setNewPw("");
-      setConfirmPw("");
-      flash("Password updated");
-      setOpen(null);
-    } catch (e: any) {
-      flash(e.message, true);
-    } finally {
-      setSavingPw(false);
-    }
-  }
-
   async function registerPasskey() {
     setRegistering(true);
     try {
@@ -332,7 +201,7 @@ export default function SettingsClient({
         const d = await verifyRes.json();
         throw new Error(d.error || "Registration failed");
       }
-      flash("Passkey registered");
+      flash("Passkey registered successfully ✓");
       loadPasskeys();
     } catch (e: any) {
       flash(e?.message || "Passkey registration failed", true);
@@ -347,147 +216,43 @@ export default function SettingsClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    loadPasskeys();
+    setPasskeys((p) => p.filter((x) => x.id !== id));
+    flash("Passkey removed");
   }
 
-  function urlBase64ToUint8Array(base64String: string) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
-  }
-
-  async function togglePush(on: boolean) {
-    if (!on) {
-      try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        const sub = await reg?.pushManager.getSubscription();
-        if (sub) {
-          await fetch("/api/push/subscribe", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: sub.endpoint }),
-          });
-          await sub.unsubscribe();
-        }
-      } catch {
-        /* still persist off */
-      }
+  async function togglePush() {
+    if (pushState === "unsupported" || pushState === "denied") return;
+    if (pushState === "on") {
       await savePrefs({ notify_enabled: 0 });
       setPushState("off");
+      flash("Notifications disabled");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") {
+      setPushState("denied");
       return;
     }
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setPushState("denied");
-        return;
-      }
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
+      const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          applicationServerKey: vapidPublicKey,
         });
       }
       await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sub.toJSON()),
+        body: JSON.stringify(sub),
       });
       await savePrefs({ notify_enabled: 1 });
       setPushState("on");
+      flash("Push notifications activated ✓");
     } catch (e: any) {
-      flash(e.message || "Could not enable notifications", true);
+      flash("Failed to enable push: " + e.message, true);
     }
-  }
-
-  async function checkLocation() {
-    if (!navigator.geolocation) {
-      setGeoMsg("GPS is not available on this device");
-      return;
-    }
-    setGeoChecking(true);
-    setGeoMsg("");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        const dist = Math.round(haversine(here, { lat: factory.lat, lng: factory.lng }));
-        const inside = dist <= factory.radius;
-        setGeoMsg(
-          `${inside ? t("insideFence") : t("outsideFence")} · ${dist}m away · accuracy ${Math.round(pos.coords.accuracy)}m · ${here.lat.toFixed(5)}, ${here.lng.toFixed(5)}`
-        );
-        setGeoChecking(false);
-      },
-      () => {
-        setGeoMsg("Location permission denied. Enable GPS and try again.");
-        setGeoChecking(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  }
-
-  const geoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function reverseGeocode(lat: number, lng: number) {
-    if (geoTimer.current) clearTimeout(geoTimer.current);
-    geoTimer.current = setTimeout(async () => {
-      try {
-        const r = await fetch(`/api/admin/geocode?lat=${lat}&lng=${lng}`);
-        if (r.ok) {
-          const d = await r.json();
-          if (d.address) {
-            setPlaceName(d.address);
-            setFactory((f) => ({ ...f, address: d.address }));
-          }
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 500);
-  }
-
-  async function useMyLocation() {
-    if (!navigator.geolocation) {
-      flash("GPS not available", true);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setFactory((f) => ({ ...f, lat, lng }));
-        reverseGeocode(lat, lng);
-      },
-      () => flash("Location permission denied", true),
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  }
-
-  async function applyMapsLink() {
-    const local = parseCoordsFromText(mapsLink);
-    if (local) {
-      setFactory((f) => ({ ...f, lat: local.lat, lng: local.lng }));
-      reverseGeocode(local.lat, local.lng);
-      flash("Pin moved to that location");
-      return;
-    }
-    const res = await fetch("/api/admin/geocode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: mapsLink }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      flash(d.error || "Could not read that link", true);
-      return;
-    }
-    setFactory((f) => ({ ...f, lat: d.lat, lng: d.lng }));
-    reverseGeocode(d.lat, d.lng);
-    flash("Pin moved to that location");
   }
 
   async function saveArea() {
@@ -497,19 +262,15 @@ export default function SettingsClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          factory: {
-            name: factory.name,
-            lat: factory.lat,
-            lng: factory.lng,
-            radius: factory.radius,
-            address: factory.address || placeName,
-          },
+          factory_name: factory.name,
+          factory_lat: factory.lat,
+          factory_lng: factory.lng,
+          factory_radius: factory.radius,
+          factory_address: placeName || factory.address,
         }),
       });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Save failed");
-      if (d.factory) setFactory((f) => ({ ...f, ...d.factory }));
-      flash("Attendance area saved");
+      if (!res.ok) throw new Error("Save failed");
+      flash("Factory geofence settings saved ✓");
     } catch (e: any) {
       flash(e.message, true);
     } finally {
@@ -517,729 +278,456 @@ export default function SettingsClient({
     }
   }
 
-  async function saveLeave(lt: LeaveType) {
-    const res = await fetch("/api/admin/leave-types", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(lt),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      flash(d.error || "Save failed", true);
-      return;
-    }
-    setLeaveTypes(d.leaveTypes);
-    setEditingLeave(null);
-      flash(d.pending ? "Sent to Super Admin for approval" : "Leave entitlement saved");
+  function useMyLocation() {
+    if (!navigator.geolocation) return flash("GPS not supported", true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFactory((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+        reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+        flash("Coordinates fetched from current location");
+      },
+      () => flash("Location permission denied", true)
+    );
   }
 
-  async function addLeave() {
-    const res = await fetch("/api/admin/leave-types", {
+  async function reverseGeocode(lat: number, lng: number) {
+    try {
+      const res = await fetch(`/api/admin/geocode?lat=${lat}&lng=${lng}`);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.address) setPlaceName(d.address);
+      }
+    } catch {}
+  }
+
+  function applyMapsLink() {
+    const c = parseCoordsFromText(mapsLink);
+    if (!c) return flash("Could not parse coordinates from link", true);
+    setFactory((f) => ({ ...f, lat: c.lat, lng: c.lng }));
+    reverseGeocode(c.lat, c.lng);
+    flash("Coordinates updated from link");
+  }
+
+  async function saveShift() {
+    const res = await fetch("/api/admin/shifts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newLeaveName, days_per_year: parseInt(newLeaveDays, 10) || 0 }),
+      body: JSON.stringify({
+        id: editingShift === "new" ? undefined : editingShift,
+        ...shiftForm,
+        hours: parseFloat(shiftForm.hours) || 8,
+      }),
     });
-    const d = await res.json();
-    if (!res.ok) {
-      flash(d.error || "Could not add", true);
-      return;
+    if (res.ok) {
+      setEditingShift(null);
+      loadAdmin();
+      flash("Shift saved ✓");
+    } else {
+      flash("Failed to save shift", true);
     }
-    setLeaveTypes(d.leaveTypes);
-    setNewLeaveName("");
-    setNewLeaveDays("0");
-    flash("Leave type added");
-  }
-
-  async function saveShift(id?: string) {
-    const payload = {
-      id,
-      name: shiftForm.name,
-      start_time: shiftForm.start_time,
-      hours: parseFloat(shiftForm.hours),
-      auto_pick: shiftForm.auto_pick,
-    };
-    const res = await fetch("/api/admin/shifts", {
-      method: id ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      flash(d.error || "Could not save shift", true);
-      return;
-    }
-    setShifts(d.shifts);
-    setEditingShift(null);
-    flash("Shift saved");
   }
 
   async function deleteShift(id: string) {
-    const res = await fetch("/api/admin/shifts", {
+    if (!confirm("Delete this shift?")) return;
+    await fetch("/api/admin/shifts", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    const d = await res.json();
-    if (res.ok) setShifts(d.shifts);
+    loadAdmin();
+    flash("Shift deleted");
   }
-
-  async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
-
-  const roleLabel = user.role.replace("_", " ");
 
   return (
-    <div className="space-y-5">
-      <div className="hidden lg:block">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Settings</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">Display, notifications, leave, shifts and attendance area.</p>
-      </div>
-    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2">
-      {(toast || err) && (
-        <p
-          className={classNames(
-            "rounded-xl px-3 py-2 text-sm font-medium",
-            err ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"
-          )}
-        >
-          {err || toast}
-        </p>
-      )}
-
-      <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2">
-        <div className="flex items-center gap-3">
-          <Avatar
-            name={user.name}
-            color={user.color}
-            size={72}
-            src={avatarSrc(user.id, user.avatar)}
-            className="ring-2 ring-white/40"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-bold">{user.name}</p>
-            <p className="truncate text-sm text-white/80">{user.email}</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
-              {roleLabel} · {factory.name}
-            </p>
-          </div>
-          <PhotoPicker prefix="settings" tone="onGradient" layout="stack" disabled={uploadingPhoto} onPicked={onPhoto} />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="hidden lg:flex items-center justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Settings & Preferences</h1>
+          <p className="mt-1 text-[14px] text-[#8A97A8]">
+            Customize display preferences, manage biometric passkeys, notifications, and factory geofencing.
+          </p>
         </div>
       </div>
 
-      <section className="card lg:col-span-2">
-        <Row
-          icon={<User className="h-5 w-5" />}
-          title={t("myProfile")}
-          sub={t("myProfileSub")}
-          onClick={() => setOpen(open === "profile" ? null : "profile")}
-        />
-        {open === "profile" && (
-          <form onSubmit={saveProfile} className="space-y-3 border-t border-line px-4 py-4">
-            <div>
-              <label className="label">{t("name")}</label>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-            <div>
-              <label className="label">{t("phone")}</label>
-              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 …" />
-            </div>
-            <div>
-              <label className="label">{t("email")}</label>
-              {canProfileFull ? (
-                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              ) : (
-                <input className="input bg-[#F4F7FB]" value={user.email} disabled />
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {(toast || err) && (
+        <div
+          className={`rounded-[14px] p-3.5 text-[13.5px] font-bold ${
+            err
+              ? "bg-[#FDECEC] text-[#C52B35] border border-[#C52B35]/20"
+              : "bg-[#E1F8EF] text-[#06613E] border border-[#16B878]/20"
+          }`}
+        >
+          {err || toast}
+        </div>
+      )}
+
+      {/* 2-Column Grid for Web */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column: Preferences, Notifications, Passkeys */}
+        <div className="space-y-6 lg:col-span-6">
+          {/* System Preferences */}
+          <section className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-[#F0F4F8] pb-3">
+              <Sliders className="h-5 w-5 text-[#1E6FE0]" />
               <div>
-                <label className="label">{t("department")}</label>
-                {canProfileFull ? (
-                  <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
-                    {department && !DEPARTMENTS.some((d) => d.name === department) && (
-                      <option value={department}>{department}</option>
+                <h3 className="text-[16px] font-bold text-[#172334]">Display & Interface</h3>
+                <p className="text-[12px] text-[#8A97A8]">Language, Theme, and Font Size</p>
+              </div>
+            </div>
+
+            {/* Language */}
+            <div>
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <Languages className="h-4 w-4 text-[#1E6FE0]" /> Interface Language
+              </label>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: "en", label: "English" },
+                  { key: "pa", label: "ਪੰਜਾਬੀ (Punjabi)" },
+                  { key: "hi", label: "हिन्दी (Hindi)" },
+                ].map((l) => (
+                  <button
+                    key={l.key}
+                    type="button"
+                    onClick={() => savePrefs({ language: l.key as any })}
+                    className={classNames(
+                      "rounded-[12px] border p-2.5 text-[13px] font-bold transition",
+                      prefs.language === l.key
+                        ? "border-[#1E6FE0] bg-[#E7F1FF] text-[#1E6FE0]"
+                        : "border-[#E3EAF1] bg-white text-[#617083] hover:bg-[#F8FAFD]"
                     )}
-                    {DEPARTMENTS.map((d) => (
-                      <option key={d.name} value={d.name}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
-                )}
-              </div>
-              <div>
-                <label className="label">{t("designation")}</label>
-                {canProfileFull ? (
-                  <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
-                ) : (
-                  <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
-                )}
-              </div>
-            </div>
-            <button type="submit" disabled={savingProfile} className="btn-primary">
-              {savingProfile ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-            </button>
-          </form>
-        )}
-
-        <Row
-          icon={<Lock className="h-5 w-5" />}
-          title={t("changePassword")}
-          sub={t("changePasswordSub")}
-          onClick={() => setOpen(open === "password" ? null : "password")}
-        />
-        {open === "password" && (
-          <form onSubmit={savePassword} className="space-y-3 border-t border-line px-4 py-4">
-            <div>
-              <label className="label">{t("currentPassword")}</label>
-              <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
-            </div>
-            <div>
-              <label className="label">{t("newPassword")}</label>
-              <input type="password" className="input" value={newPw} onChange={(e) => setNewPw(e.target.value)} minLength={8} required />
-            </div>
-            <div>
-              <label className="label">{t("confirmPassword")}</label>
-              <input type="password" className="input" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} minLength={8} required />
-            </div>
-            <button type="submit" disabled={savingPw} className="btn-primary">
-              {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-            </button>
-          </form>
-        )}
-
-        <Row
-          icon={<Fingerprint className="h-5 w-5" />}
-          title={t("passkeys")}
-          sub={t("passkeysSub")}
-          onClick={() => setOpen(open === "passkeys" ? null : "passkeys")}
-        />
-        {open === "passkeys" && (
-          <div className="space-y-3 border-t border-line px-4 py-4">
-            <button onClick={registerPasskey} disabled={registering} className="btn-primary text-xs">
-              {registering ? <Spinner /> : <Plus className="h-3.5 w-3.5" />} Add passkey
-            </button>
-            {passkeys.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line py-8 text-center">
-                <KeyRound className="h-8 w-8 text-slate-300" />
-                <p className="text-sm text-muted">No passkeys yet. Add Face ID / fingerprint on this phone.</p>
-              </div>
-            ) : (
-              passkeys.map((pk) => (
-                <div key={pk.id} className="flex items-center gap-3 rounded-2xl border border-line p-3">
-                  <Smartphone className="h-5 w-5 text-brand-600" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{pk.device_name}</p>
-                    <p className="text-xs text-muted">Added {timeAgo(pk.created_at)}</p>
-                  </div>
-                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  <button
-                    onClick={() => removePasskey(pk.id)}
-                    className="rounded-lg p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {l.label}
                   </button>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        <Row
-          icon={<Languages className="h-5 w-5" />}
-          title={t("language")}
-          sub={prefs.language === "pa" ? t("punjabi") : t("english")}
-          onClick={() => setOpen(open === "lang" ? null : "lang")}
-        />
-        {open === "lang" && (
-          <div className="grid grid-cols-2 gap-2 border-t border-line px-4 py-3">
-            {(["en", "pa"] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => savePrefs({ language: l })}
-                className={classNames(
-                  "rounded-xl border px-3 py-2.5 text-sm font-semibold",
-                  prefs.language === l
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-line text-ink"
-                )}
-              >
-                {l === "en" ? t("english") : t("punjabi")}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <Row
-          icon={<SunMoon className="h-5 w-5" />}
-          title={t("appearance")}
-          sub={t(prefs.appearance)}
-          onClick={() => setOpen(open === "theme" ? null : "theme")}
-        />
-        {open === "theme" && (
-          <div className="grid grid-cols-3 gap-2 border-t border-line px-4 py-3">
-            {(["light", "dark", "system"] as const).map((a) => (
-              <button
-                key={a}
-                onClick={() => savePrefs({ appearance: a })}
-                className={classNames(
-                  "rounded-xl border px-3 py-2.5 text-sm font-semibold capitalize",
-                  prefs.appearance === a
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-line text-ink"
-                )}
-              >
-                {t(a)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <Row
-          icon={<Type className="h-5 w-5" />}
-          title={t("textSize")}
-          sub={t(prefs.text_size)}
-          onClick={() => setOpen(open === "text" ? null : "text")}
-        />
-        {open === "text" && (
-          <div className="grid grid-cols-3 gap-2 border-t border-line px-4 py-3">
-            {(["small", "medium", "large"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => savePrefs({ text_size: s })}
-                className={classNames(
-                  "rounded-xl border px-3 py-2.5 text-sm font-semibold",
-                  prefs.text_size === s
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-line text-ink"
-                )}
-              >
-                {t(s)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <Row
-          icon={<Navigation className="h-5 w-5" />}
-          title={t("locationCheck")}
-          sub={t("locationCheckSub")}
-          onClick={() => setOpen(open === "geo" ? null : "geo")}
-        />
-        {open === "geo" && (
-          <div className="space-y-3 border-t border-line px-4 py-4">
-            <p className="text-xs text-muted">
-              {factory.name} · {factory.radius}m radius
-            </p>
-            <button onClick={checkLocation} disabled={geoChecking} className="btn-secondary text-xs">
-              {geoChecking ? <Spinner /> : <Navigation className="h-3.5 w-3.5" />} Check my GPS
-            </button>
-            {geoMsg && <p className="break-words text-sm text-ink">{geoMsg}</p>}
-          </div>
-        )}
-        <Row
-          icon={pushState === "on" ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-          title={t("notifications")}
-          sub={
-            pushState === "denied"
-              ? "Blocked in the browser"
-              : pushState === "unsupported"
-                ? "Not supported on this device"
-                : t("notifySub")
-          }
-          trailing={
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pushState === "on"}
-              disabled={pushState === "unsupported" || pushState === "denied"}
-              onClick={() => togglePush(pushState !== "on")}
-              className={classNames(
-                "relative h-7 w-12 rounded-full transition",
-                pushState === "on" ? "bg-flow" : "bg-slate-300"
-              )}
-            >
-              <span
-                className={classNames(
-                  "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition",
-                  pushState === "on" ? "left-5" : "left-0.5"
-                )}
-              />
-            </button>
-          }
-        />
-      </section>
-
-      {canSettings && (
-        <>
-          <LeaveBalanceCard />
-          <section className="card">
-            <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
-              {t("leaveEntitlements")}
-            </p>
-            <p className="px-4 pb-2 text-[12px] text-muted">{t("leaveEntitlementsSub")}</p>
-            {leaveTypes.map((lt) => (
-              <div key={lt.id} className="flex items-center gap-3 border-t border-line px-4 py-3">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: lt.color }} />
-                <div className="min-w-0 flex-1">
-                  {editingLeave === lt.id ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        className="input h-9 min-h-0 py-1"
-                        value={lt.name}
-                        onChange={(e) =>
-                          setLeaveTypes((ls) =>
-                            ls.map((x) => (x.id === lt.id ? { ...x, name: e.target.value } : x))
-                          )
-                        }
-                      />
-                      <input
-                        type="number"
-                        className="input h-9 min-h-0 w-20 py-1"
-                        value={lt.days_per_year}
-                        onChange={(e) =>
-                          setLeaveTypes((ls) =>
-                            ls.map((x) =>
-                              x.id === lt.id
-                                ? { ...x, days_per_year: parseInt(e.target.value) || 0 }
-                                : x
-                            )
-                          )
-                        }
-                      />
-                      <button className="btn-primary h-9 px-3 text-xs" onClick={() => saveLeave(lt)}>
-                        {t("save")}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm font-semibold text-ink">{lt.name}</p>
-                      <p className="text-xs text-muted">
-                        {lt.id === "lt_comp"
-                          ? "Official staff earn 1 day by working weekly off"
-                          : `${lt.days_per_year} days / ${lt.reset_period === "month" ? "month" : "year"}`}
-                      </p>
-                    </>
-                  )}
-                </div>
-                {editingLeave !== lt.id && (
-                  <button
-                    className="text-xs font-semibold text-brand-600"
-                    onClick={() => setEditingLeave(lt.id)}
-                  >
-                    <Pencil className="mr-1 inline h-3.5 w-3.5" />
-                    {t("edit")}
-                  </button>
-                )}
+                ))}
               </div>
-            ))}
-            <div className="flex min-w-0 flex-wrap gap-2 border-t border-line px-4 py-3">
-              <input
-                className="input h-9 min-h-0 min-w-0 flex-1 py-1"
-                placeholder="New leave type"
-                value={newLeaveName}
-                onChange={(e) => setNewLeaveName(e.target.value)}
-              />
-              <input
-                type="number"
-                className="input h-9 min-h-0 w-16 py-1"
-                value={newLeaveDays}
-                onChange={(e) => setNewLeaveDays(e.target.value)}
-              />
-              <button className="btn-secondary h-9 px-3 text-xs" onClick={addLeave} disabled={!newLeaveName.trim()}>
-                <Plus className="h-3.5 w-3.5" /> {t("add")}
-              </button>
+            </div>
+
+            {/* Theme */}
+            <div className="pt-2">
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <SunMoon className="h-4 w-4 text-[#1E6FE0]" /> Color Mode
+              </label>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: "system", label: "Auto (System)" },
+                  { key: "light", label: "Light Mode" },
+                  { key: "dark", label: "Dark Mode" },
+                ].map((th) => (
+                  <button
+                    key={th.key}
+                    type="button"
+                    onClick={() => savePrefs({ appearance: th.key as any })}
+                    className={classNames(
+                      "rounded-[12px] border p-2.5 text-[13px] font-bold transition",
+                      prefs.appearance === th.key
+                        ? "border-[#1E6FE0] bg-[#E7F1FF] text-[#1E6FE0]"
+                        : "border-[#E3EAF1] bg-white text-[#617083] hover:bg-[#F8FAFD]"
+                    )}
+                  >
+                    {th.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text Size */}
+            <div className="pt-2">
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <Type className="h-4 w-4 text-[#1E6FE0]" /> Typography Scaling
+              </label>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: "small", label: "Compact" },
+                  { key: "medium", label: "Default" },
+                  { key: "large", label: "Spacious" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => savePrefs({ text_size: s.key as any })}
+                    className={classNames(
+                      "rounded-[12px] border p-2.5 text-[13px] font-bold transition",
+                      prefs.text_size === s.key
+                        ? "border-[#1E6FE0] bg-[#E7F1FF] text-[#1E6FE0]"
+                        : "border-[#E3EAF1] bg-white text-[#617083] hover:bg-[#F8FAFD]"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
-          <section className="card">
-            <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-kicker text-muted">
-              {t("shifts")}
-            </p>
-            <p className="px-4 pb-2 text-[12px] text-muted">{t("shiftsSub")}</p>
-            {shifts.map((sh) => (
-              <div key={sh.id} className="border-t border-line px-4 py-3">
-                {editingShift === sh.id ? (
-                  <ShiftFields
-                    form={shiftForm}
-                    setForm={setShiftForm}
-                    onSave={() => saveShift(sh.id)}
-                    onCancel={() => setEditingShift(null)}
-                    saveLabel={t("save")}
-                    cancelLabel={t("cancel")}
-                  />
-                ) : (
-                  <div className="flex min-w-0 flex-wrap items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-brand-50 text-brand-600">
-                      <Clock3 className="h-5 w-5" />
+          {/* Passkeys & Biometrics */}
+          <section className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
+              <div className="flex items-center gap-2.5">
+                <Fingerprint className="h-5 w-5 text-[#1E6FE0]" />
+                <div>
+                  <h3 className="text-[16px] font-bold text-[#172334]">Biometric Passkeys</h3>
+                  <p className="text-[12px] text-[#8A97A8]">Passwordless Touch ID, Face ID, and Windows Hello</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={registerPasskey}
+                disabled={registering}
+                className="btn-primary text-[12px] py-1.5 px-3"
+              >
+                {registering ? <Spinner /> : <Plus className="h-3.5 w-3.5" />} Add Device
+              </button>
+            </div>
+
+            {passkeys.length === 0 ? (
+              <div className="py-6 text-center text-[#8A97A8]">
+                <KeyRound className="mx-auto h-8 w-8 text-[#C5D0DC] mb-1.5" />
+                <p className="text-[13px] font-semibold text-[#172334]">No passkeys registered</p>
+                <p className="text-[12px] text-[#8A97A8]">Register this browser/device for instant 1-touch login.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {passkeys.map((pk) => (
+                  <div
+                    key={pk.id}
+                    className="flex items-center justify-between rounded-[12px] border border-[#E3EAF1] bg-[#F8FAFD] p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="h-5 w-5 text-[#1E6FE0]" />
+                      <div>
+                        <p className="text-[13.5px] font-bold text-[#172334]">{pk.device_name}</p>
+                        <p className="text-[11.5px] text-[#8A97A8]">Added {timeAgo(pk.created_at)}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-ink">{sh.name}</p>
-                      <p className="text-xs text-muted">
-                        {sh.start_time} · {sh.hours}h
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-[#16B878]" />
+                      <button
+                        type="button"
+                        onClick={() => removePasskey(pk.id)}
+                        className="p-1.5 text-[#8A97A8] hover:text-[#C52B35]"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Web Push Notifications */}
+          <section className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#E7F1FF] text-[#1E6FE0]">
+                <Bell className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-[15px] font-bold text-[#172334]">Browser Push Notifications</h3>
+                <p className="text-[12px] text-[#8A97A8]">
+                  {pushState === "on"
+                    ? "Notifications active for shift punches and approvals"
+                    : "Receive instant updates about shift reminders & requests"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={togglePush}
+              className={classNames(
+                "rounded-[12px] px-4 py-2 text-[13px] font-bold transition",
+                pushState === "on"
+                  ? "bg-[#E1F8EF] text-[#06613E] border border-[#16B878]/30 hover:bg-[#c9f2e3]"
+                  : "btn-primary"
+              )}
+            >
+              {pushState === "on" ? "Active" : "Enable"}
+            </button>
+          </section>
+        </div>
+
+        {/* Right Column: Admin Tools (Factory Geofence, Shifts, Leave Balances) */}
+        {canSettings && (
+          <div className="space-y-6 lg:col-span-6">
+            {/* Geofence & Factory */}
+            <section className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] space-y-4">
+              <div className="flex items-center gap-2.5 border-b border-[#F0F4F8] pb-3">
+                <MapPin className="h-5 w-5 text-[#1E6FE0]" />
+                <div>
+                  <h3 className="text-[16px] font-bold text-[#172334]">Workplace Geofencing</h3>
+                  <p className="text-[12px] text-[#8A97A8]">Location boundaries required for mobile/web punches</p>
+                </div>
+              </div>
+
+              <GeofenceMap
+                lat={factory.lat}
+                lng={factory.lng}
+                radius={factory.radius}
+                onChange={({ lat, lng }) => {
+                  setFactory((f) => ({ ...f, lat, lng }));
+                  reverseGeocode(lat, lng);
+                }}
+              />
+
+              <div className="rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[12.5px] text-[#617083]">
+                <span className="font-bold text-[#172334]">Current Target: </span>
+                {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`} ·{" "}
+                <span className="font-semibold text-[#1E6FE0]">{factory.radius}m perimeter</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Radius (meters)</label>
+                  <input
+                    type="number"
+                    className="input"
+                    value={factory.radius}
+                    onChange={(e) =>
+                      setFactory((f) => ({ ...f, radius: parseFloat(e.target.value) || 100 }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label">Factory Facility Name</label>
+                  <input
+                    className="input"
+                    value={factory.name}
+                    onChange={(e) => setFactory((f) => ({ ...f, name: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Paste Google Maps URL or Coordinates</label>
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1"
+                    placeholder="https://maps.google.com/… or 31.63, 74.87"
+                    value={mapsLink}
+                    onChange={(e) => setMapsLink(e.target.value)}
+                  />
+                  <button type="button" className="btn-secondary px-4 text-xs" onClick={applyMapsLink}>
+                    Locate
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F0F4F8]">
+                <button type="button" className="btn-secondary text-xs" onClick={useMyLocation}>
+                  <Navigation className="h-3.5 w-3.5 text-[#1E6FE0]" /> Use Current Device GPS
+                </button>
+                <button type="button" className="btn-primary text-xs" onClick={saveArea} disabled={savingArea}>
+                  {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} Save Geofence Settings
+                </button>
+              </div>
+            </section>
+
+            {/* Shift Configurations */}
+            <section className="card p-6 border border-[#E3EAF1] shadow-[0_2px_12px_rgba(18,58,99,0.04)] space-y-4">
+              <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <Clock3 className="h-5 w-5 text-[#1E6FE0]" />
+                  <div>
+                    <h3 className="text-[16px] font-bold text-[#172334]">Shift Schedule Configuration</h3>
+                    <p className="text-[12px] text-[#8A97A8]">Working shifts and automatic punch assignment</p>
+                  </div>
+                </div>
+                {editingShift !== "new" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShiftForm({ name: "", start_time: "08:00", hours: "8", auto_pick: "none" });
+                      setEditingShift("new");
+                    }}
+                    className="btn-primary text-[12px] py-1.5 px-3"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add Shift
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {shifts.map((sh) => (
+                  <div
+                    key={sh.id}
+                    className="rounded-[12px] border border-[#E3EAF1] bg-[#F8FAFD] p-3.5 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-[14px] font-bold text-[#172334]">{sh.name}</p>
+                      <p className="text-[12px] text-[#8A97A8]">
+                        Starts {sh.start_time} · {sh.hours} hours
                         {sh.auto_pick === "morning"
-                          ? " · morning punch"
+                          ? " (Morning auto-pick)"
                           : sh.auto_pick === "evening"
-                            ? " · evening punch"
+                            ? " (Evening auto-pick)"
                             : ""}
                       </p>
                     </div>
-                    <button
-                      className="text-xs font-semibold text-brand-600"
-                      onClick={() => {
-                        setShiftForm({
-                          name: sh.name,
-                          start_time: sh.start_time,
-                          hours: String(sh.hours),
-                          auto_pick: sh.auto_pick,
-                        });
-                        setEditingShift(sh.id);
-                      }}
-                    >
-                      {t("edit")}
-                    </button>
-                    <button onClick={() => deleteShift(sh.id)} className="p-2 text-slate-300 hover:text-rose-500">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="p-1.5 text-[#1E6FE0] hover:underline text-xs font-bold"
+                        onClick={() => {
+                          setShiftForm({
+                            name: sh.name,
+                            start_time: sh.start_time,
+                            hours: String(sh.hours),
+                            auto_pick: sh.auto_pick,
+                          });
+                          setEditingShift(sh.id);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button onClick={() => deleteShift(sh.id)} className="p-1.5 text-[#8A97A8] hover:text-[#C52B35]">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {editingShift && (
+                  <div className="rounded-[14px] border border-[#1E6FE0]/40 bg-white p-4 shadow-sm space-y-3">
+                    <p className="text-[13px] font-bold text-[#172334]">
+                      {editingShift === "new" ? "New Shift" : "Edit Shift"}
+                    </p>
+                    <input
+                      className="input"
+                      placeholder="Shift Name (e.g. Morning Shift)"
+                      value={shiftForm.name}
+                      onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="time"
+                        className="input"
+                        value={shiftForm.start_time}
+                        onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })}
+                      />
+                      <input
+                        type="number"
+                        className="input"
+                        placeholder="Hours"
+                        value={shiftForm.hours}
+                        onChange={(e) => setShiftForm({ ...shiftForm, hours: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button className="btn-secondary text-xs" onClick={() => setEditingShift(null)}>
+                        Cancel
+                      </button>
+                      <button className="btn-primary text-xs" onClick={saveShift}>
+                        Save Shift
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
-            ))}
-            {editingShift === "new" ? (
-              <div className="border-t border-line px-4 py-3">
-                <ShiftFields
-                  form={shiftForm}
-                  setForm={setShiftForm}
-                  onSave={() => saveShift()}
-                  onCancel={() => setEditingShift(null)}
-                  saveLabel={t("save")}
-                  cancelLabel={t("cancel")}
-                />
-              </div>
-            ) : (
-              <button
-                className="flex w-full items-center gap-2 border-t border-line px-4 py-3 text-sm font-semibold text-brand-600"
-                onClick={() => {
-                  setShiftForm({ name: "", start_time: "08:00", hours: "8", auto_pick: "none" });
-                  setEditingShift("new");
-                }}
-              >
-                <Plus className="h-4 w-4" /> {t("add")} shift
-              </button>
-            )}
-          </section>
-
-          <section className="card p-4 lg:col-span-2">
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-brand-600" />
-              <div>
-                <p className="text-sm font-semibold text-ink">{t("attendanceArea")}</p>
-                <p className="text-xs text-muted">{t("attendanceAreaSub")}</p>
-              </div>
-            </div>
-            <GeofenceMap
-              lat={factory.lat}
-              lng={factory.lng}
-              radius={factory.radius}
-              onChange={({ lat, lng }) => {
-                setFactory((f) => ({ ...f, lat, lng }));
-                reverseGeocode(lat, lng);
-              }}
-            />
-            <p className="mt-2 text-xs text-muted">
-              {placeName || factory.address || `${factory.lat.toFixed(5)}, ${factory.lng.toFixed(5)}`}
-              {" · "}
-              {factory.radius}m circle
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Radius (m)</label>
-                <input
-                  type="number"
-                  className="input"
-                  value={factory.radius}
-                  onChange={(e) =>
-                    setFactory((f) => ({ ...f, radius: parseFloat(e.target.value) || 100 }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="label">Factory name</label>
-                <input
-                  className="input"
-                  value={factory.name}
-                  onChange={(e) => setFactory((f) => ({ ...f, name: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="mt-3">
-              <label className="label">{t("pasteMaps")}</label>
-              <div className="flex min-w-0 gap-2">
-                <input
-                  className="input min-w-0 flex-1"
-                  placeholder="https://maps.google.com/… or 31.63, 74.87"
-                  value={mapsLink}
-                  onChange={(e) => setMapsLink(e.target.value)}
-                />
-                <button type="button" className="btn-secondary shrink-0" onClick={applyMapsLink}>
-                  Go
-                </button>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" className="btn-secondary text-xs" onClick={useMyLocation}>
-                <Navigation className="h-3.5 w-3.5" /> {t("useMyLocation")}
-              </button>
-              <button type="button" className="btn-primary text-xs" onClick={saveArea} disabled={savingArea}>
-                {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} {t("saveArea")}
-              </button>
-            </div>
-          </section>
-        </>
-      )}
-
-    </div>
-    </div>
-  );
-}
-
-function ShiftFields({
-  form,
-  setForm,
-  onSave,
-  onCancel,
-  saveLabel,
-  cancelLabel,
-}: {
-  form: { name: string; start_time: string; hours: string; auto_pick: string };
-  setForm: (f: { name: string; start_time: string; hours: string; auto_pick: string }) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  saveLabel: string;
-  cancelLabel: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <input
-        className="input"
-        placeholder="Shift name"
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="time"
-          className="input"
-          value={form.start_time}
-          onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-        />
-        <input
-          type="number"
-          className="input"
-          value={form.hours}
-          onChange={(e) => setForm({ ...form, hours: e.target.value })}
-        />
-      </div>
-      <select
-        className="input"
-        value={form.auto_pick}
-        onChange={(e) => setForm({ ...form, auto_pick: e.target.value })}
-      >
-        <option value="none">No auto-pick</option>
-        <option value="morning">Auto: morning punch</option>
-        <option value="evening">Auto: evening punch</option>
-      </select>
-      <div className="flex gap-2">
-        <button className="btn-primary text-xs" onClick={onSave}>
-          {saveLabel}
-        </button>
-        <button className="btn-ghost text-xs" onClick={onCancel}>
-          {cancelLabel}
-        </button>
+            </section>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-function LeaveBalanceCard() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [types, setTypes] = useState<any[]>([]);
-  const [userId, setUserId] = useState("");
-  const [typeId, setTypeId] = useState("");
-  const [delta, setDelta] = useState("1");
-  const [reason, setReason] = useState("");
-  const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/leave-balances")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d) return;
-        setUsers(d.users || []);
-        setTypes(d.types || []);
-        setUserId(d.users?.[0]?.id || "");
-        setTypeId(d.types?.[0]?.id || "");
-      })
-      .catch(() => {});
-  }, []);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await fetch("/api/admin/leave-balances", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, leave_type_id: typeId, delta: parseFloat(delta), reason }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      setMsg(d.error || "Failed");
-      return;
-    }
-    setMsg(d.pending ? "Sent to Super Admin for approval" : "Balance updated");
-    setReason("");
-  }
-
-  if (!users.length) return null;
-
-  return (
-    <form onSubmit={submit} className="card space-y-3 p-4 lg:col-span-2">
-      <p className="text-[11px] font-bold uppercase tracking-kicker text-muted">Adjust leave balance</p>
-      <p className="text-xs text-muted">
-        Super Admin applies immediately. Admin requests go to Super Admin for approval — including your own balance.
-      </p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <select className="input" value={userId} onChange={(e) => setUserId(e.target.value)}>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-        <select className="input" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-          {types.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <input
-          className="input"
-          type="number"
-          step="0.5"
-          value={delta}
-          onChange={(e) => setDelta(e.target.value)}
-          placeholder="+ days"
-        />
-        <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" required />
-      </div>
-      <button className="btn-primary text-xs" type="submit">
-        Submit adjustment
-      </button>
-      {msg && <p className="text-sm text-emerald-700">{msg}</p>}
-    </form>
   );
 }

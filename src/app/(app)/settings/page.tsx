@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getPermissions } from "@/lib/permissions";
 import { getFactoryConfig } from "@/lib/geo";
@@ -9,7 +10,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default function SettingsPage() {
-  const user = getSessionUser()!;
+  const user = getSessionUser();
+  if (!user) redirect("/login");
   const perms = getPermissions(user.id);
   const factory = getFactoryConfig();
 
