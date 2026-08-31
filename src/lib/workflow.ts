@@ -22,6 +22,65 @@ export function managersForScope(scope: ManagerScope): string[] {
   ).map((r) => r.id);
 }
 
+export type ApproverOption = { id: string; name: string; label: string; role: string };
+
+export function approverLabel(u: {
+  name: string;
+  role: string;
+  designation?: string;
+  manager_scope?: string;
+}) {
+  if (u.role === "super_admin") return `${u.name} — Super Admin`;
+  if (u.manager_scope === "operations") return `${u.name} — Senior Manager Production`;
+  if (u.manager_scope === "engineering") return `${u.name} — Assistant General Manager`;
+  return `${u.name} — ${u.designation || "Manager"}`;
+}
+
+/** Managers + Super Admins the requester can pick. Never auto-selects. */
+export function listApproverOptions(excludeUserId: string): ApproverOption[] {
+  const rows = db
+    .prepare(
+      `SELECT id, name, role, designation, manager_scope
+       FROM users
+       WHERE active = 1 AND role IN ('manager', 'super_admin') AND id != ?
+       ORDER BY CASE role WHEN 'manager' THEN 0 ELSE 1 END, name`
+    )
+    .all(excludeUserId) as {
+    id: string;
+    name: string;
+    role: string;
+    designation: string;
+    manager_scope: string;
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    label: approverLabel(r),
+  }));
+}
+
+export function getApprover(id: string, requesterId: string) {
+  if (!id || id === requesterId) return null;
+  const u = db
+    .prepare(
+      `SELECT id, name, role, designation, manager_scope, active FROM users WHERE id = ?`
+    )
+    .get(id) as
+    | {
+        id: string;
+        name: string;
+        role: string;
+        designation: string;
+        manager_scope: string;
+        active: number;
+      }
+    | undefined;
+  if (!u || !u.active) return null;
+  if (u.role !== "manager" && u.role !== "super_admin") return null;
+  return u;
+}
+
 export function punchStageForUser(userId: string): "manager" | "scope" | "final" {
   const u = db
     .prepare("SELECT role, department FROM users WHERE id = ?")
@@ -44,8 +103,16 @@ export function notifyPunchApprovers(
   },
   summary: string,
   date: string,
-  stage: string
+  stage: string,
+  approverId?: string | null
 ) {
+  if (approverId) {
+    notify(approverId, "Manual punch", `${requester.name} needs your approval — ${summary} on ${date}`, {
+      type: "approval",
+      link: "/approvals",
+    });
+    return;
+  }
   if (stage === "manager" || stage === "scope") {
     const ids = managerIdsForDepartment(requester.department);
     if (ids.length === 0) {
@@ -68,12 +135,23 @@ export function notifyPunchApprovers(
   });
 }
 
-export function notifyLeaveApprovers(requester: {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-}, summary: string) {
+export function notifyLeaveApprovers(
+  requester: {
+    id: string;
+    name: string;
+    role: string;
+    department: string;
+  },
+  summary: string,
+  approverId?: string | null
+) {
+  if (approverId) {
+    notify(approverId, "Leave request", `${requester.name}: ${summary}`, {
+      type: "approval",
+      link: "/approvals",
+    });
+    return;
+  }
   if (isLeadershipRole(requester.role)) {
     notifyMany(superAdminIds(), "Leave request — Super Admin", `${requester.name}: ${summary}`, {
       type: "approval",
@@ -101,15 +179,16 @@ function managesDepartment(actor: { role: string; manager_scope?: string }, depa
 
 export function canActOnManual(
   actor: { id: string; role: string; manager_scope?: string },
-  row: { user_id: string; status: string; stage?: string }
+  row: { user_id: string; status: string; stage?: string; approver_id?: string | null }
 ): boolean {
   if (row.status !== "pending") return false;
   const target = db
     .prepare("SELECT id, role, staff_type, department FROM users WHERE id = ?")
     .get(row.user_id) as { id: string; role: string; staff_type: string; department: string } | undefined;
   if (!target) return false;
-  if (actor.role === "super_admin") return true;
   if (actor.id === row.user_id) return false;
+  if (actor.role === "super_admin") return true;
+  if (row.approver_id) return actor.id === row.approver_id;
   if (isLeadershipRole(target.role)) return false;
   const stage = row.stage || "final";
   if (stage === "scope" || stage === "manager") return managesDepartment(actor, target.department);
@@ -118,15 +197,16 @@ export function canActOnManual(
 
 export function canActOnLeave(
   actor: { id: string; role: string; manager_scope?: string },
-  row: { user_id: string; status: string }
+  row: { user_id: string; status: string; approver_id?: string | null }
 ): boolean {
   if (row.status !== "pending") return false;
   const target = db
     .prepare("SELECT id, role, department FROM users WHERE id = ?")
     .get(row.user_id) as { id: string; role: string; department: string } | undefined;
   if (!target) return false;
-  if (actor.role === "super_admin") return true;
   if (actor.id === row.user_id) return false;
+  if (actor.role === "super_admin") return true;
+  if (row.approver_id) return actor.id === row.approver_id;
   if (isLeadershipRole(target.role)) return false;
   if (actor.role === "manager") return managesDepartment(actor, target.department);
   return actor.role === "admin";

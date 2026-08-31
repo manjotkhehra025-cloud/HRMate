@@ -5,7 +5,7 @@ import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { businessDays } from "@/lib/utils";
 import { balancesForUser, usedInPeriod } from "@/lib/leave";
-import { notifyLeaveApprovers } from "@/lib/workflow";
+import { getApprover, listApproverOptions, notifyLeaveApprovers } from "@/lib/workflow";
 import { parseWeeklyOff } from "@/lib/staff";
 import { listGraceDays } from "@/lib/jobs";
 
@@ -15,8 +15,11 @@ export async function GET() {
 
   const requests = db
     .prepare(
-      `SELECT lr.*, lt.name AS leave_type_name, lt.color AS leave_type_color
-       FROM leave_requests lr JOIN leave_types lt ON lt.id = lr.leave_type_id
+      `SELECT lr.*, lt.name AS leave_type_name, lt.color AS leave_type_color,
+              a.name AS approver_name
+       FROM leave_requests lr
+       JOIN leave_types lt ON lt.id = lr.leave_type_id
+       LEFT JOIN users a ON a.id = lr.approver_id
        WHERE lr.user_id = ? ORDER BY lr.created_at DESC`
     )
     .all(user.id);
@@ -24,8 +27,9 @@ export async function GET() {
   const types = db.prepare("SELECT * FROM leave_types ORDER BY sort").all();
   const balance = balancesForUser(user.id);
   const openMissed = listGraceDays(user.id, parseWeeklyOff(user.weekly_off, 6));
+  const approvers = listApproverOptions(user.id);
 
-  return json({ requests, types, balance, openMissed });
+  return json({ requests, types, balance, openMissed, approvers });
 }
 
 export async function POST(req: NextRequest) {
@@ -35,10 +39,12 @@ export async function POST(req: NextRequest) {
     return error("You don't have permission to apply for leave", 403);
   }
 
-  const { leave_type_id, start_date, end_date, reason } = await req.json();
+  const { leave_type_id, start_date, end_date, reason, approver_id } = await req.json();
   if (!leave_type_id || !start_date || !end_date || !reason) {
     return error("All fields are required");
   }
+  const approver = getApprover(String(approver_id || ""), user.id);
+  if (!approver) return error("Pick who should approve this request");
   if (end_date < start_date) return error("End date must be after start date");
 
   const type = db.prepare("SELECT * FROM leave_types WHERE id = ?").get(leave_type_id) as any;
@@ -69,14 +75,15 @@ export async function POST(req: NextRequest) {
   }
 
   db.prepare(
-    `INSERT INTO leave_requests (id, user_id, leave_type_id, start_date, end_date, days, reason, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(randomId("lr_"), user.id, leave_type_id, start_date, end_date, days, reason, Date.now());
+    `INSERT INTO leave_requests (id, user_id, leave_type_id, start_date, end_date, days, reason, created_at, approver_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(randomId("lr_"), user.id, leave_type_id, start_date, end_date, days, reason, Date.now(), approver.id);
 
   notifyLeaveApprovers(
     { id: user.id, name: user.name, role: user.role, department: user.department },
-    `${days} day(s) of ${type.name} (${start_date} to ${end_date})`
+    `${days} day(s) of ${type.name} (${start_date} to ${end_date})`,
+    approver.id
   );
 
-  return json({ ok: true, days });
+  return json({ ok: true, days, approver_name: approver.name });
 }

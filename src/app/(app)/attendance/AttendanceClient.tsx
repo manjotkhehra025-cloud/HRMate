@@ -74,6 +74,8 @@ export default function AttendanceClient({
   const [mIn, setMIn] = useState("09:00");
   const [mOut, setMOut] = useState("18:00");
   const [mReason, setMReason] = useState("");
+  const [mApprover, setMApprover] = useState("");
+  const [approvers, setApprovers] = useState<{ id: string; name: string; label: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("");
 
@@ -86,6 +88,7 @@ export default function AttendanceClient({
       setManualReqs(data.manualRequests || []);
       if (typeof data.weekly_off === "number") setWeeklyOff(data.weekly_off);
       setLeaveCover(data.leaveCover || []);
+      setApprovers(data.approvers || []);
     } finally {
       setLoading(false);
     }
@@ -155,6 +158,7 @@ export default function AttendanceClient({
           punch_in: mKind === "out" ? undefined : mIn || undefined,
           punch_out: mKind === "in" ? undefined : mOut || undefined,
           reason: mReason,
+          approver_id: mApprover,
         }),
       });
       const data = await res.json();
@@ -164,11 +168,9 @@ export default function AttendanceClient({
       }
       setMReason("");
       setSubmitMsg(
-        data.stage === "manager"
-          ? "Sent to your department manager, then Super Admin."
-          : data.stage === "scope"
-            ? "Sent to your department manager."
-            : "Sent to Super Admin. After approve, those times replace the day's record."
+        data.approver_name
+          ? `Sent to ${data.approver_name}. After approve, those times replace the day's record.`
+          : "Request sent."
       );
       load();
     } finally {
@@ -370,7 +372,13 @@ export default function AttendanceClient({
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="min-w-0 break-words">
                   {m.type === "punch_in" ? "In" : "Out"} {m.date} · {m.time}
-                  {m.stage === "manager" ? " · manager" : m.stage === "final" && m.status === "pending" ? " · Super Admin" : ""}
+                  {m.approver_name
+                    ? ` · ${m.approver_name}`
+                    : m.stage === "manager"
+                      ? " · manager"
+                      : m.stage === "final" && m.status === "pending"
+                        ? " · Super Admin"
+                        : ""}
                 </span>
                 <StatusBadge status={m.status} />
               </div>

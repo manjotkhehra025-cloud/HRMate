@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import db from "@/lib/db";
 import { requireUser, unauthorized, json } from "@/lib/api";
+import { listApproverOptions } from "@/lib/workflow";
 
 export async function GET(req: NextRequest) {
   const user = requireUser();
@@ -32,5 +33,12 @@ export async function GET(req: NextRequest) {
     )
     .all(user.id, `${month}-01`, `${month}-31`) as { start_date: string; end_date: string; status: string }[];
 
-  return json({ records, manualRequests, month, weekly_off: user.weekly_off ?? 6, leaveCover });
+  return json({
+    records,
+    manualRequests,
+    month,
+    weekly_off: user.weekly_off ?? 6,
+    leaveCover,
+    approvers: listApproverOptions(user.id),
+  });
 }

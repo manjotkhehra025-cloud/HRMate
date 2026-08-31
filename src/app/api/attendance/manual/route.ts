@@ -4,7 +4,7 @@ import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { istTimestamp } from "@/lib/attendance";
-import { notifyPunchApprovers, punchStageForUser } from "@/lib/workflow";
+import { getApprover, notifyPunchApprovers, punchStageForUser } from "@/lib/workflow";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +53,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const stage = punchStageForUser(user.id);
+  const approver = getApprover(String(body.approver_id || ""), user.id);
+  if (!approver) return error("Pick who should approve this request");
+
+  const stage = approver.role === "super_admin" ? "final" : punchStageForUser(user.id);
   const insert = db.prepare(
-    `INSERT INTO manual_punch_requests (id, user_id, date, type, time, reason, created_at, stage)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO manual_punch_requests (id, user_id, date, type, time, reason, created_at, stage, approver_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const p of punches) {
-    insert.run(randomId("mp_"), user.id, date, p.type, p.time, reason.trim(), Date.now(), stage);
+    insert.run(randomId("mp_"), user.id, date, p.type, p.time, reason.trim(), Date.now(), stage, approver.id);
   }
 
   const summary = punches
@@ -69,8 +72,9 @@ export async function POST(req: NextRequest) {
     { id: user.id, name: user.name, department: user.department, staff_type: user.staff_type },
     summary,
     date,
-    stage
+    stage,
+    approver.id
   );
 
-  return json({ ok: true, count: punches.length, stage });
+  return json({ ok: true, count: punches.length, stage, approver_name: approver.name });
 }

@@ -26,7 +26,10 @@ interface LeaveRequest {
   reason: string;
   status: string;
   created_at: number;
+  approver_name?: string;
 }
+
+type ApproverOpt = { id: string; name: string; label: string };
 
 function statusPill(status: string) {
   if (status === "approved") return "bg-[#E1F8EF] text-[#06613E]";
@@ -60,6 +63,8 @@ export default function LeavesClient({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+  const [approverId, setApproverId] = useState("");
+  const [approvers, setApprovers] = useState<ApproverOpt[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -75,6 +80,7 @@ export default function LeavesClient({
       setBalance(data.balance);
       setRequests(data.requests);
       setOpenMissed(data.openMissed || []);
+      setApprovers(data.approvers || []);
     } finally {
       setLoading(false);
     }
@@ -98,6 +104,7 @@ export default function LeavesClient({
           start_date: startDate,
           end_date: endDate,
           reason,
+          approver_id: approverId,
         }),
       });
       const data = await res.json();
@@ -105,7 +112,11 @@ export default function LeavesClient({
         setError(data.error || "Failed to apply");
         return;
       }
-      setSuccess(`Leave request submitted (${data.days} day${data.days > 1 ? "s" : ""}) ✓`);
+      setSuccess(
+        data.approver_name
+          ? `Sent to ${data.approver_name} (${data.days} day${data.days > 1 ? "s" : ""})`
+          : `Leave request submitted (${data.days} day${data.days > 1 ? "s" : ""}) ✓`
+      );
       setReason("");
       load();
     } finally {
@@ -253,6 +264,26 @@ export default function LeavesClient({
               </div>
             </div>
             <div>
+              <label className="label">Send for approval to</label>
+              <select
+                value={approverId}
+                onChange={(e) => setApproverId(e.target.value)}
+                className="input"
+                required
+              >
+                <option value="">Select who should approve…</option>
+                {approvers.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-[#8A97A8]">
+                Lab, Quality, Production → Senior Manager Production. Electric (official + yellow card) and
+                Maintenance → AGM. If one is on leave, pick the other. Super Admin for managers.
+              </p>
+            </div>
+            <div>
               <label className="label">Reason</label>
               <textarea
                 value={reason}
@@ -311,6 +342,9 @@ export default function LeavesClient({
                       </span>
                     </div>
                     <p className="mt-0.5 break-words text-[13px] text-[#617083]">{r.reason}</p>
+                    {r.approver_name && (
+                      <p className="mt-0.5 text-[11px] text-[#8A97A8]">To {r.approver_name}</p>
+                    )}
                   </div>
                 </li>
               ))}

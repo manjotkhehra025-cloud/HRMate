@@ -285,6 +285,12 @@ function ensureSchema(d: DatabaseLike) {
   if (!hasColumn(d, "sessions", "last_seen")) {
     d.exec(`ALTER TABLE sessions ADD COLUMN last_seen INTEGER`);
   }
+  if (!hasColumn(d, "leave_requests", "approver_id")) {
+    d.exec(`ALTER TABLE leave_requests ADD COLUMN approver_id TEXT`);
+  }
+  if (!hasColumn(d, "manual_punch_requests", "approver_id")) {
+    d.exec(`ALTER TABLE manual_punch_requests ADD COLUMN approver_id TEXT`);
+  }
 }
 
 function seed(d: DatabaseLike) {
