@@ -3,6 +3,8 @@ import { getPermissions } from "@/lib/permissions";
 import WallClient from "./WallClient";
 
 export const metadata = { title: "Social Wall — HRMate" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function WallPage() {
   const user = getSessionUser()!;
@@ -10,18 +12,11 @@ export default function WallPage() {
   const has = (p: any) => perms.isSuperAdmin || perms.has(p);
 
   return (
-    <div className="space-y-6">
-      <div className="hidden lg:block">
-        <h1 className="page-title">Social Wall</h1>
-        <p className="page-sub">
-          Announcements, shout-outs and team updates.
-        </p>
-      </div>
-      <WallClient
-        canPost={has("wall.post")}
-        canModerate={has("wall.moderate")}
-        userId={user.id}
-      />
-    </div>
+    <WallClient
+      canPost={has("wall.post")}
+      canModerate={has("wall.moderate")}
+      userId={user.id}
+      me={{ name: user.name, color: user.color, avatar: user.avatar }}
+    />
   );
 }

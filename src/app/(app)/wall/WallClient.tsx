@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Send, ThumbsUp, MessageSquare, Trash2, Loader2 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
-import { timeAgo } from "@/lib/utils";
+import { classNames, timeAgo } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -34,10 +34,12 @@ export default function WallClient({
   canPost,
   canModerate,
   userId,
+  me,
 }: {
   canPost: boolean;
   canModerate: boolean;
   userId: string;
+  me: { name: string; color: string; avatar?: string };
 }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -79,9 +81,7 @@ export default function WallClient({
     const data = await res.json();
     setPosts((ps) =>
       ps.map((p) =>
-        p.id === postId
-          ? { ...p, like_count: data.count, liked_by_me: data.liked ? 1 : 0 }
-          : p
+        p.id === postId ? { ...p, like_count: data.count, liked_by_me: data.liked ? 1 : 0 } : p
       )
     );
   }
@@ -105,20 +105,31 @@ export default function WallClient({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      {/* Composer */}
+    <div className="mx-auto max-w-2xl space-y-5">
+      <div>
+        <h1 className="text-[26px] font-bold tracking-tight text-[#172334] lg:text-[30px]">Social Wall</h1>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">Announcements, shout-outs and team updates.</p>
+      </div>
+
       {canPost && (
-        <form onSubmit={submitPost} className="card p-4">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share an update, announcement or shout-out…"
-            className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            rows={2}
-          />
-          <div className="mt-2 flex justify-end">
-            <button type="submit" disabled={posting || !content.trim()} className="btn-primary px-4 py-2 text-xs">
-              {posting ? <Spinner className="h-4 w-4" /> : <><Send className="h-3.5 w-3.5" /> Post</>}
+        <form onSubmit={submitPost} className="card p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <Avatar name={me.name} color={me.color} size={40} src={avatarSrc(userId, me.avatar)} />
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Share an update…"
+              className="min-h-[88px] w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] px-4 py-3 text-[14px] text-[#172334] outline-none focus:border-[#1E6FE0]"
+              rows={3}
+            />
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="submit"
+              disabled={posting || !content.trim()}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white disabled:opacity-50 sm:w-auto sm:min-w-[120px]"
+            >
+              {posting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Post
             </button>
           </div>
         </form>
@@ -139,59 +150,72 @@ export default function WallClient({
           const postComments = comments.filter((c) => c.post_id === p.id);
           const isOpen = openComments === p.id;
           return (
-            <div key={p.id} className="card p-5 animate-fade-in">
+            <article key={p.id} className="card p-5">
               <div className="flex items-start gap-3">
-                <Avatar name={p.author_name} color={p.author_color} size={42} src={avatarSrc(p.user_id, p.author_avatar)} />
+                <Avatar
+                  name={p.author_name}
+                  color={p.author_color}
+                  size={42}
+                  src={avatarSrc(p.user_id, p.author_avatar)}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">{p.author_name}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="truncate text-[14px] font-semibold text-[#172334]">{p.author_name}</p>
+                      <p className="text-[12px] text-[#8A97A8]">
                         {p.author_designation || "Team member"} · {timeAgo(p.created_at)}
                       </p>
                     </div>
                     {(p.user_id === userId || canModerate) && (
                       <button
+                        type="button"
                         onClick={() => deletePost(p.id)}
-                        className="rounded-lg p-1.5 text-slate-300 transition hover:bg-rose-50 hover:text-rose-500"
+                        className="rounded-lg p-1.5 text-[#8A97A8] transition hover:bg-rose-50 hover:text-rose-500"
+                        aria-label="Delete post"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  <p className="mt-2 break-words whitespace-pre-wrap text-[14px] leading-relaxed text-[#172334]">
                     {p.content}
                   </p>
 
-                  <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3">
+                  <div className="mt-3 flex items-center gap-2 border-t border-[#F0F4F8] pt-3">
                     <button
+                      type="button"
                       onClick={() => toggleLike(p.id)}
-                      className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition ${
-                        p.liked_by_me
-                          ? "text-brand-600"
-                          : "text-slate-500 hover:bg-slate-50"
-                      }`}
+                      className={classNames(
+                        "flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-semibold",
+                        p.liked_by_me ? "text-[#1E6FE0]" : "text-[#8A97A8] hover:bg-[#F4F7FB]"
+                      )}
                     >
-                      <ThumbsUp className={`h-4 w-4 ${p.liked_by_me ? "fill-brand-600" : ""}`} />
-                      {p.like_count > 0 && p.like_count}
+                      <ThumbsUp className={classNames("h-4 w-4", p.liked_by_me && "fill-[#1E6FE0]")} />
+                      {p.like_count > 0 ? p.like_count : "Like"}
                     </button>
                     <button
+                      type="button"
                       onClick={() => setOpenComments(isOpen ? null : p.id)}
-                      className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-50"
+                      className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-semibold text-[#8A97A8] hover:bg-[#F4F7FB]"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      {p.comment_count > 0 && p.comment_count}
+                      {p.comment_count > 0 ? p.comment_count : "Comment"}
                     </button>
                   </div>
 
                   {isOpen && (
-                    <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
+                    <div className="mt-3 space-y-3 border-t border-[#F0F4F8] pt-3">
                       {postComments.map((c) => (
                         <div key={c.id} className="flex items-start gap-2.5">
-                          <Avatar name={c.author_name} color={c.author_color} size={28} src={avatarSrc(c.user_id, c.author_avatar)} />
-                          <div className="flex-1 rounded-xl bg-slate-50 px-3 py-2">
-                            <p className="text-xs font-semibold text-slate-700">{c.author_name}</p>
-                            <p className="text-sm text-slate-600">{c.content}</p>
+                          <Avatar
+                            name={c.author_name}
+                            color={c.author_color}
+                            size={28}
+                            src={avatarSrc(c.user_id, c.author_avatar)}
+                          />
+                          <div className="flex-1 rounded-[14px] bg-[#F4F7FB] px-3 py-2">
+                            <p className="text-[12px] font-semibold text-[#172334]">{c.author_name}</p>
+                            <p className="text-[13px] text-[#617083]">{c.content}</p>
                           </div>
                         </div>
                       ))}
@@ -206,9 +230,11 @@ export default function WallClient({
                           className="input flex-1 py-2 text-sm"
                         />
                         <button
+                          type="button"
                           onClick={() => submitComment(p.id)}
                           disabled={commenting === p.id}
-                          className="btn-primary p-2.5"
+                          className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#1E6FE0] text-white"
+                          aria-label="Send comment"
                         >
                           {commenting === p.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,7 +247,7 @@ export default function WallClient({
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           );
         })
       )}
