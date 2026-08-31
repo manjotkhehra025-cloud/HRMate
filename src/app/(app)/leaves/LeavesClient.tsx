@@ -14,6 +14,9 @@ import {
   Sliders,
   Settings2,
   Save,
+  RefreshCw,
+  UserCheck,
+  Award,
 } from "lucide-react";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
@@ -64,7 +67,7 @@ export default function LeavesClient({
   canApply,
   canView,
   canAdjust = false,
-  staffType,
+  staffType: initialStaffType,
   currentUserId,
 }: {
   canApply: boolean;
@@ -73,6 +76,7 @@ export default function LeavesClient({
   staffType: string;
   currentUserId?: string;
 }) {
+  const [currentStaffType, setCurrentStaffType] = useState(initialStaffType || "official");
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +96,10 @@ export default function LeavesClient({
   const [success, setSuccess] = useState("");
   const [openMissed, setOpenMissed] = useState<{ date: string; deadline: string }[]>([]);
 
+  // Category switch loading
+  const [switchingCategory, setSwitchingCategory] = useState(false);
+  const [categoryNotice, setCategoryNotice] = useState("");
+
   // Adjustment state for Super Admin / Admin
   const [adjustTargetUser, setAdjustTargetUser] = useState(currentUserId || "");
   const [adjustType, setAdjustType] = useState("");
@@ -103,19 +111,22 @@ export default function LeavesClient({
   const [adjustMsg, setAdjustMsg] = useState("");
   const [adjustErr, setAdjustErr] = useState("");
 
-  const isYellowCard = staffType === "yellow_card";
+  const isYellowCard = currentStaffType === "yellow_card";
 
   async function load() {
     setLoading(true);
     try {
       const res = await fetch("/api/leaves");
       const data = await res.json();
+      if (data.staff_type) {
+        setCurrentStaffType(data.staff_type);
+      }
       setBalance(data.balance || []);
       setRequests(data.requests || []);
       setOpenMissed(data.openMissed || []);
       setApprovers(data.approvers || []);
       setApproverFallback(!!data.approver_fallback);
-      if (data.balance?.length === 1) {
+      if (data.balance?.length > 0) {
         setLeaveType(data.balance[0].id);
       }
     } finally {
@@ -143,6 +154,37 @@ export default function LeavesClient({
     load();
     if (canAdjust) loadAdjustData();
   }, [canAdjust]);
+
+  // Quick switch own staff category (Yellow Card vs Official)
+  async function handleSwitchCategory(newCategory: "yellow_card" | "official") {
+    setSwitchingCategory(true);
+    setCategoryNotice("");
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staff_type: newCategory }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to switch category");
+        return;
+      }
+      setCurrentStaffType(newCategory);
+      setCategoryNotice(
+        newCategory === "yellow_card"
+          ? "Switched to Yellow Card Staff (Strictly 15 EL Leaves, 1.25/month accrual) ✓"
+          : "Switched to Official Staff (Full Leave Package: CL, SL, EL & Holidays) ✓"
+      );
+      await load();
+      if (canAdjust) await loadAdjustData();
+      setTimeout(() => setCategoryNotice(""), 6000);
+    } catch (e: any) {
+      alert(e.message || "Network error");
+    } finally {
+      setSwitchingCategory(false);
+    }
+  }
 
   // Calculate day count between start and end date
   const calculatedDays = useMemo(() => {
@@ -230,72 +272,134 @@ export default function LeavesClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="hidden items-center justify-between lg:flex">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Leaves Management</h1>
-          <p className="mt-1 text-[14px] text-[#8A97A8]">
-            {isYellowCard
-              ? "Yellow card staff quota: strictly 15 days Earned Leave (EL) per year, accrued at 1.25 days per month."
-              : "Check available leave quotas, submit new applications, and track past requests."}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {canAdjust && (
-            <button
-              type="button"
-              onClick={() => setShowAdjust((a) => !a)}
-              className="flex h-11 items-center gap-2 rounded-[12px] border border-[#1E6FE0] bg-[#E7F1FF] px-4 text-[14px] font-bold text-[#1E6FE0] transition hover:bg-[#d5e7ff]"
-            >
-              <Settings2 className="h-4 w-4" /> {showAdjust ? "Close Adjuster" : "Adjust / Add Leave Days"}
-            </button>
-          )}
+      {/* Top Main Bar - Always visible on Mobile & Desktop */}
+      <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-6 w-6 text-[#1E6FE0]" />
+              <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+                Leaves Management
+              </h1>
+            </div>
+            <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
+              {isYellowCard
+                ? "🟡 Yellow Card Staff: Strictly 15 days Earned Leave (EL) per year (accrued at 1.25/month)."
+                : "🔵 Official Staff: Casual (CL), Sick (SL), Earned (EL), and Optional Holidays available."}
+            </p>
+          </div>
 
-          {canApply && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(true);
-                document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
-            >
-              <Plus className="h-4 w-4" /> Apply For Leave
-            </button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {canAdjust && (
+              <button
+                type="button"
+                onClick={() => setShowAdjust((a) => !a)}
+                className={classNames(
+                  "flex h-10 sm:h-11 items-center gap-2 rounded-[12px] px-3.5 sm:px-4 text-[13px] sm:text-[14px] font-bold transition",
+                  showAdjust
+                    ? "bg-[#1E6FE0] text-white shadow-sm"
+                    : "border-2 border-[#1E6FE0] bg-[#E7F1FF] text-[#1E6FE0] hover:bg-[#d5e7ff]"
+                )}
+              >
+                <Settings2 className="h-4 w-4" />
+                {showAdjust ? "Close Adjuster" : "⚙️ Adjust Leave Days"}
+              </button>
+            )}
+
+            {canApply && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm((f) => !f);
+                  if (!showForm) {
+                    setTimeout(() => {
+                      document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }
+                }}
+                className="flex h-10 sm:h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[13px] sm:text-[14px] font-bold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
+              >
+                <Plus className="h-4 w-4" /> {showForm ? "Hide Form" : "Apply For Leave"}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Super Admin Quick Staff Category Switcher */}
+        {canAdjust && (
+          <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F8FAFD] p-3 rounded-[14px]">
+            <div className="flex items-center gap-2">
+              <span className="text-[12.5px] font-bold text-[#617083]">Your Category:</span>
+              <span
+                className={classNames(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold",
+                  isYellowCard
+                    ? "bg-amber-100 text-amber-900 border border-amber-300"
+                    : "bg-blue-100 text-blue-900 border border-blue-300"
+                )}
+              >
+                {isYellowCard ? "🟡 Yellow Card Staff (15 EL Only)" : "🔵 Official Staff (All Leaves)"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-[#8A97A8]">Super Admin Switch:</span>
+              <button
+                type="button"
+                disabled={switchingCategory}
+                onClick={() => handleSwitchCategory(isYellowCard ? "official" : "yellow_card")}
+                className="inline-flex items-center gap-1.5 rounded-[10px] bg-white border border-[#CBD6E2] px-3 py-1.5 text-[12px] font-bold text-[#172334] shadow-sm hover:bg-[#EEF2F7] active:scale-95 transition"
+              >
+                {switchingCategory ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 text-[#1E6FE0]" />
+                )}
+                {isYellowCard ? "Switch to Official Staff" : "Switch to Yellow Card (15 EL)"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {categoryNotice && (
+          <div className="mt-3 rounded-[12px] bg-[#E1F8EF] p-3 text-[13px] font-bold text-[#06613E] flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>{categoryNotice}</span>
+          </div>
+        )}
       </div>
 
       {/* Super Admin Direct Balance Adjuster Module */}
       {showAdjust && canAdjust && (
         <form
           onSubmit={submitAdjustment}
-          className="card p-6 border-2 border-[#1E6FE0]/40 bg-gradient-to-br from-white to-[#F8FAFD] shadow-pop space-y-4 animate-fade-in"
+          className="card p-5 sm:p-6 border-2 border-[#1E6FE0] bg-gradient-to-br from-white to-[#F8FAFD] shadow-pop space-y-4 animate-fade-in"
         >
           <div className="flex items-center justify-between border-b border-[#E3EAF1] pb-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Sliders className="h-5 w-5 text-[#1E6FE0]" />
               <div>
                 <h2 className="text-[16px] font-bold text-[#172334]">
                   Super Admin / Manager Leave Balance Adjuster
                 </h2>
                 <p className="text-[12px] text-[#8A97A8]">
-                  Directly credit or modify leave balance for yourself or any employee
+                  Directly credit, deduct or modify leave balances for yourself or any staff member
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setShowAdjust(false)}
-              className="text-[#8A97A8] hover:text-[#172334]"
+              className="rounded-lg p-1 text-[#8A97A8] hover:bg-[#EEF2F7] hover:text-[#172334]"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-4">
             <div>
-              <label className="label">Target User / Self</label>
+              <label className="label">Target Employee</label>
               <select
                 className="input font-semibold"
                 value={adjustTargetUser || currentUserId}
@@ -354,12 +458,12 @@ export default function LeavesClient({
             </div>
 
             <div>
-              <label className="label">Adjustment Reason</label>
+              <label className="label">Reason / Remark</label>
               <input
                 className="input"
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="Reason / Note"
+                placeholder="e.g. Annual quota grant"
                 required
               />
             </div>
@@ -382,25 +486,28 @@ export default function LeavesClient({
               disabled={adjustSaving}
               className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2"
             >
-              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Apply Balance Adjustment
+              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Save Balance Adjustment
             </button>
           </div>
         </form>
       )}
 
-      {/* Yellow Card Notice Banner if Yellow Card */}
+      {/* Yellow Card Notice Banner */}
       {isYellowCard && (
-        <div className="rounded-[14px] bg-[#E7F1FF] border border-[#1E6FE0]/30 p-4 flex items-center gap-3">
-          <ShieldAlert className="h-5 w-5 text-[#1E6FE0] shrink-0" />
-          <p className="text-[13.5px] font-medium text-[#0A2037]">
-            <span className="font-bold">Yellow Card Policy:</span> You are eligible for{" "}
-            <span className="font-bold text-[#1E6FE0]">15 days of Earned Leave (EL) per year</span> (accrued at{" "}
-            <span className="font-bold text-[#16B878]">1.25 days per month</span>). No other leave types apply.
-          </p>
+        <div className="rounded-[16px] bg-gradient-to-r from-amber-50 to-[#FFF9E6] border-2 border-amber-300/80 p-4 sm:p-5 flex items-start gap-3.5 shadow-sm">
+          <div className="rounded-full bg-amber-500/20 p-2 text-amber-800 shrink-0">
+            <Award className="h-5 w-5" />
+          </div>
+          <div className="text-[13.5px] text-[#5C3B00] leading-relaxed">
+            <p className="font-bold text-[15px] text-amber-950">Yellow Card Staff Leave Policy</p>
+            <p className="mt-0.5">
+              Yellow Card staff members strictly receive <strong className="text-amber-900">15 Earned Leaves (EL) per year</strong>, accrued monthly at <strong className="text-emerald-700">1.25 days per elapsed month</strong>. Casual Leaves (CL), Sick Leaves (SL), Optional Holidays, and Short Leaves are not applicable.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Leave Balance Cards */}
+      {/* Leave Balance Cards Grid */}
       <div
         className={classNames(
           "grid gap-3.5",
@@ -411,18 +518,29 @@ export default function LeavesClient({
           const total = Math.max(1, b.days_per_year);
           const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
           return (
-            <div key={b.id} className="card p-5 relative overflow-hidden border border-[#E3EAF1] shadow-card">
+            <div
+              key={b.id}
+              className={classNames(
+                "card p-5 relative overflow-hidden border shadow-card transition hover:shadow-md",
+                isYellowCard && "border-amber-300/60 bg-gradient-to-br from-white to-amber-50/30"
+              )}
+            >
               <div className="flex items-center justify-between">
-                <p className="truncate text-[14px] font-bold text-[#172334]">{b.name}</p>
+                <p className="truncate text-[14.5px] font-bold text-[#172334]">{b.name}</p>
                 <span
-                  className="h-3 w-3 rounded-full"
+                  className="h-3 w-3 rounded-full shrink-0"
                   style={{ backgroundColor: b.color || "#16B878" }}
                 />
               </div>
-              <p className="mt-2 text-[32px] font-bold tabular-nums leading-none text-[#172334]">
-                {b.balance} <span className="text-[13px] font-normal text-[#8A97A8]">days left</span>
-              </p>
-              <p className="mt-2 text-[12px] font-semibold text-[#8A97A8]">
+
+              <div className="mt-2.5 flex items-baseline gap-2">
+                <span className="text-[34px] font-extrabold tabular-nums leading-none text-[#172334]">
+                  {b.balance}
+                </span>
+                <span className="text-[13px] font-semibold text-[#8A97A8]">days left</span>
+              </div>
+
+              <p className="mt-2 text-[12px] font-semibold text-[#617083]">
                 {isYellowCard
                   ? `Accrued: ${b.accrued_days ?? b.balance} days (1.25/mo) · Used: ${b.used} of 15`
                   : b.reset_period === "month"
@@ -431,12 +549,14 @@ export default function LeavesClient({
                       ? `${b.balance} earned on weekly off`
                       : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
               </p>
-              <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-[#E8EEF4]">
+
+              <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-[#E8EEF4]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${leftPct}%`, background: b.color || "#16B878" }}
                 />
               </div>
+
               {b.reset_period === "month" && (
                 <p className="mt-2 text-[11px] text-[#8A97A8]">Lapses at month end</p>
               )}
@@ -462,11 +582,14 @@ export default function LeavesClient({
               </ul>
               <button
                 type="button"
-                className="mt-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[#D98200] px-3 py-1.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#b56d00]"
+                className="mt-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[#D98200] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#b56d00]"
                 onClick={() => {
                   setShowForm(true);
                   setStartDate(openMissed[0].date);
                   setEndDate(openMissed[0].date);
+                  setTimeout(() => {
+                    document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 100);
                 }}
               >
                 Apply for this date now
@@ -476,7 +599,7 @@ export default function LeavesClient({
         </div>
       )}
 
-      {/* 2-Column Section */}
+      {/* Main Grid: Application Form & Requests History */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
         {/* Application Form */}
         {canApply && (
@@ -498,7 +621,7 @@ export default function LeavesClient({
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="text-[#8A97A8] hover:text-[#172334] lg:hidden"
+                className="rounded-lg p-1 text-[#8A97A8] hover:bg-[#EEF2F7] hover:text-[#172334] lg:hidden"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -599,7 +722,7 @@ export default function LeavesClient({
               </div>
             )}
 
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
+            <button type="submit" disabled={submitting} className="btn-primary w-full py-3 text-[14px]">
               {submitting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Submit Leave Request
             </button>
           </form>

@@ -46,8 +46,8 @@ export async function PUT(req: NextRequest) {
   if (!user) return unauthorized();
 
   const body = await req.json();
-  const name = String(body.name || "").trim();
-  const phone = String(body.phone || "").trim();
+  const name = String(body.name !== undefined ? body.name : user.name || "").trim();
+  const phone = String(body.phone !== undefined ? body.phone : user.phone || "").trim();
   if (!name) return error("Name is required");
   if (name.length > 80) return error("Name is too long");
   if (phone && !/^[+\d][\d\s\-()]{6,20}$/.test(phone)) {

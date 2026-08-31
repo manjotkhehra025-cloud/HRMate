@@ -9,6 +9,9 @@ import { approverFallback, getApprover, listApproverOptions, notifyLeaveApprover
 import { parseWeeklyOff } from "@/lib/staff";
 import { listGraceDays } from "@/lib/jobs";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const user = requireUser();
   if (!user) return unauthorized();
@@ -24,16 +27,27 @@ export async function GET() {
     )
     .all(user.id);
 
+  // Fetch fresh user row to get latest staff_type
+  const userRow = db.prepare("SELECT id, name, role, staff_type, weekly_off FROM users WHERE id = ?").get(user.id) as any;
+  const staffType = userRow?.staff_type || "official";
+
   const balance = balancesForUser(user.id);
   const types =
-    user.staff_type === "yellow_card"
+    staffType === "yellow_card"
       ? balance
       : (db.prepare("SELECT * FROM leave_types ORDER BY sort").all() as any[]);
 
-  const openMissed = listGraceDays(user.id, parseWeeklyOff(user.weekly_off, 6));
+  const openMissed = listGraceDays(user.id, parseWeeklyOff(userRow?.weekly_off || user.weekly_off, 6));
   const approvers = listApproverOptions(user.id);
 
   return json({
+    current_user: {
+      id: user.id,
+      name: userRow?.name || user.name,
+      role: userRow?.role || user.role,
+      staff_type: staffType,
+    },
+    staff_type: staffType,
     requests,
     types,
     balance,
@@ -61,7 +75,8 @@ export async function POST(req: NextRequest) {
   const type = db.prepare("SELECT * FROM leave_types WHERE id = ?").get(leave_type_id) as any;
   if (!type) return error("Invalid leave type");
 
-  const isYellowCard = user.staff_type === "yellow_card";
+  const userRow = db.prepare("SELECT staff_type, weekly_off FROM users WHERE id = ?").get(user.id) as any;
+  const isYellowCard = (userRow?.staff_type || user.staff_type) === "yellow_card";
 
   // Yellow card rule: only Earned Leave (15/year, 1.25/month accrual)
   if (isYellowCard) {
@@ -69,11 +84,9 @@ export async function POST(req: NextRequest) {
     if (!isEarned) {
       return error("Yellow card staff are only eligible for Earned Leave (EL).");
     }
-  } else if (type.id === "lt_comp") {
-    // Comp off only for official staff
   }
 
-  const days = businessDays(start_date, end_date, parseWeeklyOff(user.weekly_off, 6));
+  const days = businessDays(start_date, end_date, parseWeeklyOff(userRow?.weekly_off || user.weekly_off, 6));
   if (days <= 0) return error("Selected range has no working days");
 
   const reset = type.reset_period === "month" ? "month" : "year";
