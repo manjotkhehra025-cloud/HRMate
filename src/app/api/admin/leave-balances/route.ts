@@ -36,6 +36,17 @@ export async function POST(req: NextRequest) {
   if (!user_id || !leave_type_id || !Number.isFinite(Number(delta))) {
     return error("Employee, leave type and days are required");
   }
+
+  const target = db.prepare("SELECT staff_type FROM users WHERE id = ?").get(user_id) as { staff_type?: string } | undefined;
+  const lt = db.prepare("SELECT id, name FROM leave_types WHERE id = ?").get(leave_type_id) as { id: string; name: string } | undefined;
+
+  if (target?.staff_type === "yellow_card") {
+    const isEarned = lt?.id === "lt_earned" || lt?.name?.toLowerCase().includes("earned");
+    if (!isEarned) {
+      return error("Yellow card staff is only eligible for Earned Leave (EL). Other leave types cannot be assigned.");
+    }
+  }
+
   const payload = {
     user_id,
     leave_type_id,
