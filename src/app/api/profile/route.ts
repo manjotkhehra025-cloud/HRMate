@@ -24,6 +24,7 @@ export async function GET() {
       ...row,
       phone: row.phone || "",
       avatar: row.avatar || "",
+      staff_type: row.staff_type || "official",
     },
     factory: {
       name: factory.name,
@@ -34,8 +35,8 @@ export async function GET() {
     },
     prefs: getUserPrefs(user.id),
     canSettings: hasPermission(user.id, "admin.settings"),
-    canAdjustLeaves: hasPermission(user.id, "leaves.adjust"),
-    canProfileFull: hasPermission(user.id, "profile.full"),
+    canAdjustLeaves: hasPermission(user.id, "leaves.adjust") || user.role === "super_admin",
+    canProfileFull: hasPermission(user.id, "profile.full") || user.role === "super_admin",
     vapidPublicKey: getVapidPublicKey(),
   });
 }
@@ -53,10 +54,18 @@ export async function PUT(req: NextRequest) {
     return error("Enter a valid phone number");
   }
 
-  if (hasPermission(user.id, "profile.full")) {
+  const isSuper = user.role === "super_admin";
+  const canFull = hasPermission(user.id, "profile.full") || isSuper;
+
+  if (canFull) {
     const email = String(body.email || user.email || "").trim().toLowerCase();
     const department = String(body.department ?? user.department ?? "").trim();
     const designation = String(body.designation ?? user.designation ?? "").trim();
+    const staff_type =
+      body.staff_type === "yellow_card" || body.staff_type === "official"
+        ? body.staff_type
+        : user.staff_type || "official";
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return error("Enter a valid email");
     }
@@ -67,9 +76,10 @@ export async function PUT(req: NextRequest) {
       .prepare("SELECT id FROM users WHERE email = ? AND id != ?")
       .get(email, user.id) as { id: string } | undefined;
     if (taken) return error("That email is already in use");
+
     db.prepare(
-      "UPDATE users SET name = ?, phone = ?, email = ?, department = ?, designation = ? WHERE id = ?"
-    ).run(name, phone, email, department, designation, user.id);
+      "UPDATE users SET name = ?, phone = ?, email = ?, department = ?, designation = ?, staff_type = ? WHERE id = ?"
+    ).run(name, phone, email, department, designation, staff_type, user.id);
   } else {
     db.prepare("UPDATE users SET name = ?, phone = ? WHERE id = ?").run(name, phone, user.id);
   }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2 } from "lucide-react";
+import { Fingerprint, KeyRound, Plus, Save, ShieldCheck, Smartphone, Trash2, ShieldAlert } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner } from "@/components/ui";
@@ -32,6 +32,7 @@ export default function ProfileClient({
     phone?: string;
     color: string;
     avatar?: string;
+    staff_type?: string;
   };
   canFull?: boolean;
 }) {
@@ -43,6 +44,7 @@ export default function ProfileClient({
   const [email, setEmail] = useState(initialUser.email);
   const [department, setDepartment] = useState(initialUser.department || "");
   const [designation, setDesignation] = useState(initialUser.designation || "");
+  const [staffType, setStaffType] = useState(initialUser.staff_type || "official");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [err, setErr] = useState("");
@@ -74,6 +76,7 @@ export default function ProfileClient({
           setEmail(d.user.email || "");
           setDepartment(d.user.department || "");
           setDesignation(d.user.designation || "");
+          setStaffType(d.user.staff_type || "official");
         }
       })
       .catch(() => {});
@@ -105,13 +108,15 @@ export default function ProfileClient({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          canFull ? { name, phone, email, department, designation } : { name, phone }
+          canFull
+            ? { name, phone, email, department, designation, staff_type: staffType }
+            : { name, phone }
         ),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Save failed");
       setUser((u) => ({ ...u, ...d.user }));
-      flash("Profile saved");
+      flash("Profile saved successfully ✓");
       router.refresh();
     } catch (e: any) {
       flash(e.message, true);
@@ -138,7 +143,7 @@ export default function ProfileClient({
       setCurPw("");
       setNewPw("");
       setConfirmPw("");
-      flash("Password updated");
+      flash("Password updated successfully ✓");
     } catch (e: any) {
       flash(e.message, true);
     } finally {
@@ -162,7 +167,7 @@ export default function ProfileClient({
         const d = await verifyRes.json();
         throw new Error(d.error || "Registration failed");
       }
-      flash("Passkey registered");
+      flash("Passkey registered successfully ✓");
       const list = await fetch("/api/passkeys").then((r) => r.json());
       setPasskeys(list.passkeys || []);
     } catch (e: any) {
@@ -184,38 +189,53 @@ export default function ProfileClient({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="hidden lg:block">
         <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">My profile</h1>
-        <p className="mt-1 text-[14px] text-[#8A97A8]">Photo, name, phone, password and passkeys.</p>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">
+          Manage your personal details, staff category, password, and biometric passkeys.
+        </p>
       </div>
 
       {(toast || err) && (
-        <p
-          className={`rounded-xl px-3 py-2 text-sm font-medium ${err ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}
+        <div
+          className={`rounded-[14px] p-3.5 text-[13.5px] font-bold ${
+            err ? "bg-rose-50 text-rose-700 border border-rose-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+          }`}
         >
           {err || toast}
-        </p>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="flow-gradient rounded-[18px] p-5 text-white shadow-glow lg:col-span-2 lg:row-start-1">
-          <div className="flex items-center gap-3">
-            <Avatar name={user.name} color={user.color} size={72} src={photo} className="ring-2 ring-white/40" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-lg font-bold">{user.name}</p>
-              <p className="truncate text-sm text-white/80">{user.email}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/70">
-                {user.role.replace("_", " ")}
-                {user.designation ? ` · ${user.designation}` : ""}
-              </p>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Profile Card Banner */}
+        <div className="flow-gradient rounded-[18px] p-6 text-white shadow-glow lg:col-span-2 lg:row-start-1">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Avatar name={user.name} color={user.color} size={76} src={photo} className="ring-4 ring-white/30 shadow-md" />
+              <div className="min-w-0">
+                <p className="truncate text-xl font-bold">{user.name}</p>
+                <p className="truncate text-[13.5px] text-white/85">{user.email}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                    {user.role.replace("_", " ")}
+                  </span>
+                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                    {staffType === "yellow_card" ? "🟡 Yellow Card Staff" : "Official Staff"}
+                  </span>
+                </div>
+              </div>
             </div>
             <PhotoPicker prefix="profile" tone="onGradient" layout="stack" disabled={uploading} onPicked={onPhoto} />
           </div>
         </div>
 
-        <form onSubmit={saveProfile} className="card space-y-4 p-5 lg:col-span-2 lg:row-start-2">
-          <h2 className="text-[15px] font-semibold text-[#172334]">Profile details</h2>
+        {/* Profile Details Form */}
+        <form onSubmit={saveProfile} className="card space-y-4 p-6 lg:col-span-2 lg:row-start-2 border border-[#E3EAF1] shadow-card">
+          <h2 className="text-[16px] font-bold text-[#172334] border-b border-[#F0F4F8] pb-2.5">
+            Profile Details & Staff Category
+          </h2>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="label">{t("name")}</label>
@@ -231,6 +251,21 @@ export default function ProfileClient({
                 <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               ) : (
                 <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+              )}
+            </div>
+            <div>
+              <label className="label">Staff Category</label>
+              {canFull ? (
+                <select className="input font-semibold" value={staffType} onChange={(e) => setStaffType(e.target.value)}>
+                  <option value="yellow_card">🟡 Yellow card / Third party (15 EL Only)</option>
+                  <option value="official">Official G.D. Foods Staff</option>
+                </select>
+              ) : (
+                <input
+                  className="input bg-[#F4F7FB]"
+                  value={staffType === "yellow_card" ? "Yellow card (15 EL)" : "Official Staff"}
+                  disabled
+                />
               )}
             </div>
             <div>
@@ -250,7 +285,7 @@ export default function ProfileClient({
                 <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
               )}
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <label className="label">{t("designation")}</label>
               {canFull ? (
                 <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
@@ -259,13 +294,19 @@ export default function ProfileClient({
               )}
             </div>
           </div>
-          <button type="submit" disabled={saving} className="btn-primary w-full sm:ml-auto sm:w-auto">
-            {saving ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
-          </button>
+
+          <div className="flex justify-end pt-2">
+            <button type="submit" disabled={saving} className="btn-primary w-full sm:w-auto">
+              {saving ? <Spinner /> : <Save className="h-4 w-4" />} Save Profile
+            </button>
+          </div>
         </form>
 
-        <form onSubmit={savePassword} className="card space-y-3 p-5 lg:col-start-3 lg:row-start-1">
-          <h2 className="text-[15px] font-semibold text-[#172334]">{t("changePassword")}</h2>
+        {/* Password Form */}
+        <form onSubmit={savePassword} className="card space-y-3.5 p-6 lg:col-start-3 lg:row-start-1 border border-[#E3EAF1] shadow-card">
+          <h2 className="text-[16px] font-bold text-[#172334] border-b border-[#F0F4F8] pb-2.5">
+            {t("changePassword")}
+          </h2>
           <div>
             <label className="label">{t("currentPassword")}</label>
             <input type="password" className="input" value={curPw} onChange={(e) => setCurPw(e.target.value)} required />
@@ -285,38 +326,46 @@ export default function ProfileClient({
               required
             />
           </div>
-          <button type="submit" disabled={savingPw} className="btn-primary">
-            {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
+          <button type="submit" disabled={savingPw} className="btn-primary w-full">
+            {savingPw ? <Spinner /> : <Save className="h-4 w-4" />} Update Password
           </button>
         </form>
 
-        <div className="card space-y-4 p-5 lg:col-start-3 lg:row-start-2">
-          <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[#172334]">
-            <Fingerprint className="h-4 w-4 text-[#1E6FE0]" /> {t("passkeys")}
-          </h2>
-          <p className="text-[13px] text-[#8A97A8]">Face ID / fingerprint on this phone.</p>
-          <button onClick={registerPasskey} disabled={registering} className="btn-primary w-full">
-            {registering ? <Spinner /> : <Plus className="h-3.5 w-3.5" />} Add passkey
-          </button>
+        {/* Passkeys Card */}
+        <div className="card space-y-4 p-6 lg:col-start-3 lg:row-start-2 border border-[#E3EAF1] shadow-card">
+          <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-2.5">
+            <h2 className="flex items-center gap-2 text-[16px] font-bold text-[#172334]">
+              <Fingerprint className="h-4 w-4 text-[#1E6FE0]" /> {t("passkeys")}
+            </h2>
+            <button onClick={registerPasskey} disabled={registering} className="btn-primary text-xs py-1.5 px-3">
+              {registering ? <Spinner /> : <Plus className="h-3.5 w-3.5" />} Add
+            </button>
+          </div>
+          <p className="text-[12.5px] text-[#8A97A8]">
+            Instant biometric passwordless authentication using Touch ID, Face ID or device PIN.
+          </p>
+
           {passkeys.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-[#E3EAF1] py-8 text-center">
-              <KeyRound className="h-8 w-8 text-[#C5D0DC]" />
-              <p className="text-sm text-[#8A97A8]">No passkeys yet.</p>
+            <div className="flex flex-col items-center gap-2 rounded-[14px] border border-dashed border-[#E3EAF1] py-7 text-center">
+              <KeyRound className="h-7 w-7 text-[#C5D0DC]" />
+              <p className="text-[13px] text-[#8A97A8]">No passkeys registered on this account.</p>
             </div>
           ) : (
-            passkeys.map((pk) => (
-              <div key={pk.id} className="flex items-center gap-3 rounded-[14px] border border-[#E3EAF1] p-3">
-                <Smartphone className="h-5 w-5 text-[#1E6FE0]" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#172334]">{pk.device_name}</p>
-                  <p className="text-xs text-[#8A97A8]">Added {timeAgo(pk.created_at)}</p>
+            <div className="space-y-2.5">
+              {passkeys.map((pk) => (
+                <div key={pk.id} className="flex items-center gap-3 rounded-[12px] border border-[#E3EAF1] bg-[#F8FAFD] p-3">
+                  <Smartphone className="h-5 w-5 text-[#1E6FE0]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-bold text-[#172334]">{pk.device_name}</p>
+                    <p className="text-[11.5px] text-[#8A97A8]">Added {timeAgo(pk.created_at)}</p>
+                  </div>
+                  <ShieldCheck className="h-4 w-4 text-[#16B878]" />
+                  <button onClick={() => removePasskey(pk.id)} className="rounded-lg p-1.5 text-[#8A97A8] hover:text-[#C52B35]">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <ShieldCheck className="h-4 w-4 text-[#16B878]" />
-                <button onClick={() => removePasskey(pk.id)} className="rounded-lg p-2 text-[#8A97A8] hover:text-[#C52B35]">
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>

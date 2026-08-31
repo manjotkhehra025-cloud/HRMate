@@ -17,7 +17,9 @@ export default function LeavesPage() {
     <LeavesClient
       canApply={has("leaves.apply")}
       canView={has("leaves.view")}
+      canAdjust={perms.isSuperAdmin || has("leaves.adjust")}
       staffType={user.staff_type || "official"}
+      currentUserId={user.id}
     />
   );
 }

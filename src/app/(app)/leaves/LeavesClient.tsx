@@ -1,7 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { CalendarDays, Send, Plus, X, AlertTriangle, CheckCircle2, Clock, Filter, ShieldAlert } from "lucide-react";
+import {
+  CalendarDays,
+  Send,
+  Plus,
+  X,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Filter,
+  ShieldAlert,
+  Sliders,
+  Settings2,
+  Save,
+} from "lucide-react";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
 
@@ -50,16 +63,21 @@ function statusLabel(status: string) {
 export default function LeavesClient({
   canApply,
   canView,
+  canAdjust = false,
   staffType,
+  currentUserId,
 }: {
   canApply: boolean;
   canView: boolean;
+  canAdjust?: boolean;
   staffType: string;
+  currentUserId?: string;
 }) {
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("all");
 
   const [leaveType, setLeaveType] = useState("");
@@ -73,6 +91,17 @@ export default function LeavesClient({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [openMissed, setOpenMissed] = useState<{ date: string; deadline: string }[]>([]);
+
+  // Adjustment state for Super Admin / Admin
+  const [adjustTargetUser, setAdjustTargetUser] = useState(currentUserId || "");
+  const [adjustType, setAdjustType] = useState("");
+  const [adjustDelta, setAdjustDelta] = useState("1");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjustUsers, setAdjustUsers] = useState<any[]>([]);
+  const [adjustTypes, setAdjustTypes] = useState<any[]>([]);
+  const [adjustSaving, setAdjustSaving] = useState(false);
+  const [adjustMsg, setAdjustMsg] = useState("");
+  const [adjustErr, setAdjustErr] = useState("");
 
   const isYellowCard = staffType === "yellow_card";
 
@@ -94,9 +123,26 @@ export default function LeavesClient({
     }
   }
 
+  async function loadAdjustData() {
+    if (!canAdjust) return;
+    try {
+      const res = await fetch("/api/admin/leave-balances");
+      if (res.ok) {
+        const d = await res.json();
+        setAdjustUsers(d.users || []);
+        setAdjustTypes(d.types || []);
+        if (d.types?.length > 0 && !adjustType) {
+          const el = d.types.find((t: any) => t.id === "lt_earned") || d.types[0];
+          setAdjustType(el.id);
+        }
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     load();
-  }, []);
+    if (canAdjust) loadAdjustData();
+  }, [canAdjust]);
 
   // Calculate day count between start and end date
   const calculatedDays = useMemo(() => {
@@ -146,6 +192,40 @@ export default function LeavesClient({
     }
   }
 
+  async function submitAdjustment(e: React.FormEvent) {
+    e.preventDefault();
+    setAdjustSaving(true);
+    setAdjustMsg("");
+    setAdjustErr("");
+    try {
+      const res = await fetch("/api/admin/leave-balances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: adjustTargetUser || currentUserId,
+          leave_type_id: adjustType,
+          delta: parseFloat(adjustDelta) || 0,
+          reason: adjustReason || "Manual adjustment by Super Admin",
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setAdjustErr(d.error || "Failed to adjust balance");
+        return;
+      }
+      setAdjustMsg(d.applied ? "Leave balance updated successfully ✓" : "Adjustment sent for Super Admin approval ✓");
+      setAdjustReason("");
+      load();
+    } catch (e: any) {
+      setAdjustErr(e.message || "Adjustment failed");
+    } finally {
+      setAdjustSaving(false);
+    }
+  }
+
+  const selectedUserObj = adjustUsers.find((u) => u.id === (adjustTargetUser || currentUserId));
+  const isTargetYellow = selectedUserObj?.staff_type === "yellow_card";
+
   if (!canView) return null;
 
   return (
@@ -156,23 +236,157 @@ export default function LeavesClient({
           <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Leaves Management</h1>
           <p className="mt-1 text-[14px] text-[#8A97A8]">
             {isYellowCard
-              ? "Yellow card staff quota: 15 days Earned Leave (EL) per year, accrued at 1.25 days per month."
+              ? "Yellow card staff quota: strictly 15 days Earned Leave (EL) per year, accrued at 1.25 days per month."
               : "Check available leave quotas, submit new applications, and track past requests."}
           </p>
         </div>
-        {canApply && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowForm(true);
-              document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-            className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
-          >
-            <Plus className="h-4 w-4" /> Apply For Leave
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {canAdjust && (
+            <button
+              type="button"
+              onClick={() => setShowAdjust((a) => !a)}
+              className="flex h-11 items-center gap-2 rounded-[12px] border border-[#1E6FE0] bg-[#E7F1FF] px-4 text-[14px] font-bold text-[#1E6FE0] transition hover:bg-[#d5e7ff]"
+            >
+              <Settings2 className="h-4 w-4" /> {showAdjust ? "Close Adjuster" : "Adjust / Add Leave Days"}
+            </button>
+          )}
+
+          {canApply && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(true);
+                document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="flex h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
+            >
+              <Plus className="h-4 w-4" /> Apply For Leave
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Super Admin Direct Balance Adjuster Module */}
+      {showAdjust && canAdjust && (
+        <form
+          onSubmit={submitAdjustment}
+          className="card p-6 border-2 border-[#1E6FE0]/40 bg-gradient-to-br from-white to-[#F8FAFD] shadow-pop space-y-4 animate-fade-in"
+        >
+          <div className="flex items-center justify-between border-b border-[#E3EAF1] pb-3">
+            <div className="flex items-center gap-2">
+              <Sliders className="h-5 w-5 text-[#1E6FE0]" />
+              <div>
+                <h2 className="text-[16px] font-bold text-[#172334]">
+                  Super Admin / Manager Leave Balance Adjuster
+                </h2>
+                <p className="text-[12px] text-[#8A97A8]">
+                  Directly credit or modify leave balance for yourself or any employee
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAdjust(false)}
+              className="text-[#8A97A8] hover:text-[#172334]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <div>
+              <label className="label">Target User / Self</label>
+              <select
+                className="input font-semibold"
+                value={adjustTargetUser || currentUserId}
+                onChange={(e) => setAdjustTargetUser(e.target.value)}
+              >
+                {adjustUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.id === currentUserId ? `⭐ Myself (${u.name})` : `${u.name} (${u.staff_type === "yellow_card" ? "🟡 Yellow" : "Official"})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label">Leave Type</label>
+              {isTargetYellow ? (
+                <select
+                  className="input font-semibold bg-[#E7F1FF] text-[#1E6FE0]"
+                  value={adjustType}
+                  onChange={(e) => setAdjustType(e.target.value)}
+                >
+                  {adjustTypes
+                    .filter((t) => t.id === "lt_earned" || t.name.toLowerCase().includes("earned"))
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} (Yellow Card EL Only)
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <select
+                  className="input font-semibold"
+                  value={adjustType}
+                  onChange={(e) => setAdjustType(e.target.value)}
+                >
+                  {adjustTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="label">Days Adjustment (+ or -)</label>
+              <input
+                className="input font-bold"
+                type="number"
+                step="0.5"
+                value={adjustDelta}
+                onChange={(e) => setAdjustDelta(e.target.value)}
+                placeholder="+ days (e.g. 1 or 2.5)"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="label">Adjustment Reason</label>
+              <input
+                className="input"
+                value={adjustReason}
+                onChange={(e) => setAdjustReason(e.target.value)}
+                placeholder="Reason / Note"
+                required
+              />
+            </div>
+          </div>
+
+          {adjustErr && (
+            <div className="rounded-[12px] bg-[#FDECEC] p-3 text-[13px] font-semibold text-[#C52B35]">
+              {adjustErr}
+            </div>
+          )}
+          {adjustMsg && (
+            <div className="rounded-[12px] bg-[#E1F8EF] p-3 text-[13px] font-semibold text-[#06613E]">
+              {adjustMsg}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="submit"
+              disabled={adjustSaving}
+              className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2"
+            >
+              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Apply Balance Adjustment
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* Yellow Card Notice Banner if Yellow Card */}
       {isYellowCard && (
@@ -181,18 +395,23 @@ export default function LeavesClient({
           <p className="text-[13.5px] font-medium text-[#0A2037]">
             <span className="font-bold">Yellow Card Policy:</span> You are eligible for{" "}
             <span className="font-bold text-[#1E6FE0]">15 days of Earned Leave (EL) per year</span> (accrued at{" "}
-            <span className="font-bold text-[#16B878]">1.25 days per month</span>).
+            <span className="font-bold text-[#16B878]">1.25 days per month</span>). No other leave types apply.
           </p>
         </div>
       )}
 
       {/* Leave Balance Cards */}
-      <div className={classNames("grid gap-3.5", isYellowCard ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4")}>
+      <div
+        className={classNames(
+          "grid gap-3.5",
+          isYellowCard ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-4"
+        )}
+      >
         {balance.map((b) => {
           const total = Math.max(1, b.days_per_year);
           const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
           return (
-            <div key={b.id} className="card p-5 relative overflow-hidden">
+            <div key={b.id} className="card p-5 relative overflow-hidden border border-[#E3EAF1] shadow-card">
               <div className="flex items-center justify-between">
                 <p className="truncate text-[14px] font-bold text-[#172334]">{b.name}</p>
                 <span
@@ -265,7 +484,7 @@ export default function LeavesClient({
             id="leave-apply"
             onSubmit={submit}
             className={classNames(
-              "card space-y-4 p-5 sm:p-6 lg:col-span-5",
+              "card space-y-4 p-5 sm:p-6 lg:col-span-5 border border-[#E3EAF1] shadow-card",
               !showForm && "hidden lg:block"
             )}
           >
@@ -273,7 +492,7 @@ export default function LeavesClient({
               <div>
                 <h2 className="text-[16px] font-bold text-[#172334]">Apply For Leave</h2>
                 <p className="text-[12px] text-[#8A97A8]">
-                  {isYellowCard ? "Yellow Card (Earned Leave)" : "Submit request for manager review"}
+                  {isYellowCard ? "Yellow Card (Earned Leave Only)" : "Submit request for manager review"}
                 </p>
               </div>
               <button
@@ -291,7 +510,7 @@ export default function LeavesClient({
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value)}
-                className="input"
+                className="input font-semibold"
                 required
               >
                 <option value="">Select Leave Type…</option>
@@ -387,7 +606,7 @@ export default function LeavesClient({
         )}
 
         {/* Requests List */}
-        <div className={classNames("card p-5 sm:p-6", canApply ? "lg:col-span-7" : "lg:col-span-12")}>
+        <div className={classNames("card p-5 sm:p-6 border border-[#E3EAF1] shadow-card", canApply ? "lg:col-span-7" : "lg:col-span-12")}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F4F8] pb-3">
             <div>
               <h2 className="text-[16px] font-bold text-[#172334]">My Leave Requests</h2>
