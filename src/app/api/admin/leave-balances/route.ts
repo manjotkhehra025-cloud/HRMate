@@ -3,6 +3,7 @@ import db from "@/lib/db";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
 import { applyChangeRequest, submitChange } from "@/lib/workflow";
+import { balancesForUser } from "@/lib/leave";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,12 @@ export async function POST(req: NextRequest) {
   if (!hasPermission(user.id, "leaves.adjust") && user.role !== "super_admin") {
     return error("You don't have permission to adjust leave balances", 403);
   }
-  const { user_id, leave_type_id, delta, reason } = await req.json();
-  if (!user_id || !leave_type_id || !Number.isFinite(Number(delta))) {
-    return error("Employee, leave type and days are required");
+  const body = await req.json();
+  const user_id = body.user_id || user.id;
+  const { leave_type_id, reason } = body;
+
+  if (!user_id || !leave_type_id) {
+    return error("Employee and leave type are required");
   }
 
   const target = db.prepare("SELECT staff_type FROM users WHERE id = ?").get(user_id) as { staff_type?: string } | undefined;
@@ -47,16 +51,29 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  let delta = 0;
+  if (body.set_balance !== undefined && Number.isFinite(Number(body.set_balance))) {
+    const currentBalances = balancesForUser(user_id);
+    const curr = currentBalances.find((b) => b.id === leave_type_id);
+    const currentVal = curr ? curr.balance : 0;
+    delta = Math.round((Number(body.set_balance) - currentVal) * 100) / 100;
+  } else if (body.delta !== undefined && Number.isFinite(Number(body.delta))) {
+    delta = Number(body.delta);
+  } else {
+    return error("Adjustment days (delta) or new balance (set_balance) is required");
+  }
+
   const payload = {
     user_id,
     leave_type_id,
     delta: Number(delta),
-    reason: String(reason || "").trim(),
+    reason: String(reason || "Direct balance adjustment by Super Admin").trim(),
   };
+
   if (user.role === "super_admin") {
     applyChangeRequest("leave_balance", payload);
-    return json({ ok: true, applied: true });
+    return json({ ok: true, applied: true, delta });
   }
   submitChange("leave_balance", payload, user.id);
-  return json({ ok: true, pending: true });
+  return json({ ok: true, pending: true, delta });
 }

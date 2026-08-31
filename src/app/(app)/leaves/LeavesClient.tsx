@@ -17,6 +17,8 @@ import {
   RefreshCw,
   UserCheck,
   Award,
+  Edit3,
+  Check,
 } from "lucide-react";
 import { Spinner, EmptyState } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
@@ -103,6 +105,8 @@ export default function LeavesClient({
   // Adjustment state for Super Admin / Admin
   const [adjustTargetUser, setAdjustTargetUser] = useState(currentUserId || "");
   const [adjustType, setAdjustType] = useState("");
+  const [adjustMode, setAdjustMode] = useState<"set_total" | "delta">("set_total");
+  const [adjustNewTotal, setAdjustNewTotal] = useState("");
   const [adjustDelta, setAdjustDelta] = useState("1");
   const [adjustReason, setAdjustReason] = useState("");
   const [adjustUsers, setAdjustUsers] = useState<any[]>([]);
@@ -110,6 +114,15 @@ export default function LeavesClient({
   const [adjustSaving, setAdjustSaving] = useState(false);
   const [adjustMsg, setAdjustMsg] = useState("");
   const [adjustErr, setAdjustErr] = useState("");
+
+  // Direct Card Edit Modal State
+  const [editingCard, setEditingCard] = useState<LeaveType | null>(null);
+  const [cardEditMode, setCardEditMode] = useState<"set_total" | "delta">("set_total");
+  const [cardNewTotal, setCardNewTotal] = useState("");
+  const [cardDelta, setCardDelta] = useState("1");
+  const [cardReason, setCardReason] = useState("");
+  const [cardSaving, setCardSaving] = useState(false);
+  const [cardError, setCardError] = useState("");
 
   const isYellowCard = currentStaffType === "yellow_card";
 
@@ -234,21 +247,28 @@ export default function LeavesClient({
     }
   }
 
+  // Submit Top Module Adjustment
   async function submitAdjustment(e: React.FormEvent) {
     e.preventDefault();
     setAdjustSaving(true);
     setAdjustMsg("");
     setAdjustErr("");
     try {
+      const payload: any = {
+        user_id: adjustTargetUser || currentUserId,
+        leave_type_id: adjustType,
+        reason: adjustReason || "Manual adjustment by Super Admin",
+      };
+      if (adjustMode === "set_total") {
+        payload.set_balance = parseFloat(adjustNewTotal) || 0;
+      } else {
+        payload.delta = parseFloat(adjustDelta) || 0;
+      }
+
       const res = await fetch("/api/admin/leave-balances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: adjustTargetUser || currentUserId,
-          leave_type_id: adjustType,
-          delta: parseFloat(adjustDelta) || 0,
-          reason: adjustReason || "Manual adjustment by Super Admin",
-        }),
+        body: JSON.stringify(payload),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -263,6 +283,54 @@ export default function LeavesClient({
     } finally {
       setAdjustSaving(false);
     }
+  }
+
+  // Submit Card-Level Edit
+  async function submitCardEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingCard) return;
+    setCardSaving(true);
+    setCardError("");
+    try {
+      const payload: any = {
+        user_id: currentUserId,
+        leave_type_id: editingCard.id,
+        reason: cardReason || `Adjusted ${editingCard.name} balance directly`,
+      };
+      if (cardEditMode === "set_total") {
+        payload.set_balance = parseFloat(cardNewTotal) || 0;
+      } else {
+        payload.delta = parseFloat(cardDelta) || 0;
+      }
+
+      const res = await fetch("/api/admin/leave-balances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setCardError(d.error || "Failed to update balance");
+        return;
+      }
+      setCategoryNotice(`${editingCard.name} balance updated to ${cardEditMode === "set_total" ? cardNewTotal : editingCard.balance + (parseFloat(cardDelta) || 0)} days ✓`);
+      setEditingCard(null);
+      await load();
+      setTimeout(() => setCategoryNotice(""), 5000);
+    } catch (e: any) {
+      setCardError(e.message || "Adjustment failed");
+    } finally {
+      setCardSaving(false);
+    }
+  }
+
+  function openEditCard(b: LeaveType) {
+    setEditingCard(b);
+    setCardEditMode("set_total");
+    setCardNewTotal(String(b.balance));
+    setCardDelta("1");
+    setCardReason(`Updated ${b.name} balance`);
+    setCardError("");
   }
 
   const selectedUserObj = adjustUsers.find((u) => u.id === (adjustTargetUser || currentUserId));
@@ -303,7 +371,7 @@ export default function LeavesClient({
                 )}
               >
                 <Settings2 className="h-4 w-4" />
-                {showAdjust ? "Close Adjuster" : "⚙️ Adjust Leave Days"}
+                {showAdjust ? "Close Adjuster" : "⚙️ Adjust / Edit Leave Days"}
               </button>
             )}
 
@@ -363,7 +431,7 @@ export default function LeavesClient({
         )}
 
         {categoryNotice && (
-          <div className="mt-3 rounded-[12px] bg-[#E1F8EF] p-3 text-[13px] font-bold text-[#06613E] flex items-center gap-2">
+          <div className="mt-3 rounded-[12px] bg-[#E1F8EF] p-3 text-[13px] font-bold text-[#06613E] flex items-center gap-2 animate-fade-in">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{categoryNotice}</span>
           </div>
@@ -384,7 +452,7 @@ export default function LeavesClient({
                   Super Admin / Manager Leave Balance Adjuster
                 </h2>
                 <p className="text-[12px] text-[#8A97A8]">
-                  Directly credit, deduct or modify leave balances for yourself or any staff member
+                  Directly edit total remaining balance or add/deduct days for yourself or any employee
                 </p>
               </div>
             </div>
@@ -394,6 +462,35 @@ export default function LeavesClient({
               className="rounded-lg p-1 text-[#8A97A8] hover:bg-[#EEF2F7] hover:text-[#172334]"
             >
               <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Mode Switcher */}
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-[12.5px] font-bold text-[#617083]">Edit Mode:</span>
+            <button
+              type="button"
+              onClick={() => setAdjustMode("set_total")}
+              className={classNames(
+                "rounded-lg px-3 py-1 text-[12px] font-bold transition",
+                adjustMode === "set_total"
+                  ? "bg-[#1E6FE0] text-white shadow-sm"
+                  : "bg-[#EEF2F7] text-[#617083] hover:text-[#172334]"
+              )}
+            >
+              Direct Set Total Balance
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdjustMode("delta")}
+              className={classNames(
+                "rounded-lg px-3 py-1 text-[12px] font-bold transition",
+                adjustMode === "delta"
+                  ? "bg-[#1E6FE0] text-white shadow-sm"
+                  : "bg-[#EEF2F7] text-[#617083] hover:text-[#172334]"
+              )}
+            >
+              Add / Deduct (+ / -)
             </button>
           </div>
 
@@ -444,18 +541,33 @@ export default function LeavesClient({
               )}
             </div>
 
-            <div>
-              <label className="label">Days Adjustment (+ or -)</label>
-              <input
-                className="input font-bold"
-                type="number"
-                step="0.5"
-                value={adjustDelta}
-                onChange={(e) => setAdjustDelta(e.target.value)}
-                placeholder="+ days (e.g. 1 or 2.5)"
-                required
-              />
-            </div>
+            {adjustMode === "set_total" ? (
+              <div>
+                <label className="label">New Total Balance (Days)</label>
+                <input
+                  className="input font-bold text-[#1E6FE0]"
+                  type="number"
+                  step="0.5"
+                  value={adjustNewTotal}
+                  onChange={(e) => setAdjustNewTotal(e.target.value)}
+                  placeholder="e.g. 10 or 15"
+                  required
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="label">Days Adjustment (+ or -)</label>
+                <input
+                  className="input font-bold"
+                  type="number"
+                  step="0.5"
+                  value={adjustDelta}
+                  onChange={(e) => setAdjustDelta(e.target.value)}
+                  placeholder="+ days (e.g. +2 or -1)"
+                  required
+                />
+              </div>
+            )}
 
             <div>
               <label className="label">Reason / Remark</label>
@@ -463,7 +575,7 @@ export default function LeavesClient({
                 className="input"
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="e.g. Annual quota grant"
+                placeholder="e.g. Balance update"
                 required
               />
             </div>
@@ -486,10 +598,135 @@ export default function LeavesClient({
               disabled={adjustSaving}
               className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2"
             >
-              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Save Balance Adjustment
+              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Save Balance
             </button>
           </div>
         </form>
+      )}
+
+      {/* Direct Card Edit Modal */}
+      {editingCard && canAdjust && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in backdrop-blur-sm">
+          <form
+            onSubmit={submitCardEdit}
+            className="w-full max-w-md rounded-[20px] bg-white p-6 shadow-pop border border-[#E3EAF1] space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: editingCard.color || "#16B878" }}
+                />
+                <h3 className="text-[17px] font-bold text-[#172334]">
+                  Edit {editingCard.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCard(null)}
+                className="rounded-lg p-1 text-[#8A97A8] hover:bg-[#EEF2F7] hover:text-[#172334]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="rounded-[14px] bg-[#F4F7FB] p-3.5 flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-[#617083]">Current Balance:</span>
+              <span className="text-[20px] font-black text-[#172334]">
+                {editingCard.balance} <span className="text-[12px] font-normal text-[#8A97A8]">days</span>
+              </span>
+            </div>
+
+            {/* Mode selection */}
+            <div className="flex rounded-[12px] bg-[#EEF2F7] p-1 text-[12px] font-bold">
+              <button
+                type="button"
+                onClick={() => setCardEditMode("set_total")}
+                className={classNames(
+                  "flex-1 rounded-[9px] py-1.5 transition text-center",
+                  cardEditMode === "set_total" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
+                )}
+              >
+                Direct Set Total
+              </button>
+              <button
+                type="button"
+                onClick={() => setCardEditMode("delta")}
+                className={classNames(
+                  "flex-1 rounded-[9px] py-1.5 transition text-center",
+                  cardEditMode === "delta" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
+                )}
+              >
+                Add / Deduct (+ / -)
+              </button>
+            </div>
+
+            {cardEditMode === "set_total" ? (
+              <div>
+                <label className="label">New Desired Balance (Days)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  className="input font-extrabold text-[18px] text-[#1E6FE0]"
+                  value={cardNewTotal}
+                  onChange={(e) => setCardNewTotal(e.target.value)}
+                  placeholder="e.g. 10 or 15"
+                  autoFocus
+                  required
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="label">Adjust Days (+ or -)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  className="input font-extrabold text-[18px]"
+                  value={cardDelta}
+                  onChange={(e) => setCardDelta(e.target.value)}
+                  placeholder="+2 or -1"
+                  autoFocus
+                  required
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="label">Reason / Remark</label>
+              <input
+                type="text"
+                className="input"
+                value={cardReason}
+                onChange={(e) => setCardReason(e.target.value)}
+                placeholder="e.g. Direct balance edit"
+                required
+              />
+            </div>
+
+            {cardError && (
+              <div className="rounded-[12px] bg-[#FDECEC] p-3 text-[13px] font-semibold text-[#C52B35]">
+                {cardError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingCard(null)}
+                className="rounded-[12px] border border-[#CBD6E2] px-4 py-2.5 text-[13px] font-bold text-[#617083] hover:bg-[#F4F7FB]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={cardSaving}
+                className="btn-primary text-[13px] px-5 py-2.5 flex items-center gap-2"
+              >
+                {cardSaving ? <Spinner /> : <Check className="h-4 w-4" />} Save Balance Now
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Yellow Card Notice Banner */}
@@ -521,44 +758,59 @@ export default function LeavesClient({
             <div
               key={b.id}
               className={classNames(
-                "card p-5 relative overflow-hidden border shadow-card transition hover:shadow-md",
+                "card p-5 relative overflow-hidden border shadow-card transition hover:shadow-md flex flex-col justify-between",
                 isYellowCard && "border-amber-300/60 bg-gradient-to-br from-white to-amber-50/30"
               )}
             >
-              <div className="flex items-center justify-between">
-                <p className="truncate text-[14.5px] font-bold text-[#172334]">{b.name}</p>
-                <span
-                  className="h-3 w-3 rounded-full shrink-0"
-                  style={{ backgroundColor: b.color || "#16B878" }}
-                />
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="truncate text-[14.5px] font-bold text-[#172334]">{b.name}</p>
+                  <span
+                    className="h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: b.color || "#16B878" }}
+                  />
+                </div>
+
+                <div className="mt-2.5 flex items-baseline gap-2">
+                  <span className="text-[34px] font-extrabold tabular-nums leading-none text-[#172334]">
+                    {b.balance}
+                  </span>
+                  <span className="text-[13px] font-semibold text-[#8A97A8]">days left</span>
+                </div>
+
+                <p className="mt-2 text-[12px] font-semibold text-[#617083]">
+                  {isYellowCard
+                    ? `Accrued: ${b.accrued_days ?? b.balance} days (1.25/mo) · Used: ${b.used} of 15`
+                    : b.reset_period === "month"
+                      ? `${b.balance} remaining this month`
+                      : b.id === "lt_comp"
+                        ? `${b.balance} earned on weekly off`
+                        : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
+                </p>
+
+                <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-[#E8EEF4]">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${leftPct}%`, background: b.color || "#16B878" }}
+                  />
+                </div>
+
+                {b.reset_period === "month" && (
+                  <p className="mt-2 text-[11px] text-[#8A97A8]">Lapses at month end</p>
+                )}
               </div>
 
-              <div className="mt-2.5 flex items-baseline gap-2">
-                <span className="text-[34px] font-extrabold tabular-nums leading-none text-[#172334]">
-                  {b.balance}
-                </span>
-                <span className="text-[13px] font-semibold text-[#8A97A8]">days left</span>
-              </div>
-
-              <p className="mt-2 text-[12px] font-semibold text-[#617083]">
-                {isYellowCard
-                  ? `Accrued: ${b.accrued_days ?? b.balance} days (1.25/mo) · Used: ${b.used} of 15`
-                  : b.reset_period === "month"
-                    ? `${b.balance} remaining this month`
-                    : b.id === "lt_comp"
-                      ? `${b.balance} earned on weekly off`
-                      : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
-              </p>
-
-              <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-[#E8EEF4]">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${leftPct}%`, background: b.color || "#16B878" }}
-                />
-              </div>
-
-              {b.reset_period === "month" && (
-                <p className="mt-2 text-[11px] text-[#8A97A8]">Lapses at month end</p>
+              {/* Super Admin Direct Edit Button on each Card */}
+              {canAdjust && (
+                <div className="mt-4 pt-3 border-t border-[#F0F4F8]">
+                  <button
+                    type="button"
+                    onClick={() => openEditCard(b)}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-[10px] bg-[#F4F7FB] border border-[#E3EAF1] py-1.5 text-[12px] font-bold text-[#1E6FE0] transition hover:bg-[#E7F1FF] hover:border-[#1E6FE0]/40"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" /> Edit Balance
+                  </button>
+                </div>
               )}
             </div>
           );
