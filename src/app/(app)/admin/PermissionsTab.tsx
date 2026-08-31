@@ -44,26 +44,27 @@ export default function PermissionsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl bg-brand-50/60 p-3 text-xs text-brand-700">
-        Select a user to fine-tune what they can and can't do. Overrides apply on top of their
-        role's default permissions.
+      <div className="rounded-[14px] bg-[#E8F1FC] p-3 text-[13px] text-[#1E6FE0]">
+        Select a user to fine-tune what they can and can&apos;t do. Overrides apply on top of their
+        role&apos;s default permissions.
       </div>
 
       {users.length === 0 ? (
         <EmptyState icon={<UserCog className="h-8 w-8" />} title="No users" />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {users.map((u) => (
             <button
               key={u.id}
+              type="button"
               onClick={() => setSelected(u.id)}
-              className="card flex items-center gap-3 p-4 text-left transition hover:shadow-pop"
+              className="card flex items-center gap-3 p-4 text-left"
             >
-              <Avatar name={u.name} color={u.color} size={40} src={avatarSrc(u.id, u.avatar)} />
+              <Avatar name={u.name} color={u.color} size={48} src={avatarSrc(u.id, u.avatar)} />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-800">{u.name}</p>
-                <p className="truncate text-xs text-slate-400">{u.email}</p>
-                <span className="mt-1 inline-block text-[11px] font-medium capitalize text-brand-600">
+                <p className="truncate text-[14px] font-semibold text-[#172334]">{u.name}</p>
+                <p className="truncate text-[12px] text-[#8A97A8]">{u.email}</p>
+                <span className="mt-1 inline-block text-[11px] font-semibold text-[#1E6FE0]">
                   {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS] || u.role}
                 </span>
               </div>

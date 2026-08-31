@@ -26,10 +26,10 @@ interface User {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  super_admin: "#6366f1",
-  admin: "#8b5cf6",
-  manager: "#0ea5e9",
-  employee: "#10b981",
+  super_admin: "#1E6FE0",
+  admin: "#07945D",
+  manager: "#1E6FE0",
+  employee: "#16B878",
 };
 
 export default function UsersTab({
@@ -177,12 +177,20 @@ export default function UsersTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="min-w-0 text-sm font-semibold text-slate-800">
-          {isControl ? "Users (control)" : "Employees"}{" "}
-          <span className="text-slate-400">({visibleUsers.length})</span>
+        <h2 className="min-w-0 text-[15px] font-semibold text-[#172334]">
+          {isControl ? "Users" : "Employees"}{" "}
+          <span className="font-medium text-[#8A97A8]">({visibleUsers.length})</span>
         </h2>
-        <button onClick={() => { setShowForm(true); setPendingPhoto(null); resetForm(); }} className="btn-primary shrink-0 px-3 py-2 text-xs">
-          <Plus className="h-3.5 w-3.5" /> {isControl ? "Add user" : "Add employee"}
+        <button
+          type="button"
+          onClick={() => {
+            setShowForm(true);
+            setPendingPhoto(null);
+            resetForm();
+          }}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[14px] font-semibold text-white sm:h-10 sm:w-auto sm:text-xs"
+        >
+          <Plus className="h-4 w-4" /> {isControl ? "Add user" : "Add employee"}
         </button>
       </div>
 
@@ -303,72 +311,86 @@ export default function UsersTab({
           <Spinner className="h-7 w-7 text-brand-500" />
         </div>
       ) : (
-        <div className="card divide-y divide-slate-50">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {visibleUsers.map((u) => (
-            <div key={u.id} className="flex flex-wrap items-center gap-2 p-4 sm:gap-3">
-              <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={40} src={avatarSrc(u.id, u.avatar)} />
-              <div className="min-w-0 flex-1 basis-36">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-slate-800">{u.name}</p>
-                  <span className="badge text-[10px]" style={{ backgroundColor: `${ROLE_COLORS[u.role]}18`, color: ROLE_COLORS[u.role] }}>
-                    {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS]}
-                  </span>
-                  {u.staff_type === "yellow_card" && (
-                    <span className="badge bg-amber-50 text-[10px] text-amber-700">Yellow card</span>
-                  )}
+            <div key={u.id} className="card flex flex-col gap-3 p-4">
+              <div className="flex items-start gap-3">
+                <Avatar name={u.name} color={u.color || ROLE_COLORS[u.role]} size={48} src={avatarSrc(u.id, u.avatar)} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="truncate text-[14px] font-semibold text-[#172334]">{u.name}</p>
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                      style={{ backgroundColor: `${ROLE_COLORS[u.role]}22`, color: ROLE_COLORS[u.role] }}
+                    >
+                      {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS]}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-[12px] text-[#8A97A8]">
+                    {u.email}
+                    {u.department ? ` · ${u.department}` : ""}
+                    {u.designation ? ` · ${u.designation}` : ""}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {u.staff_type === "yellow_card" ? (
+                      <span className="rounded-full bg-[#FFF1E8] px-2 py-0.5 text-[10px] font-semibold text-[#C2410C]">
+                        Yellow card
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-[#F4F7FB] px-2 py-0.5 text-[10px] font-semibold text-[#8A97A8]">
+                        Official
+                      </span>
+                    )}
+                    <StatusBadge status={u.active ? "active" : "inactive"} />
+                    <span className="hidden items-center gap-1 text-[11px] text-[#8A97A8] sm:inline-flex">
+                      <Fingerprint className="h-3.5 w-3.5" />
+                      {u.passkey_count}
+                    </span>
+                  </div>
                 </div>
-                <p className="truncate text-xs text-slate-400">
-                  {u.email}
-                  {u.department ? ` · ${u.department}` : ""}
-                  {u.designation ? ` · ${u.designation}` : ""}
-                  {u.staff_type === "yellow_card" ? " · Yellow card" : " · Official"}
-                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-              <div className="hidden items-center gap-1.5 text-xs text-slate-400 sm:flex">
-                <Fingerprint className="h-3.5 w-3.5" />
-                {u.passkey_count}
-              </div>
-              <StatusBadge status={u.active ? "active" : "inactive"} />
-
-              {canPermissions && (
-                <button
-                  onClick={() => setManagePermsFor(u.id)}
-                  className="btn-secondary px-2.5 py-1.5 text-xs"
-                  title="Permissions"
-                >
-                  <UserCog className="h-3.5 w-3.5" />
+              <div className="flex flex-wrap items-center gap-2">
+                {canPermissions && (
+                  <button
+                    type="button"
+                    onClick={() => setManagePermsFor(u.id)}
+                    className="btn-secondary px-2.5 py-1.5 text-xs"
+                    title="Permissions"
+                  >
+                    <UserCog className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button type="button" onClick={() => setEditing({ ...u })} className="btn-secondary px-3 py-1.5 text-xs">
+                  Edit
                 </button>
-              )}
-              <button onClick={() => setEditing({ ...u })} className="btn-secondary px-2.5 py-1.5 text-xs">
-                Edit
-              </button>
-              {u.role !== "super_admin" && (
-                <button
-                  onClick={() => toggleActive(u)}
-                  className={`px-2.5 py-1.5 text-xs font-semibold ${u.active ? "text-rose-500 hover:text-rose-600" : "text-emerald-500 hover:text-emerald-600"}`}
-                >
-                  {u.active ? "Deactivate" : "Activate"}
-                </button>
-              )}
-              {isSuperAdmin && u.role !== "super_admin" && (
-                <button
-                  onClick={async () => {
-                    if (!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
-                    const res = await fetch("/api/admin/users", {
-                      method: "DELETE",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ id: u.id }),
-                    });
-                    const d = await res.json();
-                    if (!res.ok) setError(d.error || "Delete failed");
-                    else load();
-                  }}
-                  className="px-2.5 py-1.5 text-xs font-semibold text-rose-600"
-                >
-                  Delete
-                </button>
-              )}
+                {u.role !== "super_admin" && (
+                  <button
+                    type="button"
+                    onClick={() => toggleActive(u)}
+                    className={`rounded-[10px] px-3 py-1.5 text-xs font-semibold ${u.active ? "text-[#C52B35]" : "text-[#16B878]"}`}
+                  >
+                    {u.active ? "Deactivate" : "Activate"}
+                  </button>
+                )}
+                {isSuperAdmin && u.role !== "super_admin" && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm(`Delete ${u.name}? This cannot be undone.`)) return;
+                      const res = await fetch("/api/admin/users", {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: u.id }),
+                      });
+                      const d = await res.json();
+                      if (!res.ok) setError(d.error || "Delete failed");
+                      else load();
+                    }}
+                    className="px-2.5 py-1.5 text-xs font-semibold text-[#C52B35]"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           ))}
