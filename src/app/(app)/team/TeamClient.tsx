@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, MapPin, CalendarDays } from "lucide-react";
+import { MapPin, CalendarDays } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner, EmptyState } from "@/components/ui";
-import { formatDate, formatTime } from "@/lib/utils";
+import { classNames, formatDate, formatTime } from "@/lib/utils";
 import { WEEKDAYS, departmentScope, weeklyOffLabel } from "@/lib/staff";
 
 interface Member {
@@ -70,139 +70,158 @@ export default function TeamClient({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1 sm:w-96">
+    <div className="space-y-5">
+      <div className="hidden lg:block">
+        <h1 className="text-[26px] font-bold tracking-tight text-[#172334]">Team</h1>
+        <p className="mt-1 text-[14px] text-[#8A97A8]">Who is in today and upcoming leaves.</p>
+      </div>
+
+      <div className="flex rounded-[14px] bg-[#EEF2F7] p-1">
         {canViewAttendance && (
           <button
+            type="button"
             onClick={() => setTab("today")}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-              tab === "today" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-            }`}
+            className={classNames(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-[13px] font-semibold",
+              tab === "today" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
+            )}
           >
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" /> Today ({members.length})
-            </span>
+            <MapPin className="h-4 w-4" /> Today
           </button>
         )}
         {canViewLeaves && (
           <button
+            type="button"
             onClick={() => setTab("leaves")}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-              tab === "leaves" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-            }`}
+            className={classNames(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-[12px] py-2.5 text-[13px] font-semibold",
+              tab === "leaves" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
+            )}
           >
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4" /> Leaves
-            </span>
+            <CalendarDays className="h-4 w-4" /> Leaves
           </button>
         )}
       </div>
 
       {tab === "today" ? (
         <>
-          <div className="grid grid-cols-3 gap-4">
-            <StatCard label="Present" value={presentCount} tone="text-emerald-600 bg-emerald-50" />
-            <StatCard label="Completed" value={doneCount} tone="text-sky-600 bg-sky-50" />
-            <StatCard label="Not in yet" value={absentCount} tone="text-slate-500 bg-slate-100" />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card p-4">
+              <p className="text-[12px] text-[#8A97A8]">Present</p>
+              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#16B878]">{presentCount}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-[12px] text-[#8A97A8]">Completed</p>
+              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#1E6FE0]">{doneCount}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-[12px] text-[#8A97A8]">Not in yet</p>
+              <p className="mt-1 text-[28px] font-bold tabular-nums text-[#617083]">{absentCount}</p>
+            </div>
           </div>
 
-          <div className="card divide-y divide-slate-50">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {members.map((m) => {
               const present = m.today_in && !m.today_out;
               const done = m.today_in && m.today_out;
+              const canOff =
+                canEditWeeklyOff &&
+                (viewerRole === "super_admin" ||
+                  viewerRole === "admin" ||
+                  (viewerRole === "manager" &&
+                    m.role !== "super_admin" &&
+                    viewerScope === departmentScope(m.department)));
               return (
-                <div key={m.id} className="flex flex-wrap items-center gap-2 p-4 sm:gap-3">
-                  <Avatar name={m.name} color={m.color} size={40} />
-                  <div className="min-w-0 flex-1 basis-36">
-                    <p className="truncate text-sm font-semibold text-slate-800">{m.name}</p>
-                    <p className="truncate text-xs text-slate-400">
-                      {m.designation || m.role} · {m.department} · Off {weeklyOffLabel(m.weekly_off)}
-                    </p>
+                <div key={m.id} className="card flex items-start gap-3 p-4">
+                  <Avatar name={m.name} color={m.color} size={48} src={avatarSrc(m.id, m.avatar)} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-semibold text-[#172334]">{m.name}</p>
+                        <p className="truncate text-[12px] text-[#8A97A8]">
+                          {m.designation || m.role} · {m.department || "—"}
+                        </p>
+                      </div>
+                      {present && (
+                        <span className="shrink-0 rounded-full bg-[#E1F8EF] px-2.5 py-1 text-[11px] font-semibold text-[#06613E]">
+                          In {formatTime(m.today_in!)}
+                        </span>
+                      )}
+                      {done && (
+                        <span className="shrink-0 rounded-full bg-[#E8F1FC] px-2.5 py-1 text-[11px] font-semibold text-[#1E6FE0]">
+                          Out {formatTime(m.today_out!)}
+                        </span>
+                      )}
+                      {!m.today_in && (
+                        <span className="shrink-0 rounded-full bg-[#F4F7FB] px-2.5 py-1 text-[11px] font-semibold text-[#8A97A8]">
+                          Not in yet
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {canOff ? (
+                        <select
+                          className="input h-8 min-h-0 w-[8.5rem] py-0 text-[11px]"
+                          value={m.weekly_off ?? 6}
+                          onChange={async (e) => {
+                            const weekly_off = Number(e.target.value);
+                            setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, weekly_off } : x)));
+                            await fetch("/api/team/weekly-off", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ user_id: m.id, weekly_off }),
+                            });
+                          }}
+                        >
+                          {WEEKDAYS.map((d) => (
+                            <option key={d.value} value={d.value}>
+                              Off {d.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="rounded-full bg-[#F4F7FB] px-2 py-0.5 text-[11px] text-[#8A97A8]">
+                          Weekly off {weeklyOffLabel(m.weekly_off)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {canEditWeeklyOff &&
-                    (viewerRole === "super_admin" ||
-                      viewerRole === "admin" ||
-                      (viewerRole === "manager" &&
-                        m.role !== "super_admin" &&
-                        viewerScope === departmentScope(m.department))) && (
-                    <select
-                      className="input h-9 min-h-0 w-[7.5rem] shrink-0 py-1 text-xs"
-                      value={m.weekly_off ?? 6}
-                      onChange={async (e) => {
-                        const weekly_off = Number(e.target.value);
-                        setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, weekly_off } : x)));
-                        await fetch("/api/team/weekly-off", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ user_id: m.id, weekly_off }),
-                        });
-                      }}
-                    >
-                      {WEEKDAYS.map((d) => (
-                        <option key={d.value} value={d.value}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {present && (
-                    <span className="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                      In · {formatTime(m.today_in!)}
-                    </span>
-                  )}
-                  {done && (
-                    <span className="badge bg-sky-50 text-sky-700 ring-1 ring-sky-600/20">
-                      Out · {formatTime(m.today_out!)}
-                    </span>
-                  )}
-                  {!m.today_in && (
-                    <span className="badge bg-slate-100 text-slate-500">Not in yet</span>
-                  )}
                 </div>
               );
             })}
           </div>
         </>
       ) : (
-        <div className="card p-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {leaves.length === 0 ? (
-            <EmptyState
-              icon={<CalendarDays className="h-8 w-8" />}
-              title="No upcoming leaves"
-              subtitle="Approved leaves will appear here."
-            />
-          ) : (
-            <div className="space-y-3">
-              {leaves.map((l) => (
-                <div key={l.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 p-4">
-                  <div
-                    className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl text-white"
-                    style={{ backgroundColor: l.leave_type_color }}
-                  >
-                    <span className="text-xs font-bold">{l.days}d</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{l.user_name}</p>
-                    <p className="text-xs text-slate-500">
-                      {l.leave_type_name} · {formatDate(l.start_date)} → {formatDate(l.end_date)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="card sm:col-span-2">
+              <EmptyState
+                icon={<CalendarDays className="h-8 w-8" />}
+                title="No upcoming leaves"
+                subtitle="Approved leaves will appear here."
+              />
             </div>
+          ) : (
+            leaves.map((l) => (
+              <div key={l.id} className="card flex items-center gap-3 p-4">
+                <div
+                  className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[12px] text-white"
+                  style={{ backgroundColor: l.leave_type_color || "#1E6FE0" }}
+                >
+                  <span className="text-[13px] font-bold leading-none">{l.days}d</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-semibold text-[#172334]">{l.user_name}</p>
+                  <p className="text-[12px] text-[#8A97A8]">
+                    {l.leave_type_name} · {formatDate(l.start_date)}
+                    {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""}
+                  </p>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="card p-4">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${tone.split(" ")[0]}`}>{value}</p>
     </div>
   );
 }

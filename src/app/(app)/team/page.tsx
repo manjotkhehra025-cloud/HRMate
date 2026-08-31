@@ -3,6 +3,8 @@ import { getPermissions } from "@/lib/permissions";
 import TeamClient from "./TeamClient";
 
 export const metadata = { title: "Team — HRMate" };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function TeamPage() {
   const user = getSessionUser()!;
@@ -10,20 +12,12 @@ export default function TeamPage() {
   const has = (p: any) => perms.isSuperAdmin || perms.has(p);
 
   return (
-    <div className="space-y-6">
-      <div className="hidden lg:block">
-        <h1 className="page-title">Team</h1>
-        <p className="page-sub">
-          See who's in today and upcoming approved leaves.
-        </p>
-      </div>
-      <TeamClient
-        canViewAttendance={has("attendance.team")}
-        canViewLeaves={has("leaves.team")}
-        canEditWeeklyOff={has("admin.users") || user.role === "manager"}
-        viewerRole={user.role}
-        viewerScope={user.manager_scope || ""}
-      />
-    </div>
+    <TeamClient
+      canViewAttendance={has("attendance.team")}
+      canViewLeaves={has("leaves.team")}
+      canEditWeeklyOff={has("admin.users") || user.role === "manager"}
+      viewerRole={user.role}
+      viewerScope={user.manager_scope || ""}
+    />
   );
 }
