@@ -42,17 +42,25 @@ export default function ReportsClient() {
   }
 
   const daily = data.daily || [];
-  const maxDaily = Math.max(1, ...daily.map((d: any) => d.present));
+  const maxDaily = Math.max(1, ...daily.map((d: any) => d.present || 0));
+  const n = Math.max(1, daily.length - 1);
   const pts = daily
     .map((d: any, i: number) => {
-      const x = (i / Math.max(1, daily.length - 1)) * 100;
-      const y = 36 - (d.present / maxDaily) * 28;
+      const x = (i / n) * 100;
+      const y = 36 - ((d.present || 0) / maxDaily) * 28;
       return `${x},${y}`;
     })
     .join(" ");
-  const area = daily.length ? `0,40 ${pts} 100,40` : "0,40 100,40";
+  const firstY = daily.length ? 36 - ((daily[0].present || 0) / maxDaily) * 28 : 36;
+  const lastY = daily.length ? 36 - ((daily[daily.length - 1].present || 0) / maxDaily) * 28 : 36;
+  const area = daily.length ? `0,40 0,${firstY} ${pts} 100,${lastY} 100,40` : "0,40 100,40";
   const depts = data.byDepartment || [];
   const people = data.perEmployee || [];
+  const present = data.totals.present || 0;
+  const late = data.totals.late || 0;
+  const half = data.totals.half || 0;
+  const absent = data.totals.absent || 0;
+  const headcount = Math.max(1, present + late + half + absent);
 
   return (
     <div className="space-y-5">
@@ -62,16 +70,16 @@ export default function ReportsClient() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1 rounded-[14px] border border-[#E3EAF1] bg-white px-1 py-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-[14px] border border-[#E3EAF1] bg-white px-1 py-1">
           <button type="button" onClick={() => shift(-1)} className="rounded-lg p-2 hover:bg-[#F4F7FB]" aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-[9rem] px-2 text-center text-[14px] font-semibold text-[#172334]">{monthLabel}</span>
+          <span className="min-w-0 flex-1 px-2 text-center text-[14px] font-semibold text-[#172334]">{monthLabel}</span>
           <button type="button" onClick={() => shift(1)} className="rounded-lg p-2 hover:bg-[#F4F7FB]" aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:flex">
           <button type="button" onClick={() => exportFile("pdf")} className="btn-secondary px-3 py-2 text-xs">
             <FileText className="h-4 w-4" /> PDF
           </button>
@@ -85,26 +93,33 @@ export default function ReportsClient() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Kpi label="Present" value={data.totals.present} color="#16B878" />
-        <Kpi label="Late" value={data.totals.late} color="#F5A623" />
-        <Kpi label="Half day" value={data.totals.half} color="#172334" />
-        <Kpi label="Absent" value={data.totals.absent} color="#C52B35" />
-      </div>
-
-      <div className="flow-gradient overflow-hidden rounded-[18px] p-5 text-white shadow-glow lg:hidden">
-        <p className="text-center text-[13px] text-white/85">Overall attendance</p>
-        <p className="mt-1 text-center text-[40px] font-bold leading-none">{data.pct}%</p>
-        <p className="mt-1 text-center text-[12px] text-white/75">{data.workingDays} working days</p>
+        <KpiTile label="Present" hint={`${present} punches`} value={present} color="#16B878" pct={(present / headcount) * 100} />
+        <KpiTile label="Late" hint={`${late} late`} value={late} color="#F5A623" pct={(late / headcount) * 100} />
+        <KpiTile label="Half day" hint={`${half} half`} value={half} color="#1E6FE0" pct={(half / headcount) * 100} />
+        <KpiTile label="Absent" hint={`${absent} absent`} value={absent} color="#C52B35" pct={(absent / headcount) * 100} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="card hidden p-5 lg:block">
+        <section className="card p-5">
           <p className="text-[13px] text-[#8A97A8]">Attendance this month</p>
           <p className="mt-1 text-[36px] font-bold tabular-nums leading-none text-[#172334]">{data.pct}%</p>
           <p className="mt-1 text-[12px] text-[#8A97A8]">{data.workingDays} working days</p>
-          <svg viewBox="0 0 100 40" className="mt-3 h-24 w-full" preserveAspectRatio="none">
-            <polyline fill="#1E6FE022" stroke="none" points={area} />
-            <polyline fill="none" stroke="#1E6FE0" strokeWidth="2.2" strokeLinejoin="round" points={pts} />
+          <svg viewBox="0 0 100 40" className="mt-3 h-28 w-full" preserveAspectRatio="none" aria-hidden>
+            <defs>
+              <linearGradient id="rptFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1E6FE0" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="#1E6FE0" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            <polygon fill="url(#rptFill)" points={area} />
+            <polyline
+              fill="none"
+              stroke="#1E6FE0"
+              strokeWidth="2.4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              points={pts}
+            />
           </svg>
         </section>
 
@@ -191,13 +206,29 @@ export default function ReportsClient() {
   );
 }
 
-function Kpi({ label, value, color }: { label: string; value: number; color: string }) {
+function KpiTile({
+  label,
+  hint,
+  value,
+  color,
+  pct,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  color: string;
+  pct: number;
+}) {
   return (
     <div className="card p-4">
-      <p className="text-[13px] text-[#8A97A8]">{label}</p>
-      <p className="mt-1 text-[28px] font-bold tabular-nums leading-none" style={{ color }}>
+      <p className="truncate text-[13px] font-semibold text-[#172334]">{label}</p>
+      <p className="mt-1 text-[13px] text-[#8A97A8]">{hint}</p>
+      <p className="mt-2 text-[28px] font-bold tabular-nums leading-none" style={{ color }}>
         {value}
       </p>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF4]">
+        <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(4, pct))}%`, background: color }} />
+      </div>
     </div>
   );
 }
