@@ -137,6 +137,13 @@ public class MainActivity extends AppCompatActivity {
         String defaultUserAgent = settings.getUserAgentString();
         settings.setUserAgentString(defaultUserAgent + " HRMateNativeApp/2.0");
 
+<<<<<<< HEAD
+=======
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+
+>>>>>>> 8c110ce (feat(native): pure native app experience with zero web-overscroll and hardware biometric bridge)
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
