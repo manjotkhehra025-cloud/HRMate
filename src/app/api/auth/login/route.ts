@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
 
   if (!email) return error("Email is required");
 
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
+  const cleanEmail = email.trim().toLowerCase();
+  const user = db.prepare("SELECT * FROM users WHERE LOWER(email) = ?").get(cleanEmail) as any;
   if (!user) {
     return error("Invalid email or password", 401);
   }
