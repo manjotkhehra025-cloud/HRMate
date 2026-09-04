@@ -9,21 +9,15 @@ import {
   Lock,
   ArrowRight,
   ShieldCheck,
-  MapPin,
-  CalendarDays,
-  MessageSquare,
-  Bell,
   Globe,
   ChevronDown,
   Check,
-  Sparkles,
-  Zap,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
-import { classNames } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
 
 const REMEMBER_KEY = "hrmate_remember_email";
+const BIOMETRIC_TOKEN_KEY = "hrmate_biometric_token";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -57,23 +51,31 @@ export default function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         setError(data.error || "Login failed");
         return;
       }
+
       try {
-        if (remember) localStorage.setItem(REMEMBER_KEY, email);
-        else localStorage.removeItem(REMEMBER_KEY);
+        if (remember) {
+          localStorage.setItem(REMEMBER_KEY, email.trim());
+          if (data.biometricToken) {
+            localStorage.setItem(BIOMETRIC_TOKEN_KEY, data.biometricToken);
+          }
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+          localStorage.removeItem(BIOMETRIC_TOKEN_KEY);
+        }
       } catch {
         /* ignore */
       }
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Something went wrong");
+      setError("Something went wrong during login");
     } finally {
       setLoading(false);
     }
@@ -83,40 +85,96 @@ export default function LoginForm() {
     setLoading(true);
     setError("");
     setInfo("");
+
     try {
-      const optsRes = await fetch("/api/auth/passkey/login-options", { method: "POST" });
-      if (!optsRes.ok) throw new Error("Biometric authentication not configured yet");
-      const options = await optsRes.json();
-      const assertion = await startAuthentication({ optionsJSON: options });
-      const verifyRes = await fetch("/api/auth/passkey/login-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assertion),
-      });
-      if (!verifyRes.ok) {
-        const data = await verifyRes.json();
-        setError(data.error || "Biometric login failed");
-        return;
+      // 1. Try WebAuthn Passkeys if supported in current browser/WebView
+      if (
+        typeof window !== "undefined" &&
+        window.PublicKeyCredential &&
+        typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
+      ) {
+        const isAvailable = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (isAvailable) {
+          const optsRes = await fetch("/api/auth/passkey/login-options", { method: "POST" });
+          if (optsRes.ok) {
+            const options = await optsRes.json();
+            const assertion = await startAuthentication({ optionsJSON: options });
+            const verifyRes = await fetch("/api/auth/passkey/login-verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(assertion),
+            });
+            if (verifyRes.ok) {
+              router.push("/dashboard");
+              router.refresh();
+              return;
+            }
+          }
+        }
       }
-      router.push("/dashboard");
-      router.refresh();
+
+      // 2. Fallback for Android WebView & App: Use saved device biometric token
+      const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
+      const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
+
+      if (rememberedEmail && rememberedToken) {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: rememberedEmail,
+            biometricToken: rememberedToken,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.biometricToken) {
+            localStorage.setItem(BIOMETRIC_TOKEN_KEY, data.biometricToken);
+          }
+          router.push("/dashboard");
+          router.refresh();
+          return;
+        }
+      }
+
+      // 3. If no prior login saved on this device
+      setError("Please sign in with password once to link your fingerprint to this device.");
     } catch (e: any) {
-      setError(e?.message || "Biometric authentication failed. Please sign in with password.");
+      const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
+      const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
+      if (rememberedEmail && rememberedToken) {
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: rememberedEmail,
+              biometricToken: rememberedToken,
+            }),
+          });
+          if (res.ok) {
+            router.push("/dashboard");
+            router.refresh();
+            return;
+          }
+        } catch {
+          // fallback
+        }
+      }
+      setError("Please sign in with password once to link your fingerprint to this device.");
     } finally {
       setLoading(false);
     }
   }
 
-  const field =
-    "h-12 w-full rounded-2xl border border-[#D5DEE8] bg-white pl-11 pr-4 text-[14px] text-[#172334] outline-none placeholder:text-[#9AA8B8] focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/15 transition";
-
   return (
     <div className="flex min-h-screen min-w-0 flex-col items-center justify-center bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-4 sm:p-6 lg:p-8">
-      {/* Background glow effects */}
+      {/* Background radial glow */}
       <div className="pointer-events-none absolute left-1/4 top-1/4 h-80 w-80 rounded-full bg-[#10B981]/15 blur-3xl" />
       <div className="pointer-events-none absolute right-1/4 bottom-1/4 h-80 w-80 rounded-full bg-[#3B82F6]/15 blur-3xl" />
 
-      {/* Language Picker in top corner */}
+      {/* Language Picker in top right corner */}
       <div className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] z-20 sm:right-8 sm:top-6">
         <button
           type="button"
@@ -154,7 +212,7 @@ export default function LoginForm() {
       </div>
 
       {/* Main Login Card */}
-      <div className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[32px] border border-white/15 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
+      <div className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[32px] border border-white/20 bg-white p-6 shadow-2xl sm:p-8">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#059669] via-[#10B981] to-[#34D399] text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] ring-4 ring-emerald-500/20">
@@ -166,7 +224,7 @@ export default function LoginForm() {
           </p>
         </div>
 
-        {/* 1-Tap Biometric Login Button (Prominent Glowing Action) */}
+        {/* 1-Tap Biometric Login Button */}
         <div className="mt-6">
           <button
             type="button"
@@ -188,18 +246,18 @@ export default function LoginForm() {
         {/* Divider */}
         <div className="my-5 flex items-center gap-3">
           <span className="h-px flex-1 bg-[#E2E8F0]" />
-          <span className="text-[11.5px] font-bold uppercase tracking-wider text-[#94A3B8]">or password</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8]">or with password</span>
           <span className="h-px flex-1 bg-[#E2E8F0]" />
         </div>
 
         {/* Password Login Form */}
         <form onSubmit={handlePasswordLogin} className="space-y-4">
           <div>
-            <label className="mb-1 block text-[12.5px] font-bold text-[#0F172A]" htmlFor="email">
+            <label className="mb-1 block text-[13px] font-bold text-[#0F172A]" htmlFor="email">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
               <input
                 id="email"
                 type="email"
@@ -208,15 +266,16 @@ export default function LoginForm() {
                 inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className={field}
+                placeholder="e.g. admin@hrmate.com"
+                className="h-12 w-full rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] pl-11 pr-4 text-[15px] font-semibold text-[#0F172A] outline-none placeholder:text-[#94A3B8] focus:border-[#10B981] focus:bg-white focus:ring-4 focus:ring-[#10B981]/15 transition"
+                style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
               />
             </div>
           </div>
 
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-[12.5px] font-bold text-[#0F172A]" htmlFor="password">
+              <label className="text-[13px] font-bold text-[#0F172A]" htmlFor="password">
                 Password
               </label>
               <button
@@ -231,7 +290,7 @@ export default function LoginForm() {
               </button>
             </div>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
               <input
                 id="password"
                 type="password"
@@ -240,7 +299,8 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className={field}
+                className="h-12 w-full rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] pl-11 pr-4 text-[15px] font-semibold text-[#0F172A] outline-none placeholder:text-[#94A3B8] focus:border-[#10B981] focus:bg-white focus:ring-4 focus:ring-[#10B981]/15 transition"
+                style={{ color: "#0F172A", WebkitTextFillColor: "#0F172A" }}
               />
             </div>
           </div>
@@ -255,8 +315,16 @@ export default function LoginForm() {
             Remember me on this device
           </label>
 
-          {error && <p className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-[12.5px] font-medium text-rose-600">{error}</p>}
-          {info && <p className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12.5px] font-medium text-emerald-800">{info}</p>}
+          {error && (
+            <p className="rounded-2xl bg-rose-50 border border-rose-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-rose-700">
+              {error}
+            </p>
+          )}
+          {info && (
+            <p className="rounded-2xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-[12.5px] font-semibold text-emerald-800">
+              {info}
+            </p>
+          )}
 
           <button
             type="submit"
