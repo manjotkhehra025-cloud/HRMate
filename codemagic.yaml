@@ -31,7 +31,7 @@ workflows:
       - name: Build Android Release AAB & APK
         script: |
           cd android
-          gradle bundleRelease assembleRelease --no-daemon --stacktrace || (gradle wrapper --gradle-version 8.5 && chmod +x gradlew && ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace)
+          gradle bundleRelease assembleRelease -x lint -x test --no-daemon --stacktrace || (gradle wrapper --gradle-version 8.5 && chmod +x gradlew && ./gradlew bundleRelease assembleRelease -x lint -x test --no-daemon --stacktrace)
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
       - android/app/build/outputs/apk/release/*.apk

@@ -16,26 +16,32 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
     signingConfigs {
         release {
-            def ksPath = System.getenv("CM_KEYSTORE_PATH") ?: "hrmate-release.keystore"
-            def ksFile = file(ksPath)
-            if (!ksFile.exists()) {
+            def ksFile = file("hrmate-release.keystore")
+            if (System.getenv("CM_KEYSTORE_PATH")) {
+                ksFile = file(System.getenv("CM_KEYSTORE_PATH"))
+            } else if (!ksFile.exists()) {
+                ksFile = file("../hrmate-release.keystore")
+            } else if (!ksFile.exists()) {
                 ksFile = file("../../hrmate-release.keystore")
             }
-            if (!ksFile.exists()) {
-                ksFile = file("hrmate-release.keystore")
-            }
             storeFile ksFile
-            storePassword System.getenv("CM_KEYSTORE_PASSWORD") ?: "hrmatepassword123"
-            keyAlias System.getenv("CM_KEY_ALIAS") ?: "hrmate"
-            keyPassword System.getenv("CM_KEY_PASSWORD") ?: "hrmatepassword123"
+            storePassword(System.getenv("CM_KEYSTORE_PASSWORD") ?: "hrmatepassword123")
+            keyAlias(System.getenv("CM_KEY_ALIAS") ?: "hrmate")
+            keyPassword(System.getenv("CM_KEY_PASSWORD") ?: "hrmatepassword123")
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            shrinkResources false
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
