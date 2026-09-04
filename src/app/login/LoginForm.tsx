@@ -55,7 +55,7 @@ export default function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Login failed");
+        setError(data.error || "Invalid email or password");
         return;
       }
 
@@ -86,8 +86,46 @@ export default function LoginForm() {
     setError("");
     setInfo("");
 
+    // 1. If running inside Native Android App, trigger real Android BiometricPrompt dialog!
+    if (
+      typeof window !== "undefined" &&
+      (window as any).AndroidApp &&
+      typeof (window as any).AndroidApp.authenticateBiometrics === "function"
+    ) {
+      (window as any).onNativeBiometricResult = async (success: boolean, msg: string) => {
+        if (success) {
+          const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
+          const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
+          if (rememberedEmail && rememberedToken) {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: rememberedEmail,
+                biometricToken: rememberedToken,
+              }),
+            });
+            if (res.ok) {
+              router.push("/dashboard");
+              router.refresh();
+              return;
+            }
+          }
+        }
+        setLoading(false);
+        if (!success) {
+          setError(msg === "failed" ? "Fingerprint not recognized" : msg || "Biometric authentication cancelled");
+        } else {
+          setError("Please sign in with password once to link your fingerprint.");
+        }
+      };
+
+      (window as any).AndroidApp.authenticateBiometrics();
+      return;
+    }
+
+    // 2. WebAuthn Passkeys fallback
     try {
-      // 1. Try WebAuthn Passkeys if supported in current browser/WebView
       if (
         typeof window !== "undefined" &&
         window.PublicKeyCredential &&
@@ -113,7 +151,7 @@ export default function LoginForm() {
         }
       }
 
-      // 2. Fallback for Android WebView & App: Use saved device biometric token
+      // 3. Saved device biometric token fallback
       const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
       const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
 
@@ -138,30 +176,8 @@ export default function LoginForm() {
         }
       }
 
-      // 3. If no prior login saved on this device
       setError("Please sign in with password once to link your fingerprint to this device.");
-    } catch (e: any) {
-      const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
-      const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
-      if (rememberedEmail && rememberedToken) {
-        try {
-          const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: rememberedEmail,
-              biometricToken: rememberedToken,
-            }),
-          });
-          if (res.ok) {
-            router.push("/dashboard");
-            router.refresh();
-            return;
-          }
-        } catch {
-          // fallback
-        }
-      }
+    } catch {
       setError("Please sign in with password once to link your fingerprint to this device.");
     } finally {
       setLoading(false);
