@@ -31,9 +31,20 @@ export function getRpIdAndOrigin(req?: NextRequest) {
 }
 
 export function getUserPasskeys(userId: string) {
-  return db
+  const passkeys = db
     .prepare("SELECT id, credential_id, device_name, created_at FROM passkey_credentials WHERE user_id = ?")
-    .all(userId);
+    .all(userId) as any[];
+
+  try {
+    const bioTokens = db
+      .prepare(
+        "SELECT token as id, token as credential_id, 'Android Biometric / Mobile Device' as device_name, created_at FROM device_biometrics WHERE user_id = ?"
+      )
+      .all(userId) as any[];
+    return [...passkeys, ...bioTokens];
+  } catch {
+    return passkeys;
+  }
 }
 
 export async function registrationOptions(userId: string, req?: NextRequest) {
@@ -165,4 +176,12 @@ export function removePasskey(userId: string, passkeyId: string) {
     passkeyId,
     userId
   );
+  try {
+    db.prepare("DELETE FROM device_biometrics WHERE token = ? AND user_id = ?").run(
+      passkeyId,
+      userId
+    );
+  } catch {
+    // ignore
+  }
 }

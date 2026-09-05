@@ -65,6 +65,16 @@ export default function ProfileClient({
     }, 4000);
   }
 
+  async function loadPasskeys() {
+    try {
+      const res = await fetch("/api/passkeys");
+      if (res.ok) {
+        const d = await res.json();
+        setPasskeys(d.passkeys || []);
+      }
+    } catch {}
+  }
+
   useEffect(() => {
     fetch("/api/profile", { cache: "no-store" })
       .then((r) => r.json())
@@ -80,10 +90,7 @@ export default function ProfileClient({
         }
       })
       .catch(() => {});
-    fetch("/api/passkeys")
-      .then((r) => r.json())
-      .then((d) => setPasskeys(d.passkeys || []))
-      .catch(() => {});
+    loadPasskeys();
   }, []);
 
   async function onPhoto(file: File) {
@@ -153,6 +160,43 @@ export default function ProfileClient({
 
   async function registerPasskey() {
     setRegistering(true);
+    setErr("");
+
+    // 1. If running inside Android Native App, trigger native BiometricPrompt
+    if (
+      typeof window !== "undefined" &&
+      (window as any).AndroidApp &&
+      typeof (window as any).AndroidApp.authenticateBiometrics === "function"
+    ) {
+      (window as any).onNativeBiometricResult = async (success: boolean, msg: string) => {
+        if (success) {
+          try {
+            const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+            if (bioRes.ok) {
+              const bioData = await bioRes.json();
+              if (bioData.biometricToken) {
+                localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+                localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+              }
+              flash("Android Fingerprint linked successfully ✓");
+              loadPasskeys();
+            } else {
+              flash("Failed to link fingerprint", true);
+            }
+          } catch {
+            flash("Failed to link fingerprint", true);
+          }
+        } else {
+          flash(msg === "failed" ? "Fingerprint not recognized" : msg || "Authentication cancelled", true);
+        }
+        setRegistering(false);
+      };
+
+      (window as any).AndroidApp.authenticateBiometrics();
+      return;
+    }
+
+    // 2. Web / Browser Passkeys fallback
     try {
       const optsRes = await fetch("/api/auth/passkey/register-options", { method: "POST" });
       if (!optsRes.ok) throw new Error("Failed to start registration");
@@ -167,10 +211,35 @@ export default function ProfileClient({
         const d = await verifyRes.json();
         throw new Error(d.error || "Registration failed");
       }
+
+      // Also register device biometric fallback token
+      try {
+        const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+        if (bioRes.ok) {
+          const bioData = await bioRes.json();
+          if (bioData.biometricToken) {
+            localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+            localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+          }
+        }
+      } catch {}
+
       flash("Passkey registered successfully ✓");
-      const list = await fetch("/api/passkeys").then((r) => r.json());
-      setPasskeys(list.passkeys || []);
+      loadPasskeys();
     } catch (e: any) {
+      try {
+        const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+        if (bioRes.ok) {
+          const bioData = await bioRes.json();
+          if (bioData.biometricToken) {
+            localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+            localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+          }
+          flash("Device Biometrics activated for this device ✓");
+          loadPasskeys();
+          return;
+        }
+      } catch {}
       flash(e?.message || "Passkey registration failed", true);
     } finally {
       setRegistering(false);
@@ -184,6 +253,7 @@ export default function ProfileClient({
       body: JSON.stringify({ id }),
     });
     setPasskeys((p) => p.filter((x) => x.id !== id));
+    flash("Biometric key removed");
   }
 
   const photo = avatarSrc(user.id, user.avatar);
