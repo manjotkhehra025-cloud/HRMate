@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   hrmate:
     build:
@@ -9,9 +7,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      HRMATE_DOMAIN: dfoods.duckdns.org
-      HRMATE_RP_ID: dfoods.duckdns.org
-      HRMATE_ORIGIN: https://dfoods.duckdns.org
+      HRMATE_DOMAIN: gdfoods.duckdns.org
+      HRMATE_RP_ID: gdfoods.duckdns.org
+      HRMATE_ORIGIN: https://gdfoods.duckdns.org
       HRMATE_DB: /app/data/hrmate.db
       # Optional custom VAPID keys for Web Push. Leave empty to use demo keys.
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
