@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
 # HRMate — one-shot VPS deploy script
-# Does everything:
-#   1. Remove the old Nginx site (port 80/443)
-#   2. Install Docker + Compose
-#   3. Clone the repo
-#   4. Build & launch HRMate behind Caddy (auto HTTPS)
-#
-# Usage (on the VPS):
-#   curl -fsSL https://raw.githubusercontent.com/manjotkhehra025-cloud/HRMate/arena/01a04984-hrmate/deploy.sh | sudo bash
 # ============================================================
 set -euo pipefail
 
-DOMAIN="dfoods.duckdns.org"
-BRANCH="arena/01a04984-hrmate"
+DOMAIN="gdfoods.duckdns.org"
+BRANCH="arena/01a056d6-hrmate"
 REPO="https://github.com/manjotkhehra025-cloud/HRMate.git"
 INSTALL_DIR="/opt/hrmate"
 
@@ -27,18 +19,7 @@ if [ "$(id -u)" -ne 0 ]; then
   fail "Please run as root (use: sudo bash deploy.sh)"
 fi
 
-info "Step 1/4 — Removing old Nginx site"
-if systemctl is-active --quiet nginx 2>/dev/null; then
-  systemctl stop nginx
-fi
-systemctl disable nginx 2>/dev/null || true
-apt-get purge -y nginx nginx-common nginx-full nginx-core 2>/dev/null || true
-rm -rf /etc/nginx /var/www/html /var/www/* 2>/dev/null || true
-apt-get autoremove -y >/dev/null 2>&1 || true
-apt-get autoclean -y >/dev/null 2>&1 || true
-info "Nginx removed."
-
-info "Step 1b/4 — Ensuring swap memory (build needs RAM)"
+info "Step 1/4 — Ensuring swap memory"
 SWAP_SIZE="${SWAP_SIZE:-2G}"
 if ! swapon --show | grep -q swap; then
   if [ ! -f /swapfile ]; then
@@ -53,45 +34,22 @@ else
   info "Swap already enabled."
 fi
 
-info "Step 2/4 — Installing Docker + Compose"
-if ! command -v docker >/dev/null 2>&1; then
-  apt-get update -y
-  apt-get install -y docker.io docker-compose-v2
-  systemctl enable --now docker
-else
-  info "Docker already installed."
-fi
-if ! docker compose version >/dev/null 2>&1; then
-  fail "docker compose plugin missing — install with: apt-get install -y docker-compose-v2"
-fi
-info "Docker ready: $(docker --version)"
+info "Step 2/4 — Updating HRMate repository"
+cd "$INSTALL_DIR"
+git config --global --add safe.directory "$INSTALL_DIR"
+git fetch origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
 
-info "Step 3/4 — Cloning HRMate"
-if [ -d "$INSTALL_DIR/.git" ]; then
-  info "Existing checkout found — pulling latest."
-  cd "$INSTALL_DIR"
-  git fetch origin
-  git checkout "$BRANCH"
-  git pull origin "$BRANCH"
-else
-  rm -rf "$INSTALL_DIR"
-  git clone "$REPO" "$INSTALL_DIR"
-  cd "$INSTALL_DIR"
-  git checkout "$BRANCH"
-fi
-
-info "Step 4/4 — Building & launching"
+info "Step 3/4 — Rebuilding Docker containers"
+docker compose down || true
 docker compose up -d --build
 
-info "Waiting for containers to start..."
+info "Step 4/4 — Checking container status"
 sleep 5
 docker compose ps
 
 echo ""
 echo -e "${GREEN}================================================${NC}"
-echo -e "${GREEN}  HRMate deployed! 🎉${NC}"
+echo -e "${GREEN}  HRMate deployed successfully! 🎉${NC}"
 echo -e "${GREEN}  URL: https://${DOMAIN}${NC}"
-echo ""
-echo -e "  Logs:  cd ${INSTALL_DIR} && docker compose logs -f"
-echo -e "  NOTE:  It can take 1-2 min for Caddy to get the SSL cert."
 echo -e "${GREEN}================================================${NC}"
