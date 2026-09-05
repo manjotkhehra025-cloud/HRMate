@@ -137,13 +137,10 @@ public class MainActivity extends AppCompatActivity {
         String defaultUserAgent = settings.getUserAgentString();
         settings.setUserAgentString(defaultUserAgent + " HRMateNativeApp/2.0");
 
-<<<<<<< HEAD
-=======
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
 
->>>>>>> 8c110ce (feat(native): pure native app experience with zero web-overscroll and hardware biometric bridge)
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -171,7 +168,12 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void authenticateBiometrics() {
-            runOnUiThread(() -> showNativeBiometricPrompt());
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    showNativeBiometricPrompt();
+                }
+            });
         }
     }
 
@@ -181,19 +183,34 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, '" + errString + "');", null);
+                webView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, '" + errString + "');", null);
+                    }
+                });
             }
 
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(true, 'success');", null);
+                webView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(true, 'success');", null);
+                    }
+                });
             }
 
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, 'Fingerprint not recognized');", null);
+                webView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, 'Fingerprint not recognized');", null);
+                    }
+                });
             }
         });
 
@@ -289,9 +306,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onPermissionRequest(PermissionRequest request) {
-            runOnUiThread(() -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    request.grant(request.getResources());
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        request.grant(request.getResources());
+                    }
                 }
             });
         }
