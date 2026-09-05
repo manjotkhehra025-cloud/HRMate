@@ -1,5 +1,5 @@
 # HRMate — reverse proxy with automatic HTTPS (Let's Encrypt)
-dfoods.duckdns.org, gdfoods.duckdns.org {
+gdfoods.duckdns.org {
 	tls {
 		issuer acme {
 			# Let's Encrypt's new "Generation Y" chain (root ISRG Root YE) is not
