@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -115,6 +116,9 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
+        // Enforce GPU Hardware Acceleration for Heavy Workloads & Large Displays
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -131,8 +135,12 @@ public class MainActivity extends AppCompatActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
+        // Performance & Heavy Work Optimization
+        settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
+
         String defaultUserAgent = settings.getUserAgentString();
-        settings.setUserAgentString(defaultUserAgent + " HRMateNativeApp/2.0");
+        settings.setUserAgentString(defaultUserAgent + " HRMateNativeApp/2.0 (" + Build.SUPPORTED_ABIS[0] + ")");
 
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         webView.setVerticalScrollBarEnabled(false);
@@ -151,6 +159,12 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebChromeClient(new CustomWebChromeClient());
     }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Handle rotation on foldables, tablets and kiosks seamlessly without reloading webView
+    }
+
     public class WebAppInterface {
         Context mContext;
 
@@ -161,6 +175,11 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public boolean isNativeApp() {
             return true;
+        }
+
+        @JavascriptInterface
+        public String getDeviceArch() {
+            return Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "unknown";
         }
 
         @JavascriptInterface
