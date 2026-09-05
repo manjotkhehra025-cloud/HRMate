@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 export const ATTENDANCE_EVENT = "hrmate:attendance";
 
@@ -27,6 +28,7 @@ interface PunchWidgetProps {
 
 export default function PunchWidget({ canPunch, today, factory }: PunchWidgetProps) {
   const router = useRouter();
+  const { t } = usePrefs();
   const [record, setRecord] = useState(today);
   const [punching, setPunching] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "locating" | "outside" | "error">("idle");
@@ -117,7 +119,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     });
   }
 
-  // Camera Management - Clean Single Stream Initialization
+  // Camera Management
   const openSelfieCamera = async () => {
     setCapturedPhoto(null);
     setCameraError("");
@@ -156,7 +158,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
           await videoRef.current.play();
         }
       } catch (fallbackErr: any) {
-        setCameraError("Live camera unavailable. Tap 'Open Phone Camera' below to take a photo.");
+        setCameraError(t("liveCameraUnavailable"));
       }
     } finally {
       setCameraLoading(false);
@@ -170,7 +172,6 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     }
   }, [cameraStream]);
 
-  // Video Ref callback to attach stream instantly upon DOM mount
   const setVideoElement = useCallback(
     (node: HTMLVideoElement | null) => {
       videoRef.current = node;
@@ -217,8 +218,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       }
       setRecord(data.record);
       setGeoState("idle");
-      const action = data.record.punch_out_at ? "Punched out" : "Punched in";
-      setMessage(`${action} successfully at ${formatTime(Date.now())} ✓`);
+      const action = data.record.punch_out_at ? t("punchOut") : t("punchIn");
+      setMessage(`${action} ✓ ${formatTime(Date.now())}`);
       window.dispatchEvent(new Event(ATTENDANCE_EVENT));
       router.refresh();
       closeCameraModal();
@@ -291,7 +292,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     return null;
   }
 
-  const facilityLabel = factory.name || "GD Foods Factory";
+  const facilityLabel = factory.name || "GD Foods Mfg. (I) Pvt. Ltd.";
 
   return (
     <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-5 text-white shadow-2xl sm:p-7 border border-white/10">
@@ -304,7 +305,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[11.5px] font-bold text-emerald-400 backdrop-blur-md">
             <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
-            {facilityLabel} · Geofence Verified
+            {facilityLabel} · {t("geofenceVerified")}
           </span>
         </div>
 
@@ -319,7 +320,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       {/* Center Shift Progress Speedometer / Radial Ring */}
       <div className="relative z-10 my-6 flex flex-col items-center justify-center text-center">
         <p className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
-          {punchedOut ? "Shift Completed" : punchedIn ? "Live Shift Progress" : "Shift Schedule: 09:00 - 18:00"}
+          {punchedOut ? t("shiftCompleted") : punchedIn ? t("liveShiftProgress") : t("shiftSchedule")}
         </p>
 
         {/* Circular Glowing Ring */}
@@ -364,20 +365,20 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                   {String(hrs).padStart(2, "0")}:{String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
                 </span>
                 <span className="text-[10.5px] font-semibold text-slate-400">
-                  Punched In: {formatTime(record.punch_in_at)}
+                  {t("punchedInAt")}: {formatTime(record.punch_in_at)}
                 </span>
               </>
             ) : punchedOut ? (
               <>
                 <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-                <span className="mt-1 text-[16px] font-black text-white">Shift Finished</span>
-                <span className="text-[11px] text-slate-400">Out at {formatTime(record.punch_out_at)}</span>
+                <span className="mt-1 text-[16px] font-black text-white">{t("shiftFinished")}</span>
+                <span className="text-[11px] text-slate-400">{t("outAt")} {formatTime(record.punch_out_at)}</span>
               </>
             ) : (
               <>
                 <Camera className="h-8 w-8 text-emerald-400 animate-pulse" />
-                <span className="mt-1 text-[18px] font-black text-white">Selfie Punch In</span>
-                <span className="text-[11px] text-slate-400">General Shift (9h)</span>
+                <span className="mt-1 text-[18px] font-black text-white">{t("selfiePunchIn")}</span>
+                <span className="text-[11px] text-slate-400">{t("generalShift")}</span>
               </>
             )}
           </div>
@@ -393,7 +394,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 px-6 py-3 text-[14px] font-extrabold text-white shadow-[0_4px_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-400/30 transition active:scale-95 hover:opacity-95"
             >
               <Camera className="h-5 w-5 text-white" />
-              <span>{punchedIn ? "📸 Capture Selfie Punch Out" : "📸 Capture Selfie Punch In"}</span>
+              <span>{punchedIn ? t("captureSelfiePunchOut") : t("captureSelfiePunchIn")}</span>
             </button>
           </div>
         )}
@@ -411,10 +412,10 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             <div className="absolute inset-0 flex items-center justify-center pl-10 pr-4 text-[12px] font-bold uppercase tracking-wider text-emerald-400/90 text-center select-none">
               {punching ? (
                 <span className="flex items-center gap-2">
-                  <Spinner className="h-4 w-4 text-emerald-400" /> Recording...
+                  <Spinner className="h-4 w-4 text-emerald-400" /> {t("recording")}
                 </span>
               ) : (
-                "Slide to Selfie Punch →"
+                t("slidePunch")
               )}
             </div>
 
@@ -432,7 +433,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       {geoState === "locating" && (
         <div className="relative z-10 mt-4 flex items-center gap-2 rounded-2xl bg-sky-500/20 border border-sky-400/30 p-3 text-[12.5px] font-semibold text-sky-200">
           <Navigation className="h-4 w-4 animate-spin text-sky-300" />
-          <span>Verifying factory GPS position...</span>
+          <span>{t("verifyingGps")}</span>
         </div>
       )}
 
@@ -447,7 +448,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             onClick={openSelfieCamera}
             className="shrink-0 rounded-lg bg-rose-500/40 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-500"
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       )}
@@ -468,8 +469,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               <div className="flex items-center gap-2">
                 <Camera className="h-5 w-5 text-emerald-400" />
                 <div>
-                  <h3 className="text-[16px] font-bold text-white">Selfie Face Verification</h3>
-                  <p className="text-[11px] text-emerald-400">Align face inside the oval</p>
+                  <h3 className="text-[16px] font-bold text-white">{t("selfieFaceVerification")}</h3>
+                  <p className="text-[11px] text-emerald-400">{t("alignFaceOval")}</p>
                 </div>
               </div>
               <button
@@ -526,7 +527,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     onClick={() => nativeFileInputRef.current?.click()}
                     className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-bold text-white shadow-md active:scale-95"
                   >
-                    <Camera className="h-4 w-4" /> Open Phone Camera
+                    <Camera className="h-4 w-4" /> {t("openPhoneCamera")}
                   </button>
                 </div>
               )}
@@ -553,7 +554,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     }}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 py-3 text-[13px] font-bold text-slate-300 hover:bg-white/15"
                   >
-                    <RefreshCw className="h-4 w-4" /> Retake
+                    <RefreshCw className="h-4 w-4" /> {t("retake")}
                   </button>
                   <button
                     type="button"
@@ -562,7 +563,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 text-[13px] font-bold text-white shadow-lg active:scale-98"
                   >
                     {punching ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                    Confirm Punch
+                    {t("confirmPunch")}
                   </button>
                 </div>
               ) : (
@@ -572,7 +573,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     onClick={captureSelfiePhoto}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3.5 text-[14px] font-bold text-white shadow-lg active:scale-98"
                   >
-                    <Camera className="h-5 w-5" /> Capture Selfie &amp; Confirm
+                    <Camera className="h-5 w-5" /> {t("captureSelfieConfirm")}
                   </button>
                   <button
                     type="button"

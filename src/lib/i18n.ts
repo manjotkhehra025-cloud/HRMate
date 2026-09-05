@@ -81,16 +81,40 @@ const en = {
   activeStatus: "Active ✓",
   enableStatus: "Enable",
 
-  // Dashboard
+  // Greetings & Punch Widget
+  goodMorning: "Good morning",
+  goodAfternoon: "Good afternoon",
+  goodEvening: "Good evening",
   welcomeBack: "Welcome back",
-  welcomeSub: "GD Foods Mfg. (I) Pvt. Ltd. Workforce Portal",
-  shiftFinished: "Shift Finished",
+  welcomeSub: "Welcome to HRMate · G.D. Foods Mfg. (I) Pvt. Ltd.",
+  geofenceVerified: "Geofence Verified",
+  shiftCompleted: "Shift Completed",
   liveShiftProgress: "Live Shift Progress",
+  shiftSchedule: "Shift Schedule: 09:00 - 18:00",
+  punchedInAt: "Punched In",
+  shiftFinished: "Shift Finished",
+  outAt: "Out at",
   selfiePunchIn: "Selfie Punch In",
   selfiePunchOut: "Selfie Punch Out",
+  generalShift: "General Shift (9h)",
+  captureSelfiePunchOut: "📸 Capture Selfie Punch Out",
+  captureSelfiePunchIn: "📸 Capture Selfie Punch In",
   slidePunch: "Slide to Selfie Punch →",
+  recording: "Recording...",
+  verifyingGps: "Verifying factory GPS position...",
+  selfieFaceVerification: "Selfie Face Verification",
+  alignFaceOval: "Align face inside the oval",
+  liveCameraUnavailable: "Live camera unavailable. Tap 'Open Phone Camera' below to take a photo.",
+  openPhoneCamera: "Open Phone Camera",
+  retake: "Retake",
+  confirmPunch: "Confirm Punch",
+  captureSelfieConfirm: "Capture Selfie & Confirm",
+  retry: "Retry",
+
+  // Dashboard Stats & KPIs
   workforcePulse: "Workforce Pulse",
   workforceSub: "Live attendance summary for GD Foods",
+  live: "Live",
   present: "Present",
   late: "Late",
   halfDay: "Half Day",
@@ -109,6 +133,8 @@ const en = {
   monthlyScore: "Monthly Score: Excellent ★",
   nextMonth: "Next Month",
   soon: "Soon",
+  punchedInMsg: "Punched in at",
+  punchedOutMsg: "Punched out at",
 
   // Attendance & Logs
   attendanceLogsTitle: "Attendance & Logs",
@@ -138,11 +164,15 @@ const en = {
   officialStaffBadge: "Official Staff",
   yellowCardStaff: "Yellow Card Staff",
   officialStaff: "Official Staff",
+  category: "Category",
+  switchToOfficial: "Switch to Official Staff",
+  switchToYellowCard: "Switch to Yellow Card",
   yellowCardPolicyTitle: "Yellow Card Staff Leave Policy",
   yellowCardPolicySub: "Yellow Card staff members strictly receive 15 Earned Leaves (EL) per year, accrued monthly at 1.25 days per elapsed month. Casual Leaves (CL), Sick Leaves (SL), Optional Holidays, and Short Leaves are not applicable.",
   adjustEditDays: "Adjust / Edit Leave Days",
   applyForLeave: "Apply For Leave",
   daysLeft: "days left",
+  days: "days",
   accrued: "Accrued",
   used: "Used",
   editBalance: "Edit Balance",
@@ -152,6 +182,9 @@ const en = {
   pending: "Pending",
   approved: "Approved",
   rejected: "Rejected",
+  submittedTo: "Submitted to",
+  startDate: "Start Date",
+  endDate: "End Date",
 
   // Team
   teamTitle: "Team Directory & Presence",
@@ -160,10 +193,14 @@ const en = {
   upcomingLeaves: "Upcoming Leaves",
   searchMember: "Search member...",
   allDepartments: "All Departments",
-  currentlyPresent: "Currently Present",
-  completedShift: "Completed Shift",
-  notInYet: "Not In Yet",
+  noUpcomingLeaves: "No upcoming leaves",
+  approvedLeavesSub: "Approved leaves across the team will be displayed here.",
+  currentlyPresent: "CURRENTLY PRESENT",
+  completedShift: "COMPLETED SHIFT",
+  notInYet: "NOT IN YET",
   offDay: "Off",
+  inTime: "In",
+  outTime: "Out",
 
   // Approvals
   pendingApprovalsTitle: "Pending Approvals",
@@ -322,16 +359,40 @@ const pa: Record<keyof typeof en, string> = {
   activeStatus: "ਐਕਟਿਵ ✓",
   enableStatus: "ਚਾਲੂ ਕਰੋ",
 
-  // Dashboard
+  // Greetings & Punch Widget
+  goodMorning: "ਸ਼ੁਭ ਸਵੇਰ",
+  goodAfternoon: "ਸ਼ੁਭ ਦੁਪਹਿਰ",
+  goodEvening: "ਸ਼ੁਭ ਸ਼ਾਮ",
   welcomeBack: "ਜੀ ਆਇਆਂ ਨੂੰ",
   welcomeSub: "ਜੀ.ਡੀ. ਫੂਡਜ਼ ਮੈਨੂਫੈਕਚਰਿੰਗ (ਇੰਡੀਆ) ਪ੍ਰਾਈਵੇਟ ਲਿਮਟਿਡ ਪੋਰਟਲ",
-  shiftFinished: "ਸ਼ਿਫਟ ਮੁਕੰਮਲ",
+  geofenceVerified: "ਜੀਓਫੈਂਸ ਪ੍ਰਮਾਣਿਤ",
+  shiftCompleted: "ਸ਼ਿਫਟ ਮੁਕੰਮਲ",
   liveShiftProgress: "ਲਾਈਵ ਸ਼ਿਫਟ ਸਮਾਂ",
+  shiftSchedule: "ਸ਼ਿਫਟ ਸ਼ਡਿਊਲ: 09:00 - 18:00",
+  punchedInAt: "ਪੰਚ ਇਨ",
+  shiftFinished: "ਸ਼ਿਫਟ ਮੁਕੰਮਲ",
+  outAt: "ਬਾਹਰ ਗਏ",
   selfiePunchIn: "ਸੈਲਫ਼ੀ ਪੰਚ ਇਨ",
   selfiePunchOut: "ਸੈਲਫ਼ੀ ਪੰਚ ਆਊਟ",
+  generalShift: "ਜਨਰਲ ਸ਼ਿਫਟ (9 ਘੰਟੇ)",
+  captureSelfiePunchOut: "📸 ਸੈਲਫ਼ੀ ਪੰਚ ਆਊਟ ਕੈਪਚਰ ਕਰੋ",
+  captureSelfiePunchIn: "📸 ਸੈਲਫ਼ੀ ਪੰਚ ਇਨ ਕੈਪਚਰ ਕਰੋ",
   slidePunch: "ਸੈਲਫ਼ੀ ਪੰਚ ਲਈ ਸਲਾਈਡ ਕਰੋ →",
+  recording: "ਦਰਜ ਕਰ ਰਿਹਾ ਹੈ...",
+  verifyingGps: "ਫੈਕਟਰੀ GPS ਟਿਕਾਣਾ ਜਾਂਚ ਰਿਹਾ ਹੈ...",
+  selfieFaceVerification: "ਸੈਲਫ਼ੀ ਫੇਸ ਵੈਰੀਫਿਕੇਸ਼ਨ",
+  alignFaceOval: "ਚਿਹਰੇ ਨੂੰ ਅੰਡਾਕਾਰ ਫਰੇਮ ਵਿੱਚ ਰੱਖੋ",
+  liveCameraUnavailable: "ਲਾਈਵ ਕੈਮਰਾ ਉਪਲਬਧ ਨਹੀਂ ਹੈ। ਹੇਠਾਂ 'ਫ਼ੋਨ ਕੈਮਰਾ ਖੋਲ੍ਹੋ' 'ਤੇ ਟੈਪ ਕਰੋ।",
+  openPhoneCamera: "ਫ਼ੋਨ ਕੈਮਰਾ ਖੋਲ੍ਹੋ",
+  retake: "ਦੁਬਾਰਾ ਲਓ",
+  confirmPunch: "ਪੰਚ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ",
+  captureSelfieConfirm: "ਸੈਲਫ਼ੀ ਲਓ ਅਤੇ ਪੁਸ਼ਟੀ ਕਰੋ",
+  retry: "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
+
+  // Dashboard Stats & KPIs
   workforcePulse: "ਵਰਕਫੋਰਸ ਹਾਜ਼ਰੀ ਸਥਿਤੀ",
   workforceSub: "ਜੀ.ਡੀ. ਫੂਡਜ਼ ਲਈ ਲਾਈਵ ਹਾਜ਼ਰੀ ਸਾਰਾਂਸ਼",
+  live: "ਲਾਈਵ",
   present: "ਹਾਜ਼ਰ",
   late: "ਲੇਟ",
   halfDay: "ਅੱਧਾ ਦਿਨ",
@@ -350,6 +411,8 @@ const pa: Record<keyof typeof en, string> = {
   monthlyScore: "ਮਹੀਨਾਵਾਰ ਸਕੋਰ: ਬਹੁਤ ਵਧੀਆ ★",
   nextMonth: "ਅਗਲੇ ਮਹੀਨੇ",
   soon: "ਜਲਦੀ",
+  punchedInMsg: "ਵਜੇ ਪੰਚ ਇਨ ਕੀਤਾ",
+  punchedOutMsg: "ਵਜੇ ਪੰਚ ਆਊਟ ਕੀਤਾ",
 
   // Attendance & Logs
   attendanceLogsTitle: "ਹਾਜ਼ਰੀ ਅਤੇ ਰਿਕਾਰਡ",
@@ -379,11 +442,15 @@ const pa: Record<keyof typeof en, string> = {
   officialStaffBadge: "ਦਫ਼ਤਰੀ ਸਟਾਫ਼",
   yellowCardStaff: "ਯੈਲੋ ਕਾਰਡ ਸਟਾਫ਼",
   officialStaff: "ਦਫ਼ਤਰੀ ਸਟਾਫ਼",
+  category: "ਸ਼੍ਰੇਣੀ",
+  switchToOfficial: "ਦਫ਼ਤਰੀ ਸਟਾਫ਼ ਵਿੱਚ ਬਦਲੋ",
+  switchToYellowCard: "ਯੈਲੋ ਕਾਰਡ ਵਿੱਚ ਬਦਲੋ",
   yellowCardPolicyTitle: "ਯੈਲੋ ਕਾਰਡ ਸਟਾਫ਼ ਛੁੱਟੀ ਨੀਤੀ",
   yellowCardPolicySub: "ਯੈਲੋ ਕਾਰਡ ਸਟਾਫ਼ ਮੈਂਬਰਾਂ ਨੂੰ ਸਾਲ ਵਿੱਚ ਸਖ਼ਤੀ ਨਾਲ ਸਿਰਫ਼ 15 ਅਰਨਡ ਲੀਵ (EL) ਮਿਲਦੀਆਂ ਹਨ, ਜੋ ਕਿ ਹਰ ਮਹੀਨੇ 1.25 ਦਿਨ ਜੁੜਦੀਆਂ ਹਨ। ਕੈਜ਼ੂਅਲ ਲੀਵ (CL), ਸਿੱਕ ਲੀਵ (SL), ਆਪਸ਼ਨਲ ਛੁੱਟੀਆਂ ਅਤੇ ਸ਼ਾਰਟ ਲੀਵ ਲਾਗੂ ਨਹੀਂ ਹਨ।",
   adjustEditDays: "ਛੁੱਟੀਆਂ ਦੇ ਦਿਨ ਸੋਧੋ / ਐਡਜਸਟ ਕਰੋ",
   applyForLeave: "ਛੁੱਟੀ ਲਈ ਅਰਜ਼ੀ ਦਿਓ",
   daysLeft: "ਦਿਨ ਬਾਕੀ",
+  days: "ਦਿਨ",
   accrued: "ਜਮ੍ਹਾਂ ਹੋਏ",
   used: "ਵਰਤੇ ਗਏ",
   editBalance: "ਬੈਲੇਂਸ ਸੋਧੋ",
@@ -393,6 +460,9 @@ const pa: Record<keyof typeof en, string> = {
   pending: "ਬਕਾਇਆ",
   approved: "ਮਨਜ਼ੂਰ",
   rejected: "ਰੱਦ",
+  submittedTo: "ਨੂੰ ਭੇਜਿਆ",
+  startDate: "ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ",
+  endDate: "ਆਖ਼ਰੀ ਮਿਤੀ",
 
   // Team
   teamTitle: "ਟੀਮ ਡਾਇਰੈਕਟਰੀ ਅਤੇ ਹਾਜ਼ਰੀ",
@@ -401,10 +471,14 @@ const pa: Record<keyof typeof en, string> = {
   upcomingLeaves: "ਆਉਣ ਵਾਲੀਆਂ ਛੁੱਟੀਆਂ",
   searchMember: "ਮੈਂਬਰ ਲੱਭੋ...",
   allDepartments: "ਸਾਰੇ ਵਿਭਾਗ",
+  noUpcomingLeaves: "ਕੋਈ ਆਉਣ ਵਾਲੀ ਛੁੱਟੀ ਨਹੀਂ",
+  approvedLeavesSub: "ਟੀਮ ਦੀਆਂ ਮਨਜ਼ੂਰਸ਼ੁਦਾ ਛੁੱਟੀਆਂ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੀਆਂ।",
   currentlyPresent: "ਇਸ ਵੇਲੇ ਹਾਜ਼ਰ",
   completedShift: "ਸ਼ਿਫਟ ਮੁਕੰਮਲ",
   notInYet: "ਹਾਲੇ ਨਹੀਂ ਆਏ",
   offDay: "ਛੁੱਟੀ",
+  inTime: "ਇਨ",
+  outTime: "ਆਊਟ",
 
   // Approvals
   pendingApprovalsTitle: "ਬਕਾਇਆ ਮਨਜ਼ੂਰੀਆਂ",
@@ -563,16 +637,40 @@ const hi: Record<keyof typeof en, string> = {
   activeStatus: "सक्रिय ✓",
   enableStatus: "सक्षम करें",
 
-  // Dashboard
+  // Greetings & Punch Widget
+  goodMorning: "शुभ प्रभात",
+  goodAfternoon: "शुभ दोपहर",
+  goodEvening: "शुभ संध्या",
   welcomeBack: "स्वागत है",
-  welcomeSub: "जी.डी. फूड्स मैन्युफैक्चरिंग (इंडिया) प्राइवेट लिमिटेड पोर्टल",
-  shiftFinished: "शिफ्ट समाप्त",
+  welcomeSub: "जी.ਡੀ. फूड्स मैन्युफैक्चरिंग (इंडिया) प्राइवेट लिमिटेड पोर्टल",
+  geofenceVerified: "जियोफेंस सत्यापित",
+  shiftCompleted: "शिफ्ट पूरी हुई",
   liveShiftProgress: "लाइव शिफ्ट प्रगति",
+  shiftSchedule: "शिफ्ट समय सारणी: 09:00 - 18:00",
+  punchedInAt: "पंच इन",
+  shiftFinished: "शिफ्ट समाप्त",
+  outAt: "बाहर गए",
   selfiePunchIn: "सेल्फी पंच इन",
   selfiePunchOut: "सेल्फी पंच आउट",
+  generalShift: "जनरल शिफ्ट (9 घंटे)",
+  captureSelfiePunchOut: "📸 सेल्फी पंच आउट कैप्चर करें",
+  captureSelfiePunchIn: "📸 सेल्फी पंच इन कैप्चर करें",
   slidePunch: "सेल्फी पंच के लिए स्लाइड करें →",
+  recording: "दर्ज कर रहा है...",
+  verifyingGps: "फ़ैक्टरी GPS स्थान सत्यापित कर रहा है...",
+  selfieFaceVerification: "सेल्फी फेस सत्यापन",
+  alignFaceOval: "चेहरे को अंडाकार फ्रेम में रखें",
+  liveCameraUnavailable: "लाइव कैमरा उपलब्ध नहीं है। नीचे 'फ़ोन कैमरा खोलें' पर टैप करें।",
+  openPhoneCamera: "फ़ोन कैमरा खोलें",
+  retake: "दोबारा लें",
+  confirmPunch: "पंच की पुष्टि करें",
+  captureSelfieConfirm: "सेल्फी लें और पुष्टि करें",
+  retry: "पुनः प्रयास करें",
+
+  // Dashboard Stats & KPIs
   workforcePulse: "कार्यबल उपस्थिति स्थिति",
   workforceSub: "जी.डी. फूड्स के लिए लाइव उपस्थिति सारांश",
+  live: "लाइव",
   present: "उपस्थित",
   late: "देरी",
   halfDay: "आधा दिन",
@@ -591,6 +689,8 @@ const hi: Record<keyof typeof en, string> = {
   monthlyScore: "मासिक स्कोर: उत्कृष्ट ★",
   nextMonth: "अगले महीने",
   soon: "शीघ्र",
+  punchedInMsg: "पर पंच इन किया",
+  punchedOutMsg: "पर पंच आउट किया",
 
   // Attendance & Logs
   attendanceLogsTitle: "उपस्थिति और रिकॉर्ड",
@@ -620,11 +720,15 @@ const hi: Record<keyof typeof en, string> = {
   officialStaffBadge: "आधिकारिक स्टाफ",
   yellowCardStaff: "येलो कार्ड स्टाफ",
   officialStaff: "आधिकारिक स्टाफ",
+  category: "श्रेणी",
+  switchToOfficial: "आधिकारिक स्टाफ में बदलें",
+  switchToYellowCard: "येलो कार्ड में बदलें",
   yellowCardPolicyTitle: "येलो कार्ड स्टाफ अवकाश नीति",
   yellowCardPolicySub: "येलो कार्ड स्टाफ सदस्यों को प्रति वर्ष कड़ाई से 15 अर्जित छुट्टियां (EL) मिलती हैं, जो प्रति माह 1.25 दिन जुड़ती हैं। कैजुअल लीव (CL), सिक लीव (SL), वैकल्पिक अवकाश और शॉर्ट लीव लागू नहीं हैं।",
   adjustEditDays: "छुट्टी के दिन समायोजित / संपादित करें",
   applyForLeave: "छुट्टी के लिए आवेदन करें",
   daysLeft: "दिन शेष",
+  days: "दिन",
   accrued: "अर्जित",
   used: "उपयोग किए गए",
   editBalance: "शेष संपादित करें",
@@ -634,6 +738,9 @@ const hi: Record<keyof typeof en, string> = {
   pending: "लंबित",
   approved: "स्वीकृत",
   rejected: "अस्वीकृत",
+  submittedTo: "को भेजा गया",
+  startDate: "प्रारंभ तिथि",
+  endDate: "समाप्ति तिथि",
 
   // Team
   teamTitle: "टीम डायरेक्टरी और उपस्थिति",
@@ -642,10 +749,14 @@ const hi: Record<keyof typeof en, string> = {
   upcomingLeaves: "आगामी छुट्टियां",
   searchMember: "सदस्य खोजें...",
   allDepartments: "सभी विभाग",
+  noUpcomingLeaves: "कोई आगामी अवकाश नहीं",
+  approvedLeavesSub: "टीम की स्वीकृत छुट्टियां यहां दिखाई देंगी।",
   currentlyPresent: "वर्तमान में उपस्थित",
   completedShift: "शिफ्ट पूरी हुई",
   notInYet: "अभी नहीं आए",
   offDay: "छुट्टी",
+  inTime: "इन",
+  outTime: "आउट",
 
   // Approvals
   pendingApprovalsTitle: "लंबित स्वीकृतियां",
@@ -746,4 +857,82 @@ export function navLabel(lang: Lang, href: string, fallback: string): string {
   };
   const key = map[href];
   return key ? t(lang, key) : fallback;
+}
+
+export function translateLeaveName(lang: Lang, name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes("earned")) {
+    if (lang === "pa") return "ਅਰਨਡ ਲੀਵ (EL)";
+    if (lang === "hi") return "अर्जित अवकाश (EL)";
+    return "Earned Leave (EL)";
+  }
+  if (lower.includes("casual")) {
+    if (lang === "pa") return "ਕੈਜ਼ੂਅਲ ਲੀਵ (CL)";
+    if (lang === "hi") return "आकस्मिक अवकाश (CL)";
+    return "Casual Leave (CL)";
+  }
+  if (lower.includes("sick")) {
+    if (lang === "pa") return "ਸਿੱਕ ਲੀਵ (SL)";
+    if (lang === "hi") return "बीमारी अवकाश (SL)";
+    return "Sick Leave (SL)";
+  }
+  if (lower.includes("optional")) {
+    if (lang === "pa") return "ਆਪਸ਼ਨਲ ਛੁੱਟੀ";
+    if (lang === "hi") return "वैकल्पिक अवकाश";
+    return "Optional Holiday";
+  }
+  if (lower.includes("short")) {
+    if (lang === "pa") return "ਸ਼ਾਰਟ ਲੀਵ";
+    if (lang === "hi") return "शॉर्ट लीव";
+    return "Short Leave";
+  }
+  return name;
+}
+
+export function translateGreeting(lang: Lang, hour: number): string {
+  if (hour < 12) {
+    if (lang === "pa") return "ਸ਼ੁਭ ਸਵੇਰ";
+    if (lang === "hi") return "शुभ प्रभात";
+    return "Good morning";
+  }
+  if (hour < 17) {
+    if (lang === "pa") return "ਸ਼ੁਭ ਦੁਪਹਿਰ";
+    if (lang === "hi") return "शुभ दोपहर";
+    return "Good afternoon";
+  }
+  if (lang === "pa") return "ਸ਼ੁਭ ਸ਼ਾਮ";
+  if (lang === "hi") return "शुभ संध्या";
+  return "Good evening";
+}
+
+export function translateTimeAgo(lang: Lang, ts: number): string {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) {
+    if (lang === "pa") return "ਹੁਣੇ";
+    if (lang === "hi") return "अभी";
+    return "just now";
+  }
+  if (m < 60) {
+    if (lang === "pa") return `${m} ਮਿੰਟ ਪਹਿਲਾਂ`;
+    if (lang === "hi") return `${m} मिनट पहले`;
+    return `${m}m ago`;
+  }
+  const h = Math.floor(m / 60);
+  if (h < 24) {
+    if (lang === "pa") return `${h} ਘੰਟੇ ਪਹਿਲਾਂ`;
+    if (lang === "hi") return `${h} घंटे पहले`;
+    return `${h}h ago`;
+  }
+  const day = Math.floor(h / 24);
+  if (day < 7) {
+    if (lang === "pa") return `${day} ਦਿਨ ਪਹਿਲਾਂ`;
+    if (lang === "hi") return `${day} दिन पहले`;
+    return `${day}d ago`;
+  }
+  return new Date(ts).toLocaleDateString(lang === "pa" ? "pa-IN" : lang === "hi" ? "hi-IN" : "en-IN", {
+    day: "numeric",
+    month: "short",
+    timeZone: "Asia/Kolkata",
+  });
 }

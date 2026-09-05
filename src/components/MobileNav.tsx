@@ -47,7 +47,7 @@ export default function MobileNav({
           >
             <LayoutDashboard className="h-5 w-5" />
           </div>
-          <span className="mt-1 text-[11px] tracking-tight">{t("dashboard")}</span>
+          <span className="mt-1 text-[11px] tracking-tight">{t("home")}</span>
         </Link>
 
         {/* Leaves Tab */}

@@ -6,7 +6,6 @@ import {
   Send,
   Plus,
   X,
-  AlertTriangle,
   CheckCircle2,
   Settings2,
   Save,
@@ -19,6 +18,7 @@ import {
 import { Spinner } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
+import { translateLeaveName } from "@/lib/i18n";
 
 interface LeaveType {
   id: string;
@@ -68,7 +68,7 @@ export default function LeavesClient({
   staffType: string;
   currentUserId?: string;
 }) {
-  const { t } = usePrefs();
+  const { t, prefs } = usePrefs();
   const [currentStaffType, setCurrentStaffType] = useState(initialStaffType || "official");
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -166,7 +166,6 @@ export default function LeavesClient({
     if (canAdjust) loadAdjustData();
   }, [canAdjust]);
 
-  // Quick switch own staff category (Yellow Card vs Official)
   async function handleSwitchCategory(newCategory: "yellow_card" | "official") {
     setSwitchingCategory(true);
     setCategoryNotice("");
@@ -184,8 +183,8 @@ export default function LeavesClient({
       setCurrentStaffType(newCategory);
       setCategoryNotice(
         newCategory === "yellow_card"
-          ? "Switched to Yellow Card Staff (Strictly 15 EL Leaves) ✓"
-          : "Switched to Official Staff (Full Leave Package) ✓"
+          ? `${t("switchToYellowCard")} ✓`
+          : `${t("switchToOfficial")} ✓`
       );
       await load();
       if (canAdjust) await loadAdjustData();
@@ -234,7 +233,7 @@ export default function LeavesClient({
       }
       setSuccess(
         data.approver_name
-          ? `Sent to ${data.approver_name} (${data.days} ${t("daysLeft")})`
+          ? `${t("submittedTo")}: ${data.approver_name} (${data.days} ${t("daysLeft")})`
           : `${t("applyForLeave")} (${data.days} ${t("daysLeft")}) ✓`
       );
       setReason("");
@@ -271,7 +270,7 @@ export default function LeavesClient({
         setAdjustErr(d.error || "Failed to adjust balance");
         return;
       }
-      setAdjustMsg("Leave balance updated successfully ✓");
+      setAdjustMsg(`${t("adjustEditDays")} ✓`);
       setAdjustReason("");
       load();
     } catch (e: any) {
@@ -308,7 +307,7 @@ export default function LeavesClient({
         setCardError(d.error || "Failed to update balance");
         return;
       }
-      setCategoryNotice(`${editingCard.name} balance updated ✓`);
+      setCategoryNotice(`${translateLeaveName(prefs.language, editingCard.name)} ✓`);
       setEditingCard(null);
       await load();
       setTimeout(() => setCategoryNotice(""), 5000);
@@ -328,9 +327,6 @@ export default function LeavesClient({
     setCardError("");
   }
 
-  const selectedUserObj = adjustUsers.find((u) => u.id === (adjustTargetUser || currentUserId));
-  const isTargetYellow = selectedUserObj?.staff_type === "yellow_card";
-
   if (!canView) return null;
 
   return (
@@ -346,9 +342,7 @@ export default function LeavesClient({
               </h1>
             </div>
             <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-              {isYellowCard
-                ? t("yellowCardBadge")
-                : t("officialStaffBadge")}
+              {isYellowCard ? t("yellowCardBadge") : t("officialStaffBadge")}
             </p>
           </div>
 
@@ -393,7 +387,7 @@ export default function LeavesClient({
         {canAdjust && (
           <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F8FAFD] p-3 rounded-[14px]">
             <div className="flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-[#617083]">Category:</span>
+              <span className="text-[12.5px] font-bold text-[#617083]">{t("category")}:</span>
               <span
                 className={classNames(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold",
@@ -418,7 +412,7 @@ export default function LeavesClient({
                 ) : (
                   <RefreshCw className="h-3.5 w-3.5 text-[#1E6FE0]" />
                 )}
-                {isYellowCard ? "Switch to Official Staff" : "Switch to Yellow Card"}
+                {isYellowCard ? t("switchToOfficial") : t("switchToYellowCard")}
               </button>
             </div>
           </div>
@@ -479,9 +473,9 @@ export default function LeavesClient({
                 value={adjustType}
                 onChange={(e) => setAdjustType(e.target.value)}
               >
-                {adjustTypes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                {adjustTypes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {translateLeaveName(prefs.language, item.name)}
                   </option>
                 ))}
               </select>
@@ -538,7 +532,7 @@ export default function LeavesClient({
                   style={{ backgroundColor: editingCard.color || "#16B878" }}
                 />
                 <h3 className="text-[17px] font-bold text-[#172334]">
-                  {t("edit")} {editingCard.name}
+                  {t("edit")} {translateLeaveName(prefs.language, editingCard.name)}
                 </h3>
               </div>
               <button
@@ -626,6 +620,7 @@ export default function LeavesClient({
         {balance.map((b) => {
           const total = Math.max(1, b.days_per_year);
           const leftPct = Math.min(100, Math.round((b.balance / total) * 100));
+          const localizedName = translateLeaveName(prefs.language, b.name);
           return (
             <div
               key={b.id}
@@ -636,7 +631,7 @@ export default function LeavesClient({
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <p className="truncate text-[14.5px] font-bold text-[#172334]">{b.name}</p>
+                  <p className="truncate text-[14.5px] font-bold text-[#172334]">{localizedName}</p>
                   <span
                     className="h-3 w-3 rounded-full shrink-0"
                     style={{ backgroundColor: b.color || "#16B878" }}
@@ -718,7 +713,7 @@ export default function LeavesClient({
                 <option value="">Select...</option>
                 {balance.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.balance} {t("daysLeft")})
+                    {translateLeaveName(prefs.language, b.name)} ({b.balance} {t("daysLeft")})
                   </option>
                 ))}
               </select>
@@ -726,7 +721,7 @@ export default function LeavesClient({
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="label">Start Date</label>
+                <label className="label">{t("startDate")}</label>
                 <input
                   type="date"
                   value={startDate}
@@ -736,7 +731,7 @@ export default function LeavesClient({
                 />
               </div>
               <div>
-                <label className="label">End Date</label>
+                <label className="label">{t("endDate")}</label>
                 <input
                   type="date"
                   value={endDate}
@@ -819,15 +814,15 @@ export default function LeavesClient({
                     style={{ backgroundColor: r.leave_type_color || "#16B878" }}
                   >
                     <span className="text-[16px] font-bold leading-none">{r.days}</span>
-                    <span className="text-[9px] uppercase font-semibold">days</span>
+                    <span className="text-[9px] uppercase font-semibold">{t("days")}</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-[14px] font-bold text-[#172334]">
-                        {r.leave_type_name}{" "}
+                        {translateLeaveName(prefs.language, r.leave_type_name)}{" "}
                         <span className="font-medium text-[#8A97A8]">
                           ({formatDate(r.start_date)}
-                          {r.start_date !== r.end_date ? ` → ${formatDate(r.end_date)}` : ""})
+                          {r.start_date !== r.end_date ? ` → ${formatDate(r.end_date)}` : ""}
                         </span>
                       </p>
                       <span className={classNames("rounded-full px-2.5 py-0.5 text-[11px] font-bold", statusPill(r.status))}>
@@ -837,7 +832,7 @@ export default function LeavesClient({
                     <p className="mt-1 text-[13px] text-[#617083]">{r.reason}</p>
                     {r.approver_name && (
                       <p className="mt-1 text-[11.5px] font-medium text-[#8A97A8]">
-                        Submitted to: {r.approver_name}
+                        {t("submittedTo")}: {r.approver_name}
                       </p>
                     )}
                   </div>

@@ -7,6 +7,7 @@ import { Spinner } from "@/components/ui";
 import { classNames, formatDate, formatTime } from "@/lib/utils";
 import { WEEKDAYS, departmentScope, weeklyOffLabel, DEPARTMENTS } from "@/lib/staff";
 import { usePrefs } from "@/components/PrefsProvider";
+import { translateLeaveName } from "@/lib/i18n";
 
 interface Member {
   id: string;
@@ -43,7 +44,7 @@ export default function TeamClient({
   viewerRole: string;
   viewerScope: string;
 }) {
-  const { t } = usePrefs();
+  const { t, prefs } = usePrefs();
   const [members, setMembers] = useState<Member[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,12 +232,12 @@ export default function TeamClient({
                   <div className="mt-4 border-t border-[#F0F4F8] pt-3.5 flex flex-wrap items-center justify-between gap-2">
                     {present && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#E1F8EF] px-3 py-1 text-[11.5px] font-bold text-[#06613E]">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> In {formatTime(m.today_in!)}
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {t("inTime")} {formatTime(m.today_in!)}
                       </span>
                     )}
                     {done && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#E8F1FC] px-3 py-1 text-[11.5px] font-bold text-[#1E6FE0]">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Out {formatTime(m.today_out!)}
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {t("outTime")} {formatTime(m.today_out!)}
                       </span>
                     )}
                     {!m.today_in && (
@@ -282,7 +283,8 @@ export default function TeamClient({
           {leaves.length === 0 ? (
             <div className="card p-12 text-center sm:col-span-2">
               <CalendarDays className="mx-auto h-10 w-10 text-[#C5D0DC] mb-2" />
-              <p className="text-[15px] font-bold text-[#172334]">{t("noNotifications")}</p>
+              <p className="text-[16px] font-bold text-[#172334]">{t("noUpcomingLeaves")}</p>
+              <p className="text-[13px] text-[#8A97A8] mt-1">{t("approvedLeavesSub")}</p>
             </div>
           ) : (
             leaves.map((l) => (
@@ -296,7 +298,7 @@ export default function TeamClient({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-bold text-[#172334]">{l.user_name}</p>
                   <p className="text-[13px] text-[#617083]">
-                    {l.leave_type_name} · {formatDate(l.start_date)}
+                    {translateLeaveName(prefs.language, l.leave_type_name)} · {formatDate(l.start_date)}
                     {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""}
                   </p>
                 </div>

@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import PunchWidget from "@/components/PunchWidget";
 import Avatar, { avatarSrc } from "@/components/Avatar";
-import { timeAgo } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
+import { translateGreeting, translateLeaveName, translateTimeAgo } from "@/lib/i18n";
+import { istParts } from "@/lib/utils";
 
 export type DashKpi = {
   employees: number;
@@ -95,11 +96,15 @@ export default function DashboardView({
   canLeaves: boolean;
   canReports: boolean;
 }) {
-  const { t } = usePrefs();
+  const { t, prefs } = usePrefs();
   const ovTotal = Math.max(1, overview.present + overview.absent + overview.onLeave);
   const presentPct = Math.round((overview.present / ovTotal) * 100);
   const absentPct = Math.round((overview.absent / ovTotal) * 100);
   const leavePct = Math.round((overview.onLeave / ovTotal) * 100);
+
+  // Dynamic localized greeting
+  const hour = new Date().getHours();
+  const localizedGreeting = translateGreeting(prefs.language, hour);
 
   // Find Earned Leave balance
   const elBal = balances.find((b) => b.name.toLowerCase().includes("earned")) || balances[0] || {
@@ -117,6 +122,18 @@ export default function DashboardView({
     color: "#F59E0B",
   };
 
+  function formatActivityText(text: string) {
+    if (text.includes("Punched out at")) {
+      const timePart = text.replace("Punched out at", "").trim();
+      return `${t("punchedOutMsg")} ${timePart}`;
+    }
+    if (text.includes("Punched in at")) {
+      const timePart = text.replace("Punched in at", "").trim();
+      return `${t("punchedInMsg")} ${timePart}`;
+    }
+    return text;
+  }
+
   return (
     <div className="space-y-5 pb-10">
       {/* Top Mobile App Header Greeting */}
@@ -124,7 +141,7 @@ export default function DashboardView({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-[22px] font-black tracking-tight text-[#0F172A] sm:text-[26px]">
-              {greeting || t("welcomeBack")}, {firstName}!
+              {localizedGreeting}, {firstName}!
             </h1>
             <span className="text-2xl animate-bounce">👋</span>
           </div>
@@ -264,7 +281,7 @@ export default function DashboardView({
           </div>
           <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            Live
+            {t("live")}
           </span>
         </div>
 
@@ -333,9 +350,9 @@ export default function DashboardView({
                 <Avatar name={a.name} color={a.color} size={36} src={avatarSrc(a.userId, a.avatar)} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-bold text-[#0F172A]">{a.name}</p>
-                  <p className="truncate text-[12px] text-[#64748B]">{a.text}</p>
+                  <p className="truncate text-[12px] text-[#64748B]">{formatActivityText(a.text)}</p>
                 </div>
-                <span className="text-[11px] font-semibold text-[#94A3B8]">{timeAgo(a.ts)}</span>
+                <span className="text-[11px] font-semibold text-[#94A3B8]">{translateTimeAgo(prefs.language, a.ts)}</span>
               </div>
             ))}
           </div>
