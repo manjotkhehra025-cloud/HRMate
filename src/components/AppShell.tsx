@@ -20,13 +20,6 @@ import {
   BarChart3,
   ChevronDown,
   Sparkles,
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  Search,
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
 } from "lucide-react";
 import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
 import MobileNav from "./MobileNav";
@@ -151,15 +144,7 @@ export default function AppShell({
   const photo = avatarSrc(user.id, user.avatar);
 
   return (
-<<<<<<< HEAD
-<<<<<<< HEAD
-    <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#F4F7FB]">
-=======
     <div className="relative flex h-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#F4F7FB]">
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
-    <div className="relative flex h-screen min-h-0 min-w-0 flex-col overflow-hidden bg-[#F4F7FB]">
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       <IdleGuard />
       
       {/* Desktop Permanent / Expandable Sidebar */}
@@ -184,20 +169,6 @@ export default function AppShell({
         onLogout={logout}
       />
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      {/* Modern App Top Bar */}
-      <header
-        className={classNames(
-          "sticky top-0 z-30 flex h-[64px] min-w-0 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white/95 px-3.5 backdrop-blur-md transition-[padding] duration-300 sm:px-6 lg:px-8",
-          desktopOpen ? "lg:pl-[304px]" : ""
-        )}
-      >
-        {/* Left: Mobile App Brand / Title */}
-        <div className="flex items-center gap-3">
-=======
-=======
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       {/* Top Bar (Responsive for Desktop & Mobile) */}
       <header
         className={classNames(
@@ -205,16 +176,8 @@ export default function AppShell({
           desktopOpen ? "lg:pl-[304px]" : "lg:pl-8"
         )}
       >
-<<<<<<< HEAD
-        {/* Left: Brand / Title / Search */}
-        <div className="flex items-center gap-3">
-          {/* Mobile hamburger */}
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
         {/* Left: Brand / Title */}
         <div className="flex items-center gap-3">
-          {/* Mobile hamburger */}
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           <button
             onClick={() => {
               if (window.innerWidth >= 1024) {
@@ -229,18 +192,8 @@ export default function AppShell({
             <Menu className="h-5 w-5" />
           </button>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard" className="flex items-center gap-2">
-=======
           <div className="flex items-center gap-2.5">
             <Link href="/dashboard" className="flex items-center gap-2.5">
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
-          <div className="flex items-center gap-2.5">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0F172A] via-[#1E3E62] to-[#1E6FE0] text-white shadow-sm">
                 <Sparkles className="h-4 w-4 text-[#10B981]" />
               </div>
@@ -249,30 +202,14 @@ export default function AppShell({
                   {currentLabel}
                 </h1>
                 <p className="hidden text-[11px] font-medium text-[#64748B] sm:block">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                  GD Foods Moga
-=======
-                  GD Foods Mfg. (I) Pvt. Ltd. · HR Portal
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
                   GD Foods Mfg. (I) Pvt. Ltd.
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 </p>
               </div>
             </Link>
           </div>
         </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        {/* Right: Notification & Profile */}
-=======
         {/* Right: Notifications & User Profile */}
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
-        {/* Right: Notifications & User Profile */}
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Notifications */}
           <div className="relative">
@@ -409,30 +346,12 @@ export default function AppShell({
         </div>
       </header>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      {/* Main App Scrollable Body */}
-      <div
-        id="app-body"
-        className={classNames(
-          "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-[padding] duration-300 pb-24 lg:pb-10",
-          desktopOpen ? "lg:pl-72" : ""
-=======
       {/* Main Content Area: Responsive Wide on Desktop, Native App Feel on Mobile */}
       <div
         id="app-body"
         className={classNames(
           "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-[padding] duration-300 pb-24 lg:pb-8",
           desktopOpen ? "lg:pl-72" : "lg:pl-0"
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
-      {/* Main Content Area: Responsive Wide on Desktop, Native App Feel on Mobile */}
-      <div
-        id="app-body"
-        className={classNames(
-          "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto transition-[padding] duration-300 pb-24 lg:pb-8",
-          desktopOpen ? "lg:pl-72" : "lg:pl-0"
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
         )}
         style={{
           flex: "1 1 0%",
@@ -441,34 +360,15 @@ export default function AppShell({
           overscrollBehavior: "none",
         }}
       >
-<<<<<<< HEAD
-<<<<<<< HEAD
-        <main className="mx-auto min-w-0 max-w-6xl px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8">
-=======
         <main className="mx-auto min-w-0 max-w-7xl px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8">
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
-        <main className="mx-auto min-w-0 max-w-7xl px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8">
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           {children}
         </main>
       </div>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      {/* Modern Fixed Bottom Mobile App Bar */}
-      <MobileNav nav={labeledNav} onMore={() => setGridOpen(true)} />
-=======
-=======
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       {/* Bottom Navigation for Mobile App View Only (Hidden on Desktop) */}
       <div className="lg:hidden">
         <MobileNav nav={labeledNav} onMore={() => setGridOpen(true)} />
       </div>
-<<<<<<< HEAD
->>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
-=======
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
     </div>
   );
 }

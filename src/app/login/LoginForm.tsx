@@ -198,7 +198,7 @@ export default function LoginForm() {
           className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 text-[13px] font-semibold text-white shadow-sm backdrop-blur-md transition hover:bg-white/15"
         >
           <Globe className="h-3.5 w-3.5 text-emerald-400" />
-          {prefs.language === "pa" ? "ਪੰਜਾਬੀ" : "English"}
+          {prefs.language === "pa" ? "ਪੰਜਾਬੀ" : prefs.language === "hi" ? "हिन्दी" : "English"}
           <ChevronDown className="h-3.5 w-3.5 text-white/70" />
         </button>
         {langOpen && (
@@ -223,6 +223,16 @@ export default function LoginForm() {
             >
               ਪੰਜਾਬੀ {prefs.language === "pa" && <Check className="h-3.5 w-3.5 text-emerald-400" />}
             </button>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13px] hover:bg-white/10"
+              onClick={() => {
+                savePrefs({ language: "hi" });
+                setLangOpen(false);
+              }}
+            >
+              हिन्दी {prefs.language === "hi" && <Check className="h-3.5 w-3.5 text-emerald-400" />}
+            </button>
           </div>
         )}
       </div>
@@ -236,11 +246,7 @@ export default function LoginForm() {
           </div>
           <h1 className="mt-3 text-[22px] font-black tracking-tight text-[#0F172A]">HRMate</h1>
           <p className="text-[12px] font-bold uppercase tracking-wider text-[#059669]">
-<<<<<<< HEAD
-            GD Foods Moga · Workspace
-=======
             GD Foods Mfg. (I) Pvt. Ltd. · Workforce Portal
->>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           </p>
         </div>
 
