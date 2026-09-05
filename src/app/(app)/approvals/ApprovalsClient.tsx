@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, CalendarDays, Clock, CheckSquare, Sparkles, User, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, CalendarDays, Clock, CheckSquare } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
-import { Spinner, EmptyState } from "@/components/ui";
+import { Spinner } from "@/components/ui";
 import { classNames, formatDate, timeAgo } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 interface LeaveReq {
   id: string;
@@ -36,6 +37,7 @@ interface ManualReq {
 }
 
 export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
+  const { t } = usePrefs();
   const [leaves, setLeaves] = useState<LeaveReq[]>([]);
   const [manual, setManual] = useState<(ManualReq & { stage?: string; user_staff_type?: string })[]>([]);
   const [changes, setChanges] = useState<any[]>([]);
@@ -69,31 +71,31 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
   const total = leaves.length + manual.length + changes.length;
   const tabs: { key: "all" | "leaves" | "manual" | "changes"; label: string; count: number }[] = [
-    { key: "all", label: "All Requests", count: total },
-    { key: "leaves", label: "Leave Requests", count: leaves.length },
-    { key: "manual", label: "Manual Punch", count: manual.length },
+    { key: "all", label: t("allRequests"), count: total },
+    { key: "leaves", label: t("leaveRequests"), count: leaves.length },
+    { key: "manual", label: t("manualPunchRequests"), count: manual.length },
     ...(changes.length ? [{ key: "changes" as const, label: "Admin Changes", count: changes.length }] : []),
   ];
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <CheckSquare className="h-6 w-6 text-[#1E6FE0]" />
               <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-                Pending Approvals
+                {t("pendingApprovalsTitle")}
               </h1>
             </div>
             <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-              Review, authorize, or decline employee leave requests and manual punch adjustments.
+              {t("pendingApprovalsSub")}
             </p>
           </div>
           {total > 0 && (
             <span className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-3 py-1 text-[12px] font-bold text-[#D98200]">
-              {total} pending {total === 1 ? "action" : "actions"}
+              {total} {t("pendingAction")}
             </span>
           )}
         </div>
@@ -101,24 +103,24 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
       {/* Filter Tabs Bar */}
       <div className="flex gap-1 overflow-x-auto rounded-[14px] bg-[#EEF2F7] p-1" style={{ touchAction: "pan-x" }}>
-        {tabs.map((t) => (
+        {tabs.map((tabItem) => (
           <button
-            key={t.key}
+            key={tabItem.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(tabItem.key)}
             className={classNames(
               "flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-[12px] px-4 py-2.5 text-[13.5px] font-bold transition",
-              tab === t.key ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
+              tab === tabItem.key ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
             )}
           >
-            <span>{t.label}</span>
+            <span>{tabItem.label}</span>
             <span
               className={classNames(
                 "rounded-full px-2 py-0.5 text-[11px] font-bold",
-                tab === t.key ? "bg-[#E7F1FF] text-[#1E6FE0]" : "bg-white/70 text-[#8A97A8]"
+                tab === tabItem.key ? "bg-[#E7F1FF] text-[#1E6FE0]" : "bg-white/70 text-[#8A97A8]"
               )}
             >
-              {t.count}
+              {tabItem.count}
             </span>
           </button>
         ))}
@@ -133,10 +135,7 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#E1F8EF] text-[#16B878] mb-3">
             <CheckSquare className="h-7 w-7" />
           </div>
-          <p className="text-[18px] font-bold text-[#172334]">All caught up!</p>
-          <p className="text-[13.5px] text-[#8A97A8] mt-1 max-w-sm mx-auto">
-            There are no pending approvals requiring your action at this time.
-          </p>
+          <p className="text-[18px] font-bold text-[#172334]">{t("noNotifications")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -173,15 +172,15 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                           {l.start_date !== l.end_date ? ` → ${formatDate(l.end_date)}` : ""}
                         </span>
                         <span className="rounded-full bg-[#E7F1FF] px-2.5 py-0.5 text-[11.5px] font-bold text-[#1E6FE0]">
-                          {l.days} day{l.days > 1 ? "s" : ""}
+                          {l.days} {t("daysLeft")}
                         </span>
                         <span className="text-[12px] text-[#8A97A8]">
-                          Requested {timeAgo(l.created_at)}
+                          {t("requested")} {timeAgo(l.created_at)}
                         </span>
                       </div>
 
                       <div className="mt-3 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[13.5px] text-[#172334]">
-                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">Reason:</span>
+                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">{t("reason")}:</span>
                         &ldquo;{l.reason}&rdquo;
                       </div>
                     </div>
@@ -189,6 +188,8 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
                   {canManage && (
                     <Actions
+                      approveText={t("approve")}
+                      rejectText={t("reject")}
                       busy={busy === l.id}
                       onApprove={() => act("leave", l.id, "approve")}
                       onReject={() => act("leave", l.id, "reject")}
@@ -212,11 +213,11 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-[16px] font-bold text-[#172334]">{m.user_name}</p>
                         <span className="rounded-full bg-[#E7F1FF] px-3 py-0.5 text-[11.5px] font-bold text-[#1E6FE0]">
-                          Manual {m.type === "punch_in" ? "Punch In" : "Punch Out"}
+                          {m.type === "punch_in" ? t("punchIn") : t("punchOut")}
                         </span>
                         {m.user_staff_type === "yellow_card" && (
                           <span className="rounded-full bg-[#FFF4E0] border border-[#F5A623]/30 px-2.5 py-0.5 text-[11px] font-bold text-[#D98200]">
-                            Yellow Card
+                            {t("yellowCardBadge")}
                           </span>
                         )}
                         {m.user_department && (
@@ -232,12 +233,12 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                           {formatDate(m.date)} at {m.time}
                         </span>
                         <span className="text-[12px] text-[#8A97A8]">
-                          Requested {timeAgo(m.created_at)}
+                          {t("requested")} {timeAgo(m.created_at)}
                         </span>
                       </div>
 
                       <div className="mt-3 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[13.5px] text-[#172334]">
-                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">Reason:</span>
+                        <span className="font-semibold text-[#8A97A8] text-[12px] block mb-0.5">{t("reason")}:</span>
                         &ldquo;{m.reason}&rdquo;
                       </div>
                     </div>
@@ -245,6 +246,8 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
                   {canManage && (
                     <Actions
+                      approveText={t("approve")}
+                      rejectText={t("reject")}
                       busy={busy === m.id}
                       onApprove={() => act("manual", m.id, "approve")}
                       onReject={() => act("manual", m.id, "reject")}
@@ -267,19 +270,21 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
                     <div className="min-w-0 flex-1">
                       <p className="text-[16px] font-bold text-[#172334]">{c.requester_name}</p>
                       <p className="text-[13px] font-semibold capitalize text-[#1E6FE0]">
-                        {String(c.kind).replace("_", " ")} Change
+                        {String(c.kind).replace("_", " ")}
                       </p>
                       <pre className="mt-2 rounded-[12px] bg-[#F8FAFD] border border-[#E3EAF1] p-3 text-[12px] text-[#172334] overflow-x-auto">
                         {JSON.stringify(c.payload, null, 2)}
                       </pre>
                       <p className="mt-1.5 text-[11.5px] text-[#8A97A8]">
-                        Submitted {timeAgo(c.created_at)}
+                        {t("requested")} {timeAgo(c.created_at)}
                       </p>
                     </div>
                   </div>
 
                   {canManage && (
                     <Actions
+                      approveText={t("approve")}
+                      rejectText={t("reject")}
                       busy={busy === c.id}
                       onApprove={() => act("change", c.id, "approve")}
                       onReject={() => act("change", c.id, "reject")}
@@ -296,10 +301,14 @@ export default function ApprovalsClient({ canManage }: { canManage: boolean }) {
 
 function Actions({
   busy,
+  approveText,
+  rejectText,
   onApprove,
   onReject,
 }: {
   busy: boolean;
+  approveText: string;
+  rejectText: string;
   onApprove: () => void;
   onReject: () => void;
 }) {
@@ -312,7 +321,7 @@ function Actions({
         className="flex h-10 items-center justify-center gap-1.5 rounded-[12px] bg-[#16B878] px-4 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#07945D] active:scale-95 disabled:opacity-60"
       >
         {busy ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-        Approve
+        {approveText}
       </button>
       <button
         type="button"
@@ -320,7 +329,7 @@ function Actions({
         disabled={busy}
         className="flex h-10 items-center justify-center gap-1.5 rounded-[12px] bg-[#C52B35] px-4 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#a8242d] active:scale-95 disabled:opacity-60"
       >
-        <XCircle className="h-4 w-4" /> Reject
+        <XCircle className="h-4 w-4" /> {rejectText}
       </button>
     </div>
   );

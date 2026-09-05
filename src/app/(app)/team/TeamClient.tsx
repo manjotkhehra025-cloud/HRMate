@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { MapPin, CalendarDays, Search, Users, CheckCircle2, Clock, Filter, Building2 } from "lucide-react";
+import { MapPin, CalendarDays, Search, Users, CheckCircle2, Clock } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
-import { Spinner, EmptyState } from "@/components/ui";
+import { Spinner } from "@/components/ui";
 import { classNames, formatDate, formatTime } from "@/lib/utils";
 import { WEEKDAYS, departmentScope, weeklyOffLabel, DEPARTMENTS } from "@/lib/staff";
+import { usePrefs } from "@/components/PrefsProvider";
 
 interface Member {
   id: string;
@@ -42,6 +43,7 @@ export default function TeamClient({
   viewerRole: string;
   viewerScope: string;
 }) {
+  const { t } = usePrefs();
   const [members, setMembers] = useState<Member[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,16 +86,16 @@ export default function TeamClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6 text-[#1E6FE0]" />
           <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-            Team Directory & Presence
+            {t("teamTitle")}
           </h1>
         </div>
         <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-          Real-time workplace presence, employee schedules, and upcoming team leaves.
+          {t("teamSub")}
         </p>
       </div>
 
@@ -109,7 +111,7 @@ export default function TeamClient({
                 tab === "today" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
               )}
             >
-              <MapPin className="h-4 w-4 text-[#16B878]" /> Today&apos;s Attendance
+              <MapPin className="h-4 w-4 text-[#16B878]" /> {t("todayAttendance")}
               <span className="rounded-full bg-[#E1F8EF] px-2 py-0.5 text-[11px] font-bold text-[#06613E]">
                 {presentCount + doneCount}/{members.length}
               </span>
@@ -124,7 +126,7 @@ export default function TeamClient({
                 tab === "leaves" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
               )}
             >
-              <CalendarDays className="h-4 w-4 text-[#1E6FE0]" /> Upcoming Leaves
+              <CalendarDays className="h-4 w-4 text-[#1E6FE0]" /> {t("upcomingLeaves")}
               <span className="rounded-full bg-[#E7F1FF] px-2 py-0.5 text-[11px] font-bold text-[#1E6FE0]">
                 {leaves.length}
               </span>
@@ -139,7 +141,7 @@ export default function TeamClient({
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search member…"
+              placeholder={t("searchMember")}
               className="h-10 w-full rounded-[12px] border border-[#E3EAF1] bg-white pl-9 pr-3 text-[13px] text-[#172334] outline-none focus:border-[#1E6FE0]"
             />
           </div>
@@ -149,7 +151,7 @@ export default function TeamClient({
             onChange={(e) => setSelectedDept(e.target.value)}
             className="h-10 rounded-[12px] border border-[#E3EAF1] bg-white px-3 text-[13px] font-medium text-[#172334] outline-none focus:border-[#1E6FE0]"
           >
-            <option value="all">All Departments</option>
+            <option value="all">{t("allDepartments")}</option>
             {DEPARTMENTS.map((d) => (
               <option key={d.name} value={d.name}>
                 {d.name}
@@ -165,7 +167,7 @@ export default function TeamClient({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="card p-4 border-l-4 border-l-[#16B878] flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Currently Present</p>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("currentlyPresent")}</p>
                 <p className="mt-1 text-[28px] font-bold tabular-nums text-[#16B878]">{presentCount}</p>
               </div>
               <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-[#16B878]">
@@ -175,7 +177,7 @@ export default function TeamClient({
 
             <div className="card p-4 border-l-4 border-l-[#1E6FE0] flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Completed Shift</p>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("completedShift")}</p>
                 <p className="mt-1 text-[28px] font-bold tabular-nums text-[#1E6FE0]">{doneCount}</p>
               </div>
               <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#E7F1FF] text-[#1E6FE0]">
@@ -185,7 +187,7 @@ export default function TeamClient({
 
             <div className="card p-4 border-l-4 border-l-[#617083] flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Not In Yet</p>
+                <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("notInYet")}</p>
                 <p className="mt-1 text-[28px] font-bold tabular-nums text-[#617083]">{absentCount}</p>
               </div>
               <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#F4F7FB] text-[#617083]">
@@ -239,7 +241,7 @@ export default function TeamClient({
                     )}
                     {!m.today_in && (
                       <span className="rounded-full bg-[#F4F7FB] px-3 py-1 text-[11.5px] font-semibold text-[#8A97A8]">
-                        Not in yet
+                        {t("notInYet")}
                       </span>
                     )}
 
@@ -259,13 +261,13 @@ export default function TeamClient({
                       >
                         {WEEKDAYS.map((d) => (
                           <option key={d.value} value={d.value}>
-                            Off: {d.label}
+                            {t("offDay")}: {d.label}
                           </option>
                         ))}
                       </select>
                     ) : (
                       <span className="rounded-full bg-[#F4F7FB] px-2.5 py-1 text-[11px] font-semibold text-[#8A97A8]">
-                        Off: {weeklyOffLabel(m.weekly_off)}
+                        {t("offDay")}: {weeklyOffLabel(m.weekly_off)}
                       </span>
                     )}
                   </div>
@@ -280,10 +282,7 @@ export default function TeamClient({
           {leaves.length === 0 ? (
             <div className="card p-12 text-center sm:col-span-2">
               <CalendarDays className="mx-auto h-10 w-10 text-[#C5D0DC] mb-2" />
-              <p className="text-[15px] font-bold text-[#172334]">No upcoming leaves</p>
-              <p className="text-[13px] text-[#8A97A8] mt-1">
-                Approved leaves across the team will be displayed here.
-              </p>
+              <p className="text-[15px] font-bold text-[#172334]">{t("noNotifications")}</p>
             </div>
           ) : (
             leaves.map((l) => (

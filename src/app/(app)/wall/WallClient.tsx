@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Send, ThumbsUp, MessageSquare, Trash2, Loader2, Sparkles } from "lucide-react";
+import { Send, ThumbsUp, MessageSquare, Trash2, Loader2 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
-import { Spinner, EmptyState } from "@/components/ui";
+import { Spinner } from "@/components/ui";
 import { classNames, timeAgo } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 interface Post {
   id: string;
@@ -41,6 +42,7 @@ export default function WallClient({
   userId: string;
   me: { name: string; color: string; avatar?: string };
 }) {
+  const { t } = usePrefs();
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,16 +109,16 @@ export default function WallClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-6 w-6 text-[#1E6FE0]" />
           <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-            Social Feed & Announcements
+            {t("socialFeedTitle")}
           </h1>
         </div>
         <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-          Company updates, peer appreciation, milestone announcements, and team thoughts.
+          {t("socialFeedSub")}
         </p>
       </div>
 
@@ -129,20 +131,20 @@ export default function WallClient({
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Share an announcement, appreciation, or team update…"
+                placeholder={t("shareSomething")}
                 className="w-full resize-none rounded-[14px] border border-[#E3EAF1] bg-[#F8FAFD] p-3.5 text-[14px] text-[#172334] outline-none transition focus:border-[#1E6FE0] focus:bg-white focus:ring-2 focus:ring-[#1E6FE0]/15"
                 rows={3}
               />
               <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[12px] font-medium text-[#8A97A8]">
-                  Visible to all registered organization staff
+                  {t("visibleToAll")}
                 </span>
                 <button
                   type="submit"
                   disabled={posting || !content.trim()}
                   className="btn-primary px-5 py-2 text-[13.5px]"
                 >
-                  {posting ? <Spinner /> : <Send className="h-4 w-4" />} Publish Post
+                  {posting ? <Spinner /> : <Send className="h-4 w-4" />} {t("postAnnouncement")}
                 </button>
               </div>
             </div>
@@ -158,8 +160,8 @@ export default function WallClient({
       ) : posts.length === 0 ? (
         <div className="card p-12 text-center">
           <MessageSquare className="mx-auto h-10 w-10 text-[#C5D0DC] mb-2" />
-          <p className="text-[16px] font-bold text-[#172334]">No posts published yet</p>
-          <p className="text-[13px] text-[#8A97A8] mt-1">Be the first to share an announcement or cheer your team!</p>
+          <p className="text-[16px] font-bold text-[#172334]">{t("noAnnouncements")}</p>
+          <p className="text-[13px] text-[#8A97A8] mt-1">{t("shareSomething")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -219,7 +221,7 @@ export default function WallClient({
                       )}
                     >
                       <ThumbsUp className={classNames("h-4 w-4", p.liked_by_me ? "fill-[#1E6FE0]" : "")} />
-                      {p.like_count > 0 ? `${p.like_count} ${p.like_count === 1 ? "Like" : "Likes"}` : "Like"}
+                      {p.like_count > 0 ? `${p.like_count} ${t("like")}` : t("like")}
                     </button>
 
                     <button
@@ -229,8 +231,8 @@ export default function WallClient({
                     >
                       <MessageSquare className="h-4 w-4" />
                       {postComments.length > 0
-                        ? `${postComments.length} ${postComments.length === 1 ? "Comment" : "Comments"}`
-                        : "Comment"}
+                        ? `${postComments.length} ${t("comments")}`
+                        : t("comment")}
                     </button>
                   </div>
 
@@ -259,7 +261,7 @@ export default function WallClient({
                           onKeyDown={(e) => {
                             if (e.key === "Enter") submitComment(p.id);
                           }}
-                          placeholder="Write a reply…"
+                          placeholder={t("writeComment")}
                           className="input flex-1 py-2 text-[13px] rounded-[10px] min-h-[38px]"
                         />
                         <button

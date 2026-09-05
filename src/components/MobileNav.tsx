@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import type { NavItem } from "./Sidebar";
+import { usePrefs } from "@/components/PrefsProvider";
 
 export default function MobileNav({
   nav,
@@ -20,6 +21,7 @@ export default function MobileNav({
   onMore: () => void;
 }) {
   const pathname = usePathname();
+  const { t } = usePrefs();
 
   const isHome = pathname === "/dashboard" || pathname === "/";
   const isLeaves = pathname.startsWith("/leaves");
@@ -45,7 +47,7 @@ export default function MobileNav({
           >
             <LayoutDashboard className="h-5 w-5" />
           </div>
-          <span className="mt-1 text-[11px] tracking-tight">Home</span>
+          <span className="mt-1 text-[11px] tracking-tight">{t("dashboard")}</span>
         </Link>
 
         {/* Leaves Tab */}
@@ -64,7 +66,7 @@ export default function MobileNav({
           >
             <CalendarDays className="h-5 w-5" />
           </div>
-          <span className="mt-1 text-[11px] tracking-tight">Leaves</span>
+          <span className="mt-1 text-[11px] tracking-tight">{t("leaves")}</span>
         </Link>
 
         {/* Big Center Punch Button (Hero Action) */}
@@ -79,7 +81,7 @@ export default function MobileNav({
             <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-30 blur-sm animate-pulse" />
             <Fingerprint className="relative h-7 w-7 text-white transition-transform group-hover:scale-110" />
           </Link>
-          <span className="mt-1 text-[10.5px] font-bold text-[#059669]">Punch</span>
+          <span className="mt-1 text-[10.5px] font-bold text-[#059669]">{t("punch")}</span>
         </div>
 
         {/* Team Tab */}
@@ -98,7 +100,7 @@ export default function MobileNav({
           >
             <Users className="h-5 w-5" />
           </div>
-          <span className="mt-1 text-[11px] tracking-tight">Team</span>
+          <span className="mt-1 text-[11px] tracking-tight">{t("team")}</span>
         </Link>
 
         {/* More / Menu Drawer Tab */}
@@ -111,7 +113,7 @@ export default function MobileNav({
           <div className="flex h-8 w-8 items-center justify-center rounded-xl">
             <Grid className="h-5 w-5" />
           </div>
-          <span className="mt-1 text-[11px] tracking-tight">More</span>
+          <span className="mt-1 text-[11px] tracking-tight">{t("more")}</span>
         </button>
       </div>
     </nav>

@@ -8,20 +8,17 @@ import {
   X,
   AlertTriangle,
   CheckCircle2,
-  Clock,
-  Filter,
-  ShieldAlert,
-  Sliders,
   Settings2,
   Save,
   RefreshCw,
-  UserCheck,
   Award,
   Edit3,
   Check,
+  Sliders,
 } from "lucide-react";
-import { Spinner, EmptyState } from "@/components/ui";
+import { Spinner } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 interface LeaveType {
   id: string;
@@ -58,13 +55,6 @@ function statusPill(status: string) {
   return "bg-[#F4F7FB] text-[#617083]";
 }
 
-function statusLabel(status: string) {
-  if (status === "approved") return "Approved";
-  if (status === "pending") return "Pending";
-  if (status === "rejected") return "Rejected";
-  return status;
-}
-
 export default function LeavesClient({
   canApply,
   canView,
@@ -78,6 +68,7 @@ export default function LeavesClient({
   staffType: string;
   currentUserId?: string;
 }) {
+  const { t } = usePrefs();
   const [currentStaffType, setCurrentStaffType] = useState(initialStaffType || "official");
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -125,6 +116,13 @@ export default function LeavesClient({
   const [cardError, setCardError] = useState("");
 
   const isYellowCard = currentStaffType === "yellow_card";
+
+  function statusLabel(status: string) {
+    if (status === "approved") return t("approved");
+    if (status === "pending") return t("pending");
+    if (status === "rejected") return t("rejected");
+    return status;
+  }
 
   async function load() {
     setLoading(true);
@@ -186,8 +184,8 @@ export default function LeavesClient({
       setCurrentStaffType(newCategory);
       setCategoryNotice(
         newCategory === "yellow_card"
-          ? "Switched to Yellow Card Staff (Strictly 15 EL Leaves, 1.25/month accrual) ✓"
-          : "Switched to Official Staff (Full Leave Package: CL, SL, EL & Holidays) ✓"
+          ? "Switched to Yellow Card Staff (Strictly 15 EL Leaves) ✓"
+          : "Switched to Official Staff (Full Leave Package) ✓"
       );
       await load();
       if (canAdjust) await loadAdjustData();
@@ -199,7 +197,6 @@ export default function LeavesClient({
     }
   }
 
-  // Calculate day count between start and end date
   const calculatedDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
     const s = new Date(startDate);
@@ -237,8 +234,8 @@ export default function LeavesClient({
       }
       setSuccess(
         data.approver_name
-          ? `Sent to ${data.approver_name} (${data.days} day${data.days > 1 ? "s" : ""})`
-          : `Leave request submitted (${data.days} day${data.days > 1 ? "s" : ""}) ✓`
+          ? `Sent to ${data.approver_name} (${data.days} ${t("daysLeft")})`
+          : `${t("applyForLeave")} (${data.days} ${t("daysLeft")}) ✓`
       );
       setReason("");
       load();
@@ -247,7 +244,6 @@ export default function LeavesClient({
     }
   }
 
-  // Submit Top Module Adjustment
   async function submitAdjustment(e: React.FormEvent) {
     e.preventDefault();
     setAdjustSaving(true);
@@ -257,7 +253,7 @@ export default function LeavesClient({
       const payload: any = {
         user_id: adjustTargetUser || currentUserId,
         leave_type_id: adjustType,
-        reason: adjustReason || "Manual adjustment by Super Admin",
+        reason: adjustReason || "Manual adjustment",
       };
       if (adjustMode === "set_total") {
         payload.set_balance = parseFloat(adjustNewTotal) || 0;
@@ -275,7 +271,7 @@ export default function LeavesClient({
         setAdjustErr(d.error || "Failed to adjust balance");
         return;
       }
-      setAdjustMsg(d.applied ? "Leave balance updated successfully ✓" : "Adjustment sent for Super Admin approval ✓");
+      setAdjustMsg("Leave balance updated successfully ✓");
       setAdjustReason("");
       load();
     } catch (e: any) {
@@ -285,7 +281,6 @@ export default function LeavesClient({
     }
   }
 
-  // Submit Card-Level Edit
   async function submitCardEdit(e: React.FormEvent) {
     e.preventDefault();
     if (!editingCard) return;
@@ -313,7 +308,7 @@ export default function LeavesClient({
         setCardError(d.error || "Failed to update balance");
         return;
       }
-      setCategoryNotice(`${editingCard.name} balance updated to ${cardEditMode === "set_total" ? cardNewTotal : editingCard.balance + (parseFloat(cardDelta) || 0)} days ✓`);
+      setCategoryNotice(`${editingCard.name} balance updated ✓`);
       setEditingCard(null);
       await load();
       setTimeout(() => setCategoryNotice(""), 5000);
@@ -340,20 +335,20 @@ export default function LeavesClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Main Bar - Always visible on Mobile & Desktop */}
+      {/* Top Main Bar */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-[#1E6FE0]" />
               <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-                Leaves Management
+                {t("leavesManagement")}
               </h1>
             </div>
             <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
               {isYellowCard
-                ? "🟡 Yellow Card Staff: Strictly 15 days Earned Leave (EL) per year (accrued at 1.25/month)."
-                : "🔵 Official Staff: Casual (CL), Sick (SL), Earned (EL), and Optional Holidays available."}
+                ? t("yellowCardBadge")
+                : t("officialStaffBadge")}
             </p>
           </div>
 
@@ -371,7 +366,7 @@ export default function LeavesClient({
                 )}
               >
                 <Settings2 className="h-4 w-4" />
-                {showAdjust ? "Close Adjuster" : "⚙️ Adjust / Edit Leave Days"}
+                {showAdjust ? t("cancel") : t("adjustEditDays")}
               </button>
             )}
 
@@ -388,7 +383,7 @@ export default function LeavesClient({
                 }}
                 className="flex h-10 sm:h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[13px] sm:text-[14px] font-bold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
               >
-                <Plus className="h-4 w-4" /> {showForm ? "Hide Form" : "Apply For Leave"}
+                <Plus className="h-4 w-4" /> {showForm ? t("cancel") : t("applyForLeave")}
               </button>
             )}
           </div>
@@ -398,7 +393,7 @@ export default function LeavesClient({
         {canAdjust && (
           <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F8FAFD] p-3 rounded-[14px]">
             <div className="flex items-center gap-2">
-              <span className="text-[12.5px] font-bold text-[#617083]">Your Category:</span>
+              <span className="text-[12.5px] font-bold text-[#617083]">Category:</span>
               <span
                 className={classNames(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold",
@@ -407,12 +402,11 @@ export default function LeavesClient({
                     : "bg-blue-100 text-blue-900 border border-blue-300"
                 )}
               >
-                {isYellowCard ? "🟡 Yellow Card Staff (15 EL Only)" : "🔵 Official Staff (All Leaves)"}
+                {isYellowCard ? t("yellowCardBadge") : t("officialStaffBadge")}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[12px] text-[#8A97A8]">Super Admin Switch:</span>
               <button
                 type="button"
                 disabled={switchingCategory}
@@ -424,7 +418,7 @@ export default function LeavesClient({
                 ) : (
                   <RefreshCw className="h-3.5 w-3.5 text-[#1E6FE0]" />
                 )}
-                {isYellowCard ? "Switch to Official Staff" : "Switch to Yellow Card (15 EL)"}
+                {isYellowCard ? "Switch to Official Staff" : "Switch to Yellow Card"}
               </button>
             </div>
           </div>
@@ -449,11 +443,8 @@ export default function LeavesClient({
               <Sliders className="h-5 w-5 text-[#1E6FE0]" />
               <div>
                 <h2 className="text-[16px] font-bold text-[#172334]">
-                  Super Admin / Manager Leave Balance Adjuster
+                  {t("adjustEditDays")}
                 </h2>
-                <p className="text-[12px] text-[#8A97A8]">
-                  Directly edit total remaining balance or add/deduct days for yourself or any employee
-                </p>
               </div>
             </div>
             <button
@@ -465,38 +456,9 @@ export default function LeavesClient({
             </button>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex items-center gap-2 pt-1">
-            <span className="text-[12.5px] font-bold text-[#617083]">Edit Mode:</span>
-            <button
-              type="button"
-              onClick={() => setAdjustMode("set_total")}
-              className={classNames(
-                "rounded-lg px-3 py-1 text-[12px] font-bold transition",
-                adjustMode === "set_total"
-                  ? "bg-[#1E6FE0] text-white shadow-sm"
-                  : "bg-[#EEF2F7] text-[#617083] hover:text-[#172334]"
-              )}
-            >
-              Direct Set Total Balance
-            </button>
-            <button
-              type="button"
-              onClick={() => setAdjustMode("delta")}
-              className={classNames(
-                "rounded-lg px-3 py-1 text-[12px] font-bold transition",
-                adjustMode === "delta"
-                  ? "bg-[#1E6FE0] text-white shadow-sm"
-                  : "bg-[#EEF2F7] text-[#617083] hover:text-[#172334]"
-              )}
-            >
-              Add / Deduct (+ / -)
-            </button>
-          </div>
-
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-4">
             <div>
-              <label className="label">Target Employee</label>
+              <label className="label">{t("employee")}</label>
               <select
                 className="input font-semibold"
                 value={adjustTargetUser || currentUserId}
@@ -504,93 +466,51 @@ export default function LeavesClient({
               >
                 {adjustUsers.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.id === currentUserId ? `⭐ Myself (${u.name})` : `${u.name} (${u.staff_type === "yellow_card" ? "🟡 Yellow" : "Official"})`}
+                    {u.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="label">Leave Type</label>
-              {isTargetYellow ? (
-                <select
-                  className="input font-semibold bg-[#E7F1FF] text-[#1E6FE0]"
-                  value={adjustType}
-                  onChange={(e) => setAdjustType(e.target.value)}
-                >
-                  {adjustTypes
-                    .filter((t) => t.id === "lt_earned" || t.name.toLowerCase().includes("earned"))
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} (Yellow Card EL Only)
-                      </option>
-                    ))}
-                </select>
-              ) : (
-                <select
-                  className="input font-semibold"
-                  value={adjustType}
-                  onChange={(e) => setAdjustType(e.target.value)}
-                >
-                  {adjustTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <label className="label">{t("leaves")}</label>
+              <select
+                className="input font-semibold"
+                value={adjustType}
+                onChange={(e) => setAdjustType(e.target.value)}
+              >
+                {adjustTypes.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {adjustMode === "set_total" ? (
-              <div>
-                <label className="label">New Total Balance (Days)</label>
-                <input
-                  className="input font-bold text-[#1E6FE0]"
-                  type="number"
-                  step="0.5"
-                  value={adjustNewTotal}
-                  onChange={(e) => setAdjustNewTotal(e.target.value)}
-                  placeholder="e.g. 10 or 15"
-                  required
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="label">Days Adjustment (+ or -)</label>
-                <input
-                  className="input font-bold"
-                  type="number"
-                  step="0.5"
-                  value={adjustDelta}
-                  onChange={(e) => setAdjustDelta(e.target.value)}
-                  placeholder="+ days (e.g. +2 or -1)"
-                  required
-                />
-              </div>
-            )}
+            <div>
+              <label className="label">{t("daysLeft")}</label>
+              <input
+                className="input font-bold text-[#1E6FE0]"
+                type="number"
+                step="0.5"
+                value={adjustNewTotal}
+                onChange={(e) => setAdjustNewTotal(e.target.value)}
+                placeholder="e.g. 10 or 15"
+                required
+              />
+            </div>
 
             <div>
-              <label className="label">Reason / Remark</label>
+              <label className="label">{t("reason")}</label>
               <input
                 className="input"
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="e.g. Balance update"
+                placeholder="Remark"
                 required
               />
             </div>
           </div>
-
-          {adjustErr && (
-            <div className="rounded-[12px] bg-[#FDECEC] p-3 text-[13px] font-semibold text-[#C52B35]">
-              {adjustErr}
-            </div>
-          )}
-          {adjustMsg && (
-            <div className="rounded-[12px] bg-[#E1F8EF] p-3 text-[13px] font-semibold text-[#06613E]">
-              {adjustMsg}
-            </div>
-          )}
 
           <div className="flex justify-end gap-2 pt-1">
             <button
@@ -598,7 +518,7 @@ export default function LeavesClient({
               disabled={adjustSaving}
               className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2"
             >
-              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} Save Balance
+              {adjustSaving ? <Spinner /> : <Save className="h-4 w-4" />} {t("save")}
             </button>
           </div>
         </form>
@@ -618,7 +538,7 @@ export default function LeavesClient({
                   style={{ backgroundColor: editingCard.color || "#16B878" }}
                 />
                 <h3 className="text-[17px] font-bold text-[#172334]">
-                  Edit {editingCard.name}
+                  {t("edit")} {editingCard.name}
                 </h3>
               </div>
               <button
@@ -631,83 +551,37 @@ export default function LeavesClient({
             </div>
 
             <div className="rounded-[14px] bg-[#F4F7FB] p-3.5 flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-[#617083]">Current Balance:</span>
+              <span className="text-[13px] font-semibold text-[#617083]">{t("leaveBalance")}:</span>
               <span className="text-[20px] font-black text-[#172334]">
-                {editingCard.balance} <span className="text-[12px] font-normal text-[#8A97A8]">days</span>
+                {editingCard.balance} <span className="text-[12px] font-normal text-[#8A97A8]">{t("daysLeft")}</span>
               </span>
             </div>
 
-            {/* Mode selection */}
-            <div className="flex rounded-[12px] bg-[#EEF2F7] p-1 text-[12px] font-bold">
-              <button
-                type="button"
-                onClick={() => setCardEditMode("set_total")}
-                className={classNames(
-                  "flex-1 rounded-[9px] py-1.5 transition text-center",
-                  cardEditMode === "set_total" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
-                )}
-              >
-                Direct Set Total
-              </button>
-              <button
-                type="button"
-                onClick={() => setCardEditMode("delta")}
-                className={classNames(
-                  "flex-1 rounded-[9px] py-1.5 transition text-center",
-                  cardEditMode === "delta" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8]"
-                )}
-              >
-                Add / Deduct (+ / -)
-              </button>
+            <div>
+              <label className="label">{t("daysLeft")}</label>
+              <input
+                type="number"
+                step="0.5"
+                className="input font-extrabold text-[18px] text-[#1E6FE0]"
+                value={cardNewTotal}
+                onChange={(e) => setCardNewTotal(e.target.value)}
+                placeholder="e.g. 15"
+                autoFocus
+                required
+              />
             </div>
 
-            {cardEditMode === "set_total" ? (
-              <div>
-                <label className="label">New Desired Balance (Days)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  className="input font-extrabold text-[18px] text-[#1E6FE0]"
-                  value={cardNewTotal}
-                  onChange={(e) => setCardNewTotal(e.target.value)}
-                  placeholder="e.g. 10 or 15"
-                  autoFocus
-                  required
-                />
-              </div>
-            ) : (
-              <div>
-                <label className="label">Adjust Days (+ or -)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  className="input font-extrabold text-[18px]"
-                  value={cardDelta}
-                  onChange={(e) => setCardDelta(e.target.value)}
-                  placeholder="+2 or -1"
-                  autoFocus
-                  required
-                />
-              </div>
-            )}
-
             <div>
-              <label className="label">Reason / Remark</label>
+              <label className="label">{t("reason")}</label>
               <input
                 type="text"
                 className="input"
                 value={cardReason}
                 onChange={(e) => setCardReason(e.target.value)}
-                placeholder="e.g. Direct balance edit"
+                placeholder="Reason"
                 required
               />
             </div>
-
-            {cardError && (
-              <div className="rounded-[12px] bg-[#FDECEC] p-3 text-[13px] font-semibold text-[#C52B35]">
-                {cardError}
-              </div>
-            )}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
@@ -715,14 +589,14 @@ export default function LeavesClient({
                 onClick={() => setEditingCard(null)}
                 className="rounded-[12px] border border-[#CBD6E2] px-4 py-2.5 text-[13px] font-bold text-[#617083] hover:bg-[#F4F7FB]"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={cardSaving}
                 className="btn-primary text-[13px] px-5 py-2.5 flex items-center gap-2"
               >
-                {cardSaving ? <Spinner /> : <Check className="h-4 w-4" />} Save Balance Now
+                {cardSaving ? <Spinner /> : <Check className="h-4 w-4" />} {t("save")}
               </button>
             </div>
           </form>
@@ -736,10 +610,8 @@ export default function LeavesClient({
             <Award className="h-5 w-5" />
           </div>
           <div className="text-[13.5px] text-[#5C3B00] leading-relaxed">
-            <p className="font-bold text-[15px] text-amber-950">Yellow Card Staff Leave Policy</p>
-            <p className="mt-0.5">
-              Yellow Card staff members strictly receive <strong className="text-amber-900">15 Earned Leaves (EL) per year</strong>, accrued monthly at <strong className="text-emerald-700">1.25 days per elapsed month</strong>. Casual Leaves (CL), Sick Leaves (SL), Optional Holidays, and Short Leaves are not applicable.
-            </p>
+            <p className="font-bold text-[15px] text-amber-950">{t("yellowCardPolicyTitle")}</p>
+            <p className="mt-0.5">{t("yellowCardPolicySub")}</p>
           </div>
         </div>
       )}
@@ -775,17 +647,13 @@ export default function LeavesClient({
                   <span className="text-[34px] font-extrabold tabular-nums leading-none text-[#172334]">
                     {b.balance}
                   </span>
-                  <span className="text-[13px] font-semibold text-[#8A97A8]">days left</span>
+                  <span className="text-[13px] font-semibold text-[#8A97A8]">{t("daysLeft")}</span>
                 </div>
 
                 <p className="mt-2 text-[12px] font-semibold text-[#617083]">
                   {isYellowCard
-                    ? `Accrued: ${b.accrued_days ?? b.balance} days (1.25/mo) · Used: ${b.used} of 15`
-                    : b.reset_period === "month"
-                      ? `${b.balance} remaining this month`
-                      : b.id === "lt_comp"
-                        ? `${b.balance} earned on weekly off`
-                        : `${b.balance} left · ${b.used} used of ${b.days_per_year}`}
+                    ? `${t("accrued")}: ${b.accrued_days ?? b.balance} · ${t("used")}: ${b.used} / 15`
+                    : `${b.balance} ${t("daysLeft")} · ${b.used} ${t("used")}`}
                 </p>
 
                 <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-[#E8EEF4]">
@@ -794,21 +662,17 @@ export default function LeavesClient({
                     style={{ width: `${leftPct}%`, background: b.color || "#16B878" }}
                   />
                 </div>
-
-                {b.reset_period === "month" && (
-                  <p className="mt-2 text-[11px] text-[#8A97A8]">Lapses at month end</p>
-                )}
               </div>
 
-              {/* Super Admin Direct Edit Button on each Card */}
+              {/* Super Admin Direct Edit Button */}
               {canAdjust && (
                 <div className="mt-4 pt-3 border-t border-[#F0F4F8]">
                   <button
                     type="button"
                     onClick={() => openEditCard(b)}
-                    className="w-full flex items-center justify-center gap-1.5 rounded-[10px] bg-[#F4F7FB] border border-[#E3EAF1] py-1.5 text-[12px] font-bold text-[#1E6FE0] transition hover:bg-[#E7F1FF] hover:border-[#1E6FE0]/40"
+                    className="w-full flex items-center justify-center gap-1.5 rounded-[10px] bg-[#F4F7FB] border border-[#E3EAF1] py-1.5 text-[12px] font-bold text-[#1E6FE0] transition hover:bg-[#E7F1FF]"
                   >
-                    <Edit3 className="h-3.5 w-3.5" /> Edit Balance
+                    <Edit3 className="h-3.5 w-3.5" /> {t("editBalance")}
                   </button>
                 </div>
               )}
@@ -816,40 +680,6 @@ export default function LeavesClient({
           );
         })}
       </div>
-
-      {/* Missed Punch Grace Alert */}
-      {openMissed.length > 0 && canApply && (
-        <div className="rounded-[16px] bg-[#FFF4E0] border border-[#F5A623]/40 p-4 text-[#995B00]">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-[#D98200] mt-0.5" />
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-[14px]">Action Required: Apply Leave within 2 Days</p>
-              <ul className="mt-1 space-y-1 text-[13px]">
-                {openMissed.map((m) => (
-                  <li key={m.date}>
-                    No punch recorded on <span className="font-semibold">{formatDate(m.date)}</span>. Apply by{" "}
-                    <span className="font-semibold">{formatDate(m.deadline)}</span> to prevent absent status.
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                className="mt-2.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[#D98200] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#b56d00]"
-                onClick={() => {
-                  setShowForm(true);
-                  setStartDate(openMissed[0].date);
-                  setEndDate(openMissed[0].date);
-                  setTimeout(() => {
-                    document.getElementById("leave-apply")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }, 100);
-                }}
-              >
-                Apply for this date now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Grid: Application Form & Requests History */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -865,10 +695,7 @@ export default function LeavesClient({
           >
             <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
               <div>
-                <h2 className="text-[16px] font-bold text-[#172334]">Apply For Leave</h2>
-                <p className="text-[12px] text-[#8A97A8]">
-                  {isYellowCard ? "Yellow Card (Earned Leave Only)" : "Submit request for manager review"}
-                </p>
+                <h2 className="text-[16px] font-bold text-[#172334]">{t("applyForLeave")}</h2>
               </div>
               <button
                 type="button"
@@ -881,17 +708,17 @@ export default function LeavesClient({
             </div>
 
             <div>
-              <label className="label">Leave Category</label>
+              <label className="label">{t("leaves")}</label>
               <select
                 value={leaveType}
                 onChange={(e) => setLeaveType(e.target.value)}
                 className="input font-semibold"
                 required
               >
-                <option value="">Select Leave Type…</option>
+                <option value="">Select...</option>
                 {balance.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.balance} days available)
+                    {b.name} ({b.balance} {t("daysLeft")})
                   </option>
                 ))}
               </select>
@@ -920,44 +747,12 @@ export default function LeavesClient({
               </div>
             </div>
 
-            {calculatedDays > 0 && (
-              <div className="rounded-[12px] bg-[#E7F1FF] px-3.5 py-2 text-[12.5px] font-semibold text-[#1E6FE0]">
-                Duration: {calculatedDays} day{calculatedDays > 1 ? "s" : ""}
-              </div>
-            )}
-
             <div>
-              <label className="label">Send Approval To</label>
-              {approverFallback ? (
-                <p className="rounded-[12px] bg-[#F4F7FB] p-3 text-[12.5px] text-[#617083]">
-                  Senior Manager / AGM not assigned yet. Super Admin will approve.
-                </p>
-              ) : (
-                <select
-                  value={approverId}
-                  onChange={(e) => setApproverId(e.target.value)}
-                  className="input"
-                  required
-                >
-                  <option value="">Select Approver…</option>
-                  {approvers.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <p className="mt-1 text-[11px] text-[#8A97A8]">
-                Production, Lab, Store, Quality → Senior Manager Production. Electric, Maintenance, Instrument → AGM.
-              </p>
-            </div>
-
-            <div>
-              <label className="label">Reason / Notes</label>
+              <label className="label">{t("reason")}</label>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="State the reason for leave…"
+                placeholder="Reason..."
                 className="input min-h-[84px]"
                 required
               />
@@ -975,7 +770,7 @@ export default function LeavesClient({
             )}
 
             <button type="submit" disabled={submitting} className="btn-primary w-full py-3 text-[14px]">
-              {submitting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} Submit Leave Request
+              {submitting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />} {t("applyForLeave")}
             </button>
           </form>
         )}
@@ -984,8 +779,8 @@ export default function LeavesClient({
         <div className={classNames("card p-5 sm:p-6 border border-[#E3EAF1] shadow-card", canApply ? "lg:col-span-7" : "lg:col-span-12")}>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F4F8] pb-3">
             <div>
-              <h2 className="text-[16px] font-bold text-[#172334]">My Leave Requests</h2>
-              <p className="text-[12px] text-[#8A97A8]">History and real-time status</p>
+              <h2 className="text-[16px] font-bold text-[#172334]">{t("myLeaveRequests")}</h2>
+              <p className="text-[12px] text-[#8A97A8]">{t("historyStatus")}</p>
             </div>
 
             {/* Filter Tabs */}
@@ -1000,7 +795,7 @@ export default function LeavesClient({
                     filterStatus === s ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
                   )}
                 >
-                  {s}
+                  {s === "all" ? t("all") : s === "pending" ? t("pending") : s === "approved" ? t("approved") : t("rejected")}
                 </button>
               ))}
             </div>
@@ -1013,8 +808,7 @@ export default function LeavesClient({
           ) : filteredRequests.length === 0 ? (
             <div className="py-12 text-center text-[#8A97A8]">
               <CalendarDays className="mx-auto h-9 w-9 text-[#C5D0DC] mb-2" />
-              <p className="text-[14px] font-semibold text-[#172334]">No leave requests found</p>
-              <p className="text-[12px] text-[#8A97A8] mt-1">Submitted requests will appear here.</p>
+              <p className="text-[14px] font-semibold text-[#172334]">{t("noNotifications")}</p>
             </div>
           ) : (
             <ul className="divide-y divide-[#F0F4F8] pt-2">

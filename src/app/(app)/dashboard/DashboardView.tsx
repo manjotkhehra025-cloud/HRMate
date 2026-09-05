@@ -1,29 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Users,
-  CalendarDays,
   Palmtree,
-  FileText,
-  Clock,
-  MessageSquare,
-  Sparkles,
-  ArrowRight,
   TrendingUp,
-  CheckCircle,
-  AlertCircle,
-  ChevronRight,
-  ShieldCheck,
   Send,
   PartyPopper,
   BarChart3,
-  Calendar,
 } from "lucide-react";
 import PunchWidget from "@/components/PunchWidget";
 import Avatar, { avatarSrc } from "@/components/Avatar";
-import { classNames, formatDate, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 export type DashKpi = {
   employees: number;
@@ -106,6 +95,7 @@ export default function DashboardView({
   canLeaves: boolean;
   canReports: boolean;
 }) {
+  const { t } = usePrefs();
   const ovTotal = Math.max(1, overview.present + overview.absent + overview.onLeave);
   const presentPct = Math.round((overview.present / ovTotal) * 100);
   const absentPct = Math.round((overview.absent / ovTotal) * 100);
@@ -121,9 +111,9 @@ export default function DashboardView({
 
   // Find next holiday
   const nextHoliday = events[0] || {
-    title: "Upcoming Holiday",
-    when: "Next Month",
-    in: "Soon",
+    title: t("upcomingHoliday"),
+    when: t("nextMonth"),
+    in: t("soon"),
     color: "#F59E0B",
   };
 
@@ -134,12 +124,12 @@ export default function DashboardView({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-[22px] font-black tracking-tight text-[#0F172A] sm:text-[26px]">
-              {greeting}, {firstName}!
+              {greeting || t("welcomeBack")}, {firstName}!
             </h1>
             <span className="text-2xl animate-bounce">👋</span>
           </div>
           <p className="mt-0.5 text-[13px] font-medium text-[#64748B]">
-            Welcome to HRMate · {factory.name || "GD Foods Mfg. (I) Pvt. Ltd."}
+            {t("welcomeSub")}
           </p>
         </div>
 
@@ -148,7 +138,7 @@ export default function DashboardView({
             href="/leaves"
             className="inline-flex items-center gap-1.5 self-start rounded-2xl bg-gradient-to-r from-[#059669] to-[#10B981] px-4 py-2.5 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(16,185,129,0.35)] transition active:scale-95 hover:opacity-90"
           >
-            <Send className="h-4 w-4" /> Apply Leave
+            <Send className="h-4 w-4" /> {t("applyLeave")}
           </Link>
         )}
       </div>
@@ -164,17 +154,17 @@ export default function DashboardView({
           className="group relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm transition active:scale-95 hover:border-[#10B981] hover:shadow-md"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold text-[#64748B]">Leave Balance</span>
+            <span className="text-[11.5px] font-bold text-[#64748B]">{t("leaveBalance")}</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-[#10B981]">
               <Palmtree className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2.5">
             <p className="text-[24px] font-black tracking-tight text-[#0F172A]">
-              {elBal.left} <span className="text-[14px] font-bold text-[#64748B]">Days</span>
+              {elBal.left} <span className="text-[14px] font-bold text-[#64748B]">{t("daysLeft")}</span>
             </p>
             <p className="text-[11px] font-bold text-[#10B981]">
-              15 Days EL Allocated Quota
+              15 EL {t("allocatedQuota")}
             </p>
           </div>
           <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
@@ -191,7 +181,7 @@ export default function DashboardView({
           className="group relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm transition active:scale-95 hover:border-[#3B82F6] hover:shadow-md"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold text-[#64748B]">Team Working</span>
+            <span className="text-[11.5px] font-bold text-[#64748B]">{t("teamWorking")}</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#3B82F6]">
               <Users className="h-4 w-4" />
             </div>
@@ -203,7 +193,7 @@ export default function DashboardView({
             </p>
             <div className="mt-1 flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
-              <p className="text-[11px] font-bold text-[#64748B]">{presentPct}% Active Today</p>
+              <p className="text-[11px] font-bold text-[#64748B]">{presentPct}% {t("activeToday")}</p>
             </div>
           </div>
           {/* Avatar Pile */}
@@ -222,7 +212,7 @@ export default function DashboardView({
         {/* Card 3: Upcoming Holiday */}
         <div className="relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold text-[#64748B]">Upcoming Holiday</span>
+            <span className="text-[11.5px] font-bold text-[#64748B]">{t("upcomingHoliday")}</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <PartyPopper className="h-4 w-4" />
             </div>
@@ -246,7 +236,7 @@ export default function DashboardView({
           className="group relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm transition active:scale-95 hover:border-violet-500 hover:shadow-md"
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11.5px] font-bold text-[#64748B]">My Attendance</span>
+            <span className="text-[11.5px] font-bold text-[#64748B]">{t("myAttendanceScore")}</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
               <BarChart3 className="h-4 w-4" />
             </div>
@@ -256,11 +246,11 @@ export default function DashboardView({
               98.5%
             </p>
             <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-              <TrendingUp className="h-3 w-3" /> On-Time Streak
+              <TrendingUp className="h-3 w-3" /> {t("onTimeStreak")}
             </div>
           </div>
           <div className="mt-2 text-[11px] font-semibold text-[#64748B]">
-            Monthly Score: Excellent ★
+            {t("monthlyScore")}
           </div>
         </Link>
       </div>
@@ -269,8 +259,8 @@ export default function DashboardView({
       <section className="rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-[16px] font-extrabold text-[#0F172A]">Workforce Pulse</h2>
-            <p className="text-[12px] text-[#64748B]">Live attendance summary for GD Foods</p>
+            <h2 className="text-[16px] font-extrabold text-[#0F172A]">{t("workforcePulse")}</h2>
+            <p className="text-[12px] text-[#64748B]">{t("workforceSub")}</p>
           </div>
           <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
@@ -297,19 +287,19 @@ export default function DashboardView({
 
           <div className="mt-3.5 grid grid-cols-3 gap-2 text-center">
             <div className="rounded-2xl bg-emerald-50/60 p-2.5 border border-emerald-100">
-              <span className="text-[11px] font-bold text-emerald-800">Present</span>
+              <span className="text-[11px] font-bold text-emerald-800">{t("present")}</span>
               <p className="text-[18px] font-black text-emerald-700">{overview.present}</p>
               <span className="text-[10px] text-emerald-600 font-semibold">{presentPct}%</span>
             </div>
 
             <div className="rounded-2xl bg-rose-50/60 p-2.5 border border-rose-100">
-              <span className="text-[11px] font-bold text-rose-800">Absent</span>
+              <span className="text-[11px] font-bold text-rose-800">{t("absent")}</span>
               <p className="text-[18px] font-black text-rose-700">{overview.absent}</p>
               <span className="text-[10px] text-rose-600 font-semibold">{absentPct}%</span>
             </div>
 
             <div className="rounded-2xl bg-amber-50/60 p-2.5 border border-amber-100">
-              <span className="text-[11px] font-bold text-amber-800">On Leave</span>
+              <span className="text-[11px] font-bold text-amber-800">{t("onLeave")}</span>
               <p className="text-[18px] font-black text-amber-700">{overview.onLeave}</p>
               <span className="text-[10px] text-amber-600 font-semibold">{leavePct}%</span>
             </div>
@@ -321,20 +311,20 @@ export default function DashboardView({
       <section className="rounded-3xl border border-[#E2E8F0] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-[16px] font-extrabold text-[#0F172A]">Recent Activity</h2>
-            <p className="text-[12px] text-[#64748B]">Live punches & team events</p>
+            <h2 className="text-[16px] font-extrabold text-[#0F172A]">{t("recentActivity")}</h2>
+            <p className="text-[12px] text-[#64748B]">{t("historyStatus")}</p>
           </div>
           <Link
             href="/attendance"
             className="text-[12px] font-bold text-[#1E6FE0] hover:underline"
           >
-            View All
+            {t("viewAll")}
           </Link>
         </div>
 
         {activity.length === 0 ? (
           <div className="py-6 text-center text-[13px] text-[#94A3B8]">
-            No activity recorded today yet.
+            {t("noNotifications")}
           </div>
         ) : (
           <div className="divide-y divide-[#F1F5F9]">

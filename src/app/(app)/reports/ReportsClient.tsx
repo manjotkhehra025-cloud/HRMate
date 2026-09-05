@@ -7,16 +7,15 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  TrendingUp,
   BarChart3,
   Search,
-  Users,
-  Calendar,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { istParts } from "@/lib/utils";
+import { usePrefs } from "@/components/PrefsProvider";
 
 export default function ReportsClient() {
+  const { t } = usePrefs();
   const [month, setMonth] = useState(() => istParts().monthKey);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -86,16 +85,16 @@ export default function ReportsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-6 w-6 text-[#1E6FE0]" />
           <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-            Analytics & Reports
+            {t("analyticsTitle")}
           </h1>
         </div>
         <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-          Monthly attendance trends, department breakdowns, and exportable payroll reports.
+          {t("analyticsSub")}
         </p>
       </div>
 
@@ -130,31 +129,31 @@ export default function ReportsClient() {
             onClick={() => exportFile("pdf")}
             className="flex items-center gap-1.5 rounded-[12px] border border-[#E3EAF1] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#172334] shadow-sm transition hover:bg-[#F8FAFD]"
           >
-            <FileText className="h-4 w-4 text-[#C52B35]" /> Export PDF
+            <FileText className="h-4 w-4 text-[#C52B35]" /> {t("exportPdf")}
           </button>
           <button
             type="button"
             onClick={() => exportFile("excel")}
             className="flex items-center gap-1.5 rounded-[12px] border border-[#E3EAF1] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#172334] shadow-sm transition hover:bg-[#F8FAFD]"
           >
-            <FileSpreadsheet className="h-4 w-4 text-[#16B878]" /> Export Excel
+            <FileSpreadsheet className="h-4 w-4 text-[#16B878]" /> {t("exportExcel")}
           </button>
           <button
             type="button"
             onClick={() => exportFile("csv")}
             className="flex items-center gap-1.5 rounded-[12px] border border-[#E3EAF1] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#172334] shadow-sm transition hover:bg-[#F8FAFD]"
           >
-            <Download className="h-4 w-4 text-[#1E6FE0]" /> Export CSV
+            <Download className="h-4 w-4 text-[#1E6FE0]" /> {t("exportCsv")}
           </button>
         </div>
       </div>
 
       {/* 4 Metric Tiles */}
       <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <KpiTile label="Present Punches" hint={`${present} on-time`} value={present} color="#16B878" pct={(present / headcount) * 100} />
-        <KpiTile label="Late Arrivals" hint={`${late} late entries`} value={late} color="#F5A623" pct={(late / headcount) * 100} />
-        <KpiTile label="Half Days" hint={`${half} half shifts`} value={half} color="#1E6FE0" pct={(half / headcount) * 100} />
-        <KpiTile label="Absenteeism" hint={`${absent} absences`} value={absent} color="#C52B35" pct={(absent / headcount) * 100} />
+        <KpiTile label={t("present")} hint={`${present} on-time`} value={present} color="#16B878" pct={(present / headcount) * 100} />
+        <KpiTile label={t("late")} hint={`${late} late entries`} value={late} color="#F5A623" pct={(late / headcount) * 100} />
+        <KpiTile label={t("halfDay")} hint={`${half} half shifts`} value={half} color="#1E6FE0" pct={(half / headcount) * 100} />
+        <KpiTile label={t("absent")} hint={`${absent} absences`} value={absent} color="#C52B35" pct={(absent / headcount) * 100} />
       </div>
 
       {/* 2-Column Analytics Charts */}
@@ -170,7 +169,7 @@ export default function ReportsClient() {
                     {data.pct}%
                   </span>
                   <span className="rounded-full bg-[#E1F8EF] px-2.5 py-0.5 text-[11.5px] font-bold text-[#06613E]">
-                    {data.workingDays} Working Days
+                    {data.workingDays} {t("workingDays")}
                   </span>
                 </div>
               </div>
@@ -201,7 +200,7 @@ export default function ReportsClient() {
         {/* Department Performance */}
         <section className="card p-6 flex flex-col justify-between">
           <div>
-            <h2 className="text-[16px] font-bold text-[#172334]">Department Attendance Rate</h2>
+            <h2 className="text-[16px] font-bold text-[#172334]">{t("departmentAttendance")}</h2>
             <p className="text-[12.5px] text-[#8A97A8]">Presence breakdown per division</p>
 
             {depts.length === 0 ? (
@@ -231,7 +230,7 @@ export default function ReportsClient() {
       {/* 3 Insights Cards */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <div className="card p-5">
-          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Average Delay</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("averageDelay")}</p>
           <p className="mt-1 text-[26px] font-bold tabular-nums text-[#172334]">
             {data.insights.avgLateMin}{" "}
             <span className="text-[14px] font-normal text-[#8A97A8]">mins / late user</span>
@@ -239,14 +238,14 @@ export default function ReportsClient() {
         </div>
 
         <div className="card p-5">
-          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">On-Time Arrival Rate</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("onTimeArrivalRate")}</p>
           <p className="mt-1 text-[26px] font-bold tabular-nums text-[#16B878]">
             {data.insights.onTimeRate}%
           </p>
         </div>
 
         <div className="card p-5">
-          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Total Leave Days</p>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("totalLeaveDays")}</p>
           <p className="mt-1 text-[26px] font-bold tabular-nums text-[#1E6FE0]">
             {data.insights.leaveDays}{" "}
             <span className="text-[14px] font-normal text-[#8A97A8]">days taken</span>
@@ -258,7 +257,7 @@ export default function ReportsClient() {
       <section className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-[#F0F4F8]">
           <div>
-            <h2 className="text-[16px] font-bold text-[#172334]">Per Employee Summary</h2>
+            <h2 className="text-[16px] font-bold text-[#172334]">{t("perEmployeeSummary")}</h2>
             <p className="text-[12.5px] text-[#8A97A8]">Monthly individual scorecards</p>
           </div>
 
@@ -267,7 +266,7 @@ export default function ReportsClient() {
             <input
               value={searchEmp}
               onChange={(e) => setSearchEmp(e.target.value)}
-              placeholder="Search employee…"
+              placeholder={`${t("searchEmployees")}…`}
               className="h-9 w-full rounded-[10px] border border-[#E3EAF1] bg-white pl-9 pr-3 text-[13px] text-[#172334] outline-none focus:border-[#1E6FE0]"
             />
           </div>
@@ -277,13 +276,13 @@ export default function ReportsClient() {
           <table className="w-full text-left text-[13.5px]">
             <thead>
               <tr className="border-b border-[#E3EAF1] bg-[#F8FAFD] text-[11px] font-bold uppercase tracking-wider text-[#8A97A8]">
-                <th className="px-6 py-3">Employee</th>
-                <th className="px-4 py-3">Department</th>
-                <th className="px-4 py-3">Present</th>
-                <th className="px-4 py-3">Late</th>
-                <th className="px-4 py-3">Half Day</th>
-                <th className="px-4 py-3">Absent</th>
-                <th className="px-6 py-3">Attendance Rate</th>
+                <th className="px-6 py-3">{t("staffMember")}</th>
+                <th className="px-4 py-3">{t("department")}</th>
+                <th className="px-4 py-3">{t("present")}</th>
+                <th className="px-4 py-3">{t("late")}</th>
+                <th className="px-4 py-3">{t("halfDay")}</th>
+                <th className="px-4 py-3">{t("absent")}</th>
+                <th className="px-6 py-3">{t("attendanceRate")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F0F4F8]">
@@ -295,8 +294,8 @@ export default function ReportsClient() {
                       {e.role === "super_admin"
                         ? "Super Admin"
                         : e.staff_type === "yellow_card"
-                          ? "Yellow card / Third party"
-                          : "Official Staff"}
+                          ? t("yellowCardStaff")
+                          : t("officialStaff")}
                     </p>
                   </td>
                   <td className="px-4 py-3.5 font-medium text-[#617083]">{e.department || "—"}</td>

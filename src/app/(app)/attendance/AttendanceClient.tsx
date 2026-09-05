@@ -10,9 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock3,
-  MapPin,
-  Sparkles,
-  Info,
   X,
 } from "lucide-react";
 import { Spinner, StatusBadge } from "@/components/ui";
@@ -20,6 +17,7 @@ import { formatDate, formatTime, istParts } from "@/lib/utils";
 import { ATTENDANCE_EVENT } from "@/components/PunchWidget";
 import { classNames } from "@/lib/utils";
 import { addWorkingDays, isWeeklyOff } from "@/lib/staff";
+import { usePrefs } from "@/components/PrefsProvider";
 
 type DayStatus = "present" | "half" | "absent" | "weekly_off" | "future" | "empty" | "grace";
 type LeaveCover = { start_date: string; end_date: string; status: string };
@@ -73,6 +71,7 @@ export default function AttendanceClient({
   canManual: boolean;
   canView: boolean;
 }) {
+  const { t, prefs } = usePrefs();
   const today = istParts().dateKey;
   const [month, setMonth] = useState(() => istParts().monthKey);
   const [selected, setSelected] = useState(today);
@@ -202,10 +201,10 @@ export default function AttendanceClient({
     }
   }
 
-  const monthLabel = new Date(month + "-01T12:00:00+05:30").toLocaleDateString("en-IN", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = new Date(month + "-01T12:00:00+05:30").toLocaleDateString(
+    prefs.language === "pa" ? "pa-IN" : prefs.language === "hi" ? "hi-IN" : "en-IN",
+    { month: "long", year: "numeric" }
+  );
 
   const selectedRecord = byDate[selected];
   const selectedStatus = statusOf(selected, selectedRecord, today, weeklyOff, leaveCover);
@@ -214,18 +213,18 @@ export default function AttendanceClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[18px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <CalendarDays className="h-6 w-6 text-[#1E6FE0]" />
               <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-                Attendance & Logs
+                {t("attendanceLogsTitle")}
               </h1>
             </div>
             <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-              Monthly calendar, punch records, grace periods, and manual punch requests.
+              {t("attendanceLogsSub")}
             </p>
           </div>
 
@@ -242,7 +241,7 @@ export default function AttendanceClient({
               }}
               className="flex h-10 sm:h-11 items-center gap-2 rounded-[12px] bg-[#1E6FE0] px-4 text-[13px] sm:text-[14px] font-bold text-white shadow-[0_4px_14px_rgba(30,111,224,0.3)] transition hover:bg-[#1556B8]"
             >
-              <Clock className="h-4 w-4" /> {showManual ? "Hide Manual Punch" : "Request Manual Punch"}
+              <Clock className="h-4 w-4" /> {showManual ? t("cancel") : t("requestManualPunch")}
             </button>
           )}
         </div>
@@ -252,7 +251,7 @@ export default function AttendanceClient({
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <div className="card p-4 flex items-center justify-between border-l-4 border-l-[#16B878]">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Present Days</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("presentDays")}</p>
             <p className="mt-1 text-[28px] font-bold tabular-nums text-[#172334]">{stats.present}</p>
           </div>
           <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#E1F8EF] text-[#16B878]">
@@ -262,7 +261,7 @@ export default function AttendanceClient({
 
         <div className="card p-4 flex items-center justify-between border-l-4 border-l-[#D98200]">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Half Days</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("halfDays")}</p>
             <p className="mt-1 text-[28px] font-bold tabular-nums text-[#172334]">{stats.half}</p>
           </div>
           <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#FFF4E0] text-[#D98200]">
@@ -272,7 +271,7 @@ export default function AttendanceClient({
 
         <div className="card p-4 flex items-center justify-between border-l-4 border-l-[#C52B35]">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">Absent Days</p>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-[#8A97A8]">{t("absentDays")}</p>
             <p className="mt-1 text-[28px] font-bold tabular-nums text-[#172334]">{stats.absent}</p>
           </div>
           <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-[#FDECEC] text-[#C52B35]">
@@ -302,7 +301,7 @@ export default function AttendanceClient({
                 onClick={() => setMonth(istParts().monthKey)}
                 className="px-2.5 py-1 text-[11.5px] font-bold text-[#1E6FE0] transition hover:underline"
               >
-                Current
+                {t("all")}
               </button>
               <button
                 onClick={() => shiftMonth(1)}
@@ -358,19 +357,19 @@ export default function AttendanceClient({
           {/* Legend */}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#F0F4F8] pt-4 text-[12px] font-medium text-[#617083]">
             <span className="flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-[#16B878]" /> Present
+              <i className="h-2.5 w-2.5 rounded-full bg-[#16B878]" /> {t("present")}
             </span>
             <span className="flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-[#D98200]" /> Half day
+              <i className="h-2.5 w-2.5 rounded-full bg-[#D98200]" /> {t("halfDays")}
             </span>
             <span className="flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-[#C52B35]" /> Absent
+              <i className="h-2.5 w-2.5 rounded-full bg-[#C52B35]" /> {t("absent")}
             </span>
             <span className="flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-[#1E6FE0]" /> Weekly off
+              <i className="h-2.5 w-2.5 rounded-full bg-[#1E6FE0]" /> {t("weeklyOff")}
             </span>
             <span className="flex items-center gap-1.5">
-              <i className="h-2.5 w-2.5 rounded-full bg-[#D98200]" /> Grace period
+              <i className="h-2.5 w-2.5 rounded-full bg-[#D98200]" /> {t("gracePeriod")}
             </span>
           </div>
 
@@ -396,32 +395,20 @@ export default function AttendanceClient({
                             : "bg-[#F4F7FB] text-[#8A97A8]"
                 )}
               >
-                {selectedStatus === "grace" ? "Apply Leave (Grace)" : selectedStatus.replace("_", " ")}
+                {selectedStatus === "grace" ? t("applyLeave") : selectedStatus.replace("_", " ")}
               </span>
             </div>
 
             {selectedRecord?.punch_in_at && (
               <span className="text-[12px] font-medium text-[#617083]">
-                Punch In: {formatTime(selectedRecord.punch_in_at)}{" "}
-                {selectedRecord.punch_out_at ? `· Out: ${formatTime(selectedRecord.punch_out_at)}` : ""}
+                {t("punchIn")}: {formatTime(selectedRecord.punch_in_at)}{" "}
+                {selectedRecord.punch_out_at ? `· ${t("punchOut")}: ${formatTime(selectedRecord.punch_out_at)}` : ""}
               </span>
             )}
           </div>
-
-          {/* Grace Period Alert */}
-          {selected < today && selectedStatus === "grace" && (
-            <div className="mt-3 flex items-start gap-2.5 rounded-[14px] bg-[#FFF4E0] p-3.5 text-[12.5px] font-medium text-[#995B00] border border-[#F5A623]/30">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#D98200]" />
-              <div>
-                No punch recorded for {formatDate(selected)}. Please submit a leave application by{" "}
-                <span className="font-bold">{formatDate(addWorkingDays(selected, 2, weeklyOff))}</span>,
-                otherwise it will be marked absent. Weekly offs are excluded.
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Manual Punch Form (Desktop Sidebar or Toggle) */}
+        {/* Manual Punch Form */}
         {showManual && canManual && (
           <form
             id="manual-form"
@@ -430,8 +417,8 @@ export default function AttendanceClient({
           >
             <div className="flex items-center justify-between border-b border-[#F0F4F8] pb-3">
               <div>
-                <h3 className="text-[15px] font-bold text-[#172334]">Request Manual Punch</h3>
-                <p className="text-[12px] text-[#8A97A8]">Date: {formatDate(selected)}</p>
+                <h3 className="text-[15px] font-bold text-[#172334]">{t("requestManualPunch")}</h3>
+                <p className="text-[12px] text-[#8A97A8]">{t("date")}: {formatDate(selected)}</p>
               </div>
               <button
                 type="button"
@@ -442,35 +429,9 @@ export default function AttendanceClient({
               </button>
             </div>
 
-            {approverFallback ? (
-              <p className="rounded-[12px] bg-[#F4F7FB] p-3 text-[12.5px] text-[#617083]">
-                Approver management not yet assigned. Super Admin will review this request.
-              </p>
-            ) : (
-              <div>
-                <label className="label">Approver</label>
-                <select
-                  value={mApprover}
-                  onChange={(e) => setMApprover(e.target.value)}
-                  className="input"
-                  required
-                >
-                  <option value="">Select Manager / Approver…</option>
-                  {approvers.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-[11px] text-[#8A97A8]">
-                  Production, Lab, Store, Quality → Senior Manager Production. Electric, Maintenance, Instrument → AGM.
-                </p>
-              </div>
-            )}
-
             {/* Type Switcher */}
             <div>
-              <label className="label">Punch Mode</label>
+              <label className="label">Mode</label>
               <div className="grid grid-cols-3 gap-1 rounded-[12px] bg-[#EEF2F7] p-1">
                 {(["in", "out", "both"] as const).map((k) => (
                   <button
@@ -482,7 +443,7 @@ export default function AttendanceClient({
                       mKind === k ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
                     )}
                   >
-                    {k === "in" ? "Punch In" : k === "out" ? "Punch Out" : "Both"}
+                    {k === "in" ? t("punchIn") : k === "out" ? t("punchOut") : t("all")}
                   </button>
                 ))}
               </div>
@@ -493,7 +454,7 @@ export default function AttendanceClient({
               {mKind !== "out" && (
                 <>
                   <div>
-                    <label className="label">Punch In Date</label>
+                    <label className="label">{t("punchIn")} {t("date")}</label>
                     <input
                       type="date"
                       className="input"
@@ -503,7 +464,7 @@ export default function AttendanceClient({
                     />
                   </div>
                   <div>
-                    <label className="label">Punch In Time</label>
+                    <label className="label">{t("punchIn")} Time</label>
                     <input
                       type="time"
                       className="input"
@@ -518,7 +479,7 @@ export default function AttendanceClient({
               {mKind !== "in" && (
                 <>
                   <div>
-                    <label className="label">Punch Out Date</label>
+                    <label className="label">{t("punchOut")} {t("date")}</label>
                     <input
                       type="date"
                       className="input"
@@ -528,7 +489,7 @@ export default function AttendanceClient({
                     />
                   </div>
                   <div>
-                    <label className="label">Punch Out Time</label>
+                    <label className="label">{t("punchOut")} Time</label>
                     <input
                       type="time"
                       className="input"
@@ -542,18 +503,18 @@ export default function AttendanceClient({
             </div>
 
             <div>
-              <label className="label">Reason / Justification</label>
+              <label className="label">{t("reason")}</label>
               <textarea
                 className="input min-h-[80px]"
                 required
                 value={mReason}
                 onChange={(e) => setMReason(e.target.value)}
-                placeholder="Explain why manual entry is requested…"
+                placeholder="Reason…"
               />
             </div>
 
             <button type="submit" disabled={submitting} className="btn-primary w-full">
-              {submitting ? <Spinner /> : <Send className="h-4 w-4" />} Submit for Approval
+              {submitting ? <Spinner /> : <Send className="h-4 w-4" />} {t("save")}
             </button>
 
             {submitMsg && (
@@ -569,22 +530,9 @@ export default function AttendanceClient({
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-[#F0F4F8]">
           <div>
-            <h3 className="text-[16px] font-bold text-[#172334]">Monthly Attendance Logs</h3>
-            <p className="text-[12.5px] text-[#8A97A8]">Detailed day-by-day record of {monthLabel}</p>
+            <h3 className="text-[16px] font-bold text-[#172334]">{t("monthlyAttendanceLogs")}</h3>
+            <p className="text-[12.5px] text-[#8A97A8]">{t("monthlyAttendanceSub")}</p>
           </div>
-          {canManual && !showManual && (
-            <button
-              onClick={() => {
-                setShowManual(true);
-                setTimeout(() => {
-                  document.getElementById("manual-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }, 100);
-              }}
-              className="btn-secondary text-[12.5px] py-1.5"
-            >
-              <Clock className="h-3.5 w-3.5 text-[#1E6FE0]" /> Manual Request
-            </button>
-          )}
         </div>
 
         {loading ? (
@@ -596,12 +544,12 @@ export default function AttendanceClient({
             <table className="w-full text-left text-[13.5px]">
               <thead>
                 <tr className="border-b border-[#E3EAF1] bg-[#F8FAFD] text-[11px] font-bold uppercase tracking-wider text-[#8A97A8]">
-                  <th className="px-6 py-3">Date</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Punch In</th>
-                  <th className="px-4 py-3">Punch Out</th>
-                  <th className="px-4 py-3">Total Worked</th>
-                  <th className="px-6 py-3">Source</th>
+                  <th className="px-6 py-3">{t("date")}</th>
+                  <th className="px-4 py-3">{t("status")}</th>
+                  <th className="px-4 py-3">{t("punchIn")}</th>
+                  <th className="px-4 py-3">{t("punchOut")}</th>
+                  <th className="px-4 py-3">{t("totalWorked")}</th>
+                  <th className="px-6 py-3">{t("source")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F0F4F8]">
@@ -611,11 +559,10 @@ export default function AttendanceClient({
                   return (
                     <tr key={r.id} className="transition hover:bg-[#F8FAFD]">
                       <td className="px-6 py-3.5 font-semibold text-[#172334]">
-                        {new Date(r.date + "T12:00:00+05:30").toLocaleDateString("en-IN", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                        })}
+                        {new Date(r.date + "T12:00:00+05:30").toLocaleDateString(
+                          prefs.language === "pa" ? "pa-IN" : prefs.language === "hi" ? "hi-IN" : "en-IN",
+                          { weekday: "short", day: "numeric", month: "short" }
+                        )}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
@@ -630,7 +577,7 @@ export default function AttendanceClient({
                                   : "bg-[#FDECEC] text-[#C52B35]"
                           )}
                         >
-                          {st === "grace" ? "Apply Leave" : st.replace("_", " ")}
+                          {st === "grace" ? t("applyLeave") : st.replace("_", " ")}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 tabular-nums text-[#172334]">
@@ -659,7 +606,7 @@ export default function AttendanceClient({
         {manualReqs.length > 0 && (
           <div className="border-t border-[#E3EAF1] bg-[#F8FAFD] px-6 py-4">
             <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#8A97A8] mb-2">
-              Pending Manual Punch Submissions
+              {t("pendingManualSubmissions")}
             </h4>
             <div className="space-y-2">
               {manualReqs.map((m) => (
@@ -670,7 +617,7 @@ export default function AttendanceClient({
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-[#1E6FE0]" />
                     <span className="font-semibold text-[#172334]">
-                      {m.type === "punch_in" ? "Punch In" : "Punch Out"} on {m.date} at {m.time}
+                      {m.type === "punch_in" ? t("punchIn") : t("punchOut")} on {m.date} at {m.time}
                     </span>
                     {m.approver_name && (
                       <span className="text-[12px] text-[#8A97A8]">→ {m.approver_name}</span>
