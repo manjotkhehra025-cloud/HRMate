@@ -5,9 +5,9 @@ import { MapPin, CalendarDays, Search, Users, CheckCircle2, Clock } from "lucide
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { Spinner } from "@/components/ui";
 import { classNames, formatDate, formatTime } from "@/lib/utils";
-import { WEEKDAYS, departmentScope, weeklyOffLabel, DEPARTMENTS } from "@/lib/staff";
+import { WEEKDAYS, departmentScope, DEPARTMENTS } from "@/lib/staff";
 import { usePrefs } from "@/components/PrefsProvider";
-import { translateLeaveName } from "@/lib/i18n";
+import { translateLeaveName, translateWeekday } from "@/lib/i18n";
 
 interface Member {
   id: string;
@@ -262,13 +262,13 @@ export default function TeamClient({
                       >
                         {WEEKDAYS.map((d) => (
                           <option key={d.value} value={d.value}>
-                            {t("offDay")}: {d.label}
+                            {t("offDay")}: {translateWeekday(prefs.language, d.value)}
                           </option>
                         ))}
                       </select>
                     ) : (
                       <span className="rounded-full bg-[#F4F7FB] px-2.5 py-1 text-[11px] font-semibold text-[#8A97A8]">
-                        {t("offDay")}: {weeklyOffLabel(m.weekly_off)}
+                        {t("offDay")}: {translateWeekday(prefs.language, m.weekly_off ?? 6)}
                       </span>
                     )}
                   </div>

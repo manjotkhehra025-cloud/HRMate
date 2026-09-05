@@ -315,7 +315,12 @@ export default function AttendanceClient({
 
           {/* Weekday Labels */}
           <div className="grid grid-cols-7 text-center text-[11.5px] font-bold uppercase tracking-wider text-[#8A97A8] border-b border-[#F0F4F8] pb-2">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
+            {(prefs.language === "pa"
+              ? ["ਐਤ", "ਸੋਮ", "ਮੰਗਲ", "ਬੁੱਧ", "ਵੀਰ", "ਸ਼ੁੱਕਰ", "ਸ਼ਨੀ"]
+              : prefs.language === "hi"
+              ? ["रवि", "सोम", "मंगल", "बुध", "गुरु", "शुक्र", "शनि"]
+              : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            ).map((d, i) => (
               <div key={i} className="py-1">
                 {d}
               </div>

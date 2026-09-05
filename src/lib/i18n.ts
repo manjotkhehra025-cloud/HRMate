@@ -642,7 +642,7 @@ const hi: Record<keyof typeof en, string> = {
   goodAfternoon: "शुभ दोपहर",
   goodEvening: "शुभ संध्या",
   welcomeBack: "स्वागत है",
-  welcomeSub: "जी.ਡੀ. फूड्स मैन्युफैक्चरिंग (इंडिया) प्राइवेट लिमिटेड पोर्टल",
+  welcomeSub: "जी.डी. फूड्स मैन्युफैक्चरिंग (इंडिया) प्राइवेट लिमिटेड पोर्टल में आपका स्वागत है",
   geofenceVerified: "जियोफेंस सत्यापित",
   shiftCompleted: "शिफ्ट पूरी हुई",
   liveShiftProgress: "लाइव शिफ्ट प्रगति",
@@ -679,7 +679,7 @@ const hi: Record<keyof typeof en, string> = {
   leaveBalance: "अवशेष छुट्टियां",
   teamWorking: "कार्यरत टीम",
   upcomingHoliday: "आगामी अवकाश",
-  myAttendanceScore: "मेरी उपस्थिति स्कोर",
+  myAttendanceScore: "मेरी उपस्थिति",
   recentActivity: "हालिया गतिविधि",
   viewAll: "सभी देखें",
   applyLeave: "छुट्टी आवेदन",
@@ -689,8 +689,8 @@ const hi: Record<keyof typeof en, string> = {
   monthlyScore: "मासिक स्कोर: उत्कृष्ट ★",
   nextMonth: "अगले महीने",
   soon: "शीघ्र",
-  punchedInMsg: "पर पंच इन किया",
-  punchedOutMsg: "पर पंच आउट किया",
+  punchedInMsg: "बजे पंच इन किया",
+  punchedOutMsg: "बजे पंच आउट किया",
 
   // Attendance & Logs
   attendanceLogsTitle: "उपस्थिति और रिकॉर्ड",
@@ -935,4 +935,18 @@ export function translateTimeAgo(lang: Lang, ts: number): string {
     month: "short",
     timeZone: "Asia/Kolkata",
   });
+}
+
+export function translateWeekday(lang: Lang, weekdayValue: number): string {
+  const map: Record<number, { en: string; pa: string; hi: string }> = {
+    0: { en: "Sunday", pa: "ਐਤਵਾਰ", hi: "रविवार" },
+    1: { en: "Monday", pa: "ਸੋਮਵਾਰ", hi: "सोमवार" },
+    2: { en: "Tuesday", pa: "ਮੰਗਲਵਾਰ", hi: "मंगलवार" },
+    3: { en: "Wednesday", pa: "ਬੁੱਧਵਾਰ", hi: "बुधवार" },
+    4: { en: "Thursday", pa: "ਵੀਰਵਾਰ", hi: "गुरुवार" },
+    5: { en: "Friday", pa: "ਸ਼ੁੱਕਰਵਾਰ", hi: "शुक्रवार" },
+    6: { en: "Saturday", pa: "ਸ਼ਨੀਵਾਰ", hi: "शनिवार" },
+  };
+  const val = weekdayValue >= 0 && weekdayValue <= 6 ? weekdayValue : 6;
+  return map[val]?.[lang] || map[val]?.en || "Saturday";
 }
