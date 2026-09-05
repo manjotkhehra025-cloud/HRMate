@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from "react";
+=======
+import { useState, useEffect, useRef, useCallback } from "react";
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {
@@ -20,6 +24,10 @@ import {
   X,
   Zap,
   ShieldCheck,
+<<<<<<< HEAD
+=======
+  Smartphone,
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
 } from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
@@ -37,7 +45,6 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const [record, setRecord] = useState(today);
   const [punching, setPunching] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "locating" | "outside" | "error">("idle");
-  const [slowGps, setSlowGps] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [currentTime, setCurrentTime] = useState("");
@@ -47,8 +54,16 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const [biometricVerified, setBiometricVerified] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+<<<<<<< HEAD
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+=======
+  const [cameraError, setCameraError] = useState("");
+  
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
 
   // Swipe slider state
   const [sliderPos, setSliderPos] = useState(0);
@@ -100,7 +115,13 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
 
   const punchedIn = record?.punch_in_at && !record?.punch_out_at;
   const punchedOut = record?.punch_in_at && record?.punch_out_at;
-  const gpsOk = record?.punch_in_lat != null;
+
+  // Format Elapsed Hours & Minutes
+  const hrs = Math.floor(elapsedSec / 3600);
+  const mins = Math.floor((elapsedSec % 3600) / 60);
+  const secs = elapsedSec % 60;
+  const targetShiftSec = 8 * 3600; // 8 hours standard
+  const shiftPct = Math.min(100, Math.round((elapsedSec / targetShiftSec) * 100));
 
   // Format Elapsed Hours & Minutes (e.g. 04h 32m 15s)
   const hrs = Math.floor(elapsedSec / 3600);
@@ -118,12 +139,13 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => reject(new Error("Location permission denied. Enable GPS to punch.")),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
       );
     });
   }
 
   // Camera Management
+<<<<<<< HEAD
   async function startCamera() {
     setCapturedPhoto(null);
     try {
@@ -141,11 +163,65 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   }
 
   function stopCamera() {
+=======
+  const startCamera = async () => {
+    setCapturedPhoto(null);
+    setCameraError("");
+    try {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false,
+        });
+      } catch (err1) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+      }
+      
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      }
+    } catch (e: any) {
+      console.error("Camera access error:", e);
+      setCameraError("Live stream unavailable. Use the Native Camera button below to take a selfie.");
+    }
+  };
+
+  const stopCamera = useCallback(() => {
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
     if (cameraStream) {
       cameraStream.getTracks().forEach((t) => t.stop());
       setCameraStream(null);
     }
+<<<<<<< HEAD
   }
+=======
+  }, [cameraStream]);
+
+  // Video Ref callback to attach stream instantly upon DOM mount
+  const setVideoElement = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node && cameraStream) {
+        node.srcObject = cameraStream;
+        node.play().catch((err) => console.log("Video play error:", err));
+      }
+    },
+    [cameraStream]
+  );
+
+  useEffect(() => {
+    if (flowStep === "selfie_camera" && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [flowStep, cameraStream]);
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
 
   function closeAllModals() {
     stopCamera();
@@ -153,6 +229,10 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     setCapturedPhoto(null);
     setBiometricVerified(false);
     setSliderPos(0);
+<<<<<<< HEAD
+=======
+    setCameraError("");
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
   }
 
   // Final Execution of Punch (with GPS + optional selfie)
@@ -201,6 +281,26 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     setMessage("");
     setFlowStep("biometric_prompt");
 
+<<<<<<< HEAD
+=======
+    // Check if Native Android App Biometrics bridge is present
+    if (typeof window !== "undefined" && (window as any).AndroidApp?.authenticateBiometrics) {
+      (window as any).onNativeBiometricResult = (success: boolean) => {
+        if (success) {
+          setBiometricVerified(true);
+        }
+        // Proceed to selfie step
+        setTimeout(() => {
+          setFlowStep("selfie_camera");
+          startCamera();
+        }, 300);
+      };
+      (window as any).AndroidApp.authenticateBiometrics();
+      return;
+    }
+
+    // Otherwise WebAuthn browser passkey
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
     try {
       const optsRes = await fetch("/api/auth/passkey/login-options", { method: "POST" });
       if (optsRes.ok) {
@@ -216,11 +316,17 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
         }
       }
     } catch (err) {
+<<<<<<< HEAD
       // Biometric passkey prompt completed or bypassed; proceed to selfie step
       console.log("Proceeding to selfie step:", err);
     }
 
     // Step 2: Open Selfie Camera
+=======
+      console.log("Proceeding to selfie step:", err);
+    }
+
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
     setTimeout(() => {
       setFlowStep("selfie_camera");
       startCamera();
@@ -235,12 +341,40 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
     if (ctx) {
+<<<<<<< HEAD
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       setCapturedPhoto(dataUrl);
     }
   }
 
+=======
+      // Mirror image horizontally for natural selfie look
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      setCapturedPhoto(dataUrl);
+      stopCamera();
+    }
+  }
+
+  // Handle native file input capture
+  const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setCapturedPhoto(ev.target.result as string);
+          stopCamera();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
   // Swipe slider touch handlers
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (punchedOut || punching) return;
@@ -518,29 +652,76 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               </button>
             </div>
 
+<<<<<<< HEAD
             {/* Camera Viewfinder with Face Oval Outline */}
             <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black">
+=======
+            {/* Hidden canvas & native camera input */}
+            <canvas ref={canvasRef} className="hidden" />
+            <input
+              ref={nativeFileInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              className="hidden"
+              onChange={handleNativeFileCapture}
+            />
+
+            {/* Camera Viewfinder with Face Oval Outline */}
+            <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black border border-white/10">
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
               {capturedPhoto ? (
                 <img src={capturedPhoto} alt="Captured Selfie" className="h-full w-full object-cover" />
               ) : (
                 <video
+<<<<<<< HEAD
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
+=======
+                  ref={setVideoElement}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{ transform: "scaleX(-1)" }}
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
                   className="h-full w-full object-cover"
                 />
               )}
 
               {/* Glowing Face Oval Frame */}
+<<<<<<< HEAD
               {!capturedPhoto && (
+=======
+              {!capturedPhoto && !cameraError && (
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="h-44 w-36 rounded-[50%] border-2 border-dashed border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse" />
                 </div>
               )}
 
+<<<<<<< HEAD
               {/* Bottom Live Badge */}
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur-md text-[11px] font-semibold text-emerald-300">
+=======
+              {cameraError && !capturedPhoto && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-slate-900/90">
+                  <Smartphone className="h-10 w-10 text-emerald-400 mb-2" />
+                  <p className="text-[13px] text-slate-200">{cameraError}</p>
+                  <button
+                    type="button"
+                    onClick={() => nativeFileInputRef.current?.click()}
+                    className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-md"
+                  >
+                    <Camera className="h-4 w-4" /> Open Phone Camera
+                  </button>
+                </div>
+              )}
+
+              {/* Bottom Live Badge */}
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-xl bg-black/70 px-3 py-1.5 backdrop-blur-md text-[11px] font-semibold text-emerald-300">
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
                 <span className="flex items-center gap-1">
                   <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
                   {factory.name} (GPS Verified)
@@ -549,6 +730,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               </div>
             </div>
 
+<<<<<<< HEAD
             <canvas ref={canvasRef} className="hidden" />
 
             {/* Modal Actions */}
@@ -558,6 +740,18 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                   <button
                     type="button"
                     onClick={() => setCapturedPhoto(null)}
+=======
+            {/* Modal Actions */}
+            <div className="mt-4 flex flex-col gap-2.5">
+              {capturedPhoto ? (
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCapturedPhoto(null);
+                      startCamera();
+                    }}
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 py-3 text-[13px] font-bold text-slate-300 hover:bg-white/15"
                   >
                     <RefreshCw className="h-4 w-4" /> Retake
@@ -571,6 +765,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     {punching ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                     Confirm Punch In
                   </button>
+<<<<<<< HEAD
                 </>
               ) : (
                 <button
@@ -580,6 +775,28 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                 >
                   <Camera className="h-5 w-5" /> Capture Selfie & Confirm
                 </button>
+=======
+                </div>
+              ) : (
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={captureSelfiePhoto}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 text-[13.5px] font-bold text-white shadow-lg active:scale-98"
+                  >
+                    <Camera className="h-4 w-4" /> Snap & Confirm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nativeFileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/15 px-3.5 py-3 text-[12.5px] font-semibold text-slate-200 border border-white/10"
+                    title="Open device camera directly"
+                  >
+                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                    Device Cam
+                  </button>
+                </div>
+>>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
               )}
             </div>
           </div>

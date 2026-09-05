@@ -36,7 +36,6 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
     private ProgressBar progressBar;
-    private SwipeRefreshLayout swipeRefreshLayout;
     private LinearLayout offlineLayout;
     private Button btnRetry;
 
@@ -71,15 +69,11 @@ public class MainActivity extends AppCompatActivity {
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
-        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         offlineLayout = findViewById(R.id.offlineLayout);
         btnRetry = findViewById(R.id.btnRetry);
 
         checkAndRequestPermissions();
         configureWebView();
-
-        swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.primary));
-        swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
 
         btnRetry.setOnClickListener(v -> {
             offlineLayout.setVisibility(View.GONE);
@@ -104,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             permissionsNeeded.add(Manifest.permission.CAMERA);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -274,14 +271,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onPageFinished(WebView view, String url) {
             progressBar.setVisibility(View.GONE);
-            swipeRefreshLayout.setRefreshing(false);
         }
 
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
             if (request.isForMainFrame()) {
                 progressBar.setVisibility(View.GONE);
-                swipeRefreshLayout.setRefreshing(false);
                 webView.setVisibility(View.GONE);
                 offlineLayout.setVisibility(View.VISIBLE);
             }
