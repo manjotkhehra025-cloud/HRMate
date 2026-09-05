@@ -236,7 +236,11 @@ export default function LoginForm() {
           </div>
           <h1 className="mt-3 text-[22px] font-black tracking-tight text-[#0F172A]">HRMate</h1>
           <p className="text-[12px] font-bold uppercase tracking-wider text-[#059669]">
+<<<<<<< HEAD
             GD Foods Moga · Workspace
+=======
+            GD Foods Mfg. (I) Pvt. Ltd. · Workforce Portal
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           </p>
         </div>
 

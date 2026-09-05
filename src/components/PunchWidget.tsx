@@ -1,33 +1,49 @@
 "use client";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from "react";
 =======
 import { useState, useEffect, useRef, useCallback } from "react";
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+import { useState, useEffect, useRef, useCallback } from "react";
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {
+<<<<<<< HEAD
   MapPin,
   Fingerprint,
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   Camera,
   Navigation,
   AlertTriangle,
   CheckCircle2,
+<<<<<<< HEAD
   CalendarDays,
   Clock,
   Building2,
   Sparkles,
+=======
+  Clock,
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   Radio,
   ChevronRight,
   RefreshCw,
   X,
+<<<<<<< HEAD
   Zap,
   ShieldCheck,
 <<<<<<< HEAD
 =======
   Smartphone,
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+  Smartphone,
+  Sparkles,
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
 } from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
@@ -50,6 +66,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const [currentTime, setCurrentTime] = useState("");
 
   // Flow & Modal State
+<<<<<<< HEAD
   const [flowStep, setFlowStep] = useState<"idle" | "biometric_prompt" | "selfie_camera">("idle");
   const [biometricVerified, setBiometricVerified] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -64,6 +81,17 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+  const [cameraModalOpen, setCameraModalOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState("");
+  const [cameraLoading, setCameraLoading] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
 
   // Swipe slider state
   const [sliderPos, setSliderPos] = useState(0);
@@ -122,6 +150,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const secs = elapsedSec % 60;
   const targetShiftSec = 8 * 3600; // 8 hours standard
   const shiftPct = Math.min(100, Math.round((elapsedSec / targetShiftSec) * 100));
+<<<<<<< HEAD
 
   // Format Elapsed Hours & Minutes (e.g. 04h 32m 15s)
   const hrs = Math.floor(elapsedSec / 3600);
@@ -129,6 +158,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const secs = elapsedSec % 60;
   const targetShiftSec = 8 * 3600; // 8 hours standard
   const shiftPct = Math.min(100, Math.round((elapsedSec / targetShiftSec) * 100));
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
 
   function getLocation(): Promise<{ lat: number; lng: number }> {
     return new Promise((resolve, reject) => {
@@ -138,12 +169,17 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+<<<<<<< HEAD
         () => reject(new Error("Location permission denied. Enable GPS to punch.")),
+=======
+        () => reject(new Error("Location permission denied. Please enable GPS.")),
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
         { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
       );
     });
   }
 
+<<<<<<< HEAD
   // Camera Management
 <<<<<<< HEAD
   async function startCamera() {
@@ -189,10 +225,57 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     } catch (e: any) {
       console.error("Camera access error:", e);
       setCameraError("Live stream unavailable. Use the Native Camera button below to take a selfie.");
+=======
+  // Camera Management - Clean Single Stream Initialization
+  const openSelfieCamera = async () => {
+    setCapturedPhoto(null);
+    setCameraError("");
+    setCameraModalOpen(true);
+    setCameraLoading(true);
+
+    try {
+      // Direct front-camera acquisition
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 640 },
+        },
+        audio: false,
+      });
+
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.log("Play failed:", playErr);
+        }
+      }
+    } catch (e: any) {
+      console.warn("Front camera constraint failed, trying basic video:", e);
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+        setCameraStream(fallbackStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          await videoRef.current.play();
+        }
+      } catch (fallbackErr: any) {
+        setCameraError("Live camera unavailable. Tap 'Open Phone Camera' below to take a photo.");
+      }
+    } finally {
+      setCameraLoading(false);
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
     }
   };
 
   const stopCamera = useCallback(() => {
+<<<<<<< HEAD
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
     if (cameraStream) {
       cameraStream.getTracks().forEach((t) => t.stop());
@@ -201,6 +284,12 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
 <<<<<<< HEAD
   }
 =======
+=======
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   }, [cameraStream]);
 
   // Video Ref callback to attach stream instantly upon DOM mount
@@ -209,12 +298,17 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       videoRef.current = node;
       if (node && cameraStream) {
         node.srcObject = cameraStream;
+<<<<<<< HEAD
         node.play().catch((err) => console.log("Video play error:", err));
+=======
+        node.play().catch(() => {});
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       }
     },
     [cameraStream]
   );
 
+<<<<<<< HEAD
   useEffect(() => {
     if (flowStep === "selfie_camera" && videoRef.current && cameraStream) {
       videoRef.current.srcObject = cameraStream;
@@ -236,11 +330,23 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   }
 
   // Final Execution of Punch (with GPS + optional selfie)
+=======
+  function closeCameraModal() {
+    stopCamera();
+    setCameraModalOpen(false);
+    setCapturedPhoto(null);
+    setSliderPos(0);
+    setCameraError("");
+  }
+
+  // Final Execution of Punch (with GPS + Selfie)
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   async function executeFinalPunch(photoBase64?: string) {
     setPunching(true);
     setError("");
     setMessage("");
     setGeoState("locating");
+
     try {
       const pos = await getLocation();
       const res = await fetch("/api/attendance", {
@@ -256,25 +362,30 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       const data = await res.json();
       if (!res.ok) {
         setGeoState("outside");
-        setError(data.error || "Failed to punch");
+        setError(data.error || "Failed to record punch");
         return;
       }
       setRecord(data.record);
       setGeoState("idle");
       const action = data.record.punch_out_at ? "Punched out" : "Punched in";
-      setMessage(`${action} at ${formatTime(Date.now())} ✓`);
+      setMessage(`${action} successfully at ${formatTime(Date.now())} ✓`);
       window.dispatchEvent(new Event(ATTENDANCE_EVENT));
       router.refresh();
+<<<<<<< HEAD
       closeAllModals();
+=======
+      closeCameraModal();
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
     } catch (e: any) {
       setGeoState("error");
-      setError(e.message || "Failed to get location");
+      setError(e.message || "Failed to acquire GPS location");
     } finally {
       setPunching(false);
       setSliderPos(0);
     }
   }
 
+<<<<<<< HEAD
   // Step 1: Trigger Biometrics Verification, then proceed to Selfie
   async function handleSwipeInitiatedFlow() {
     setError("");
@@ -333,6 +444,8 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     }, 400);
   }
 
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   function captureSelfiePhoto() {
     if (!videoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -342,6 +455,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     const ctx = canvas.getContext("2d");
     if (ctx) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       setCapturedPhoto(dataUrl);
@@ -350,6 +464,9 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
 
 =======
       // Mirror image horizontally for natural selfie look
+=======
+      // Mirror image horizontally for natural selfie orientation
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -359,7 +476,11 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     }
   }
 
+<<<<<<< HEAD
   // Handle native file input capture
+=======
+  // Native phone camera input fallback
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -374,7 +495,10 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     }
   };
 
+<<<<<<< HEAD
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
   // Swipe slider touch handlers
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (punchedOut || punching) return;
@@ -386,7 +510,11 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     setSliderPos(pos);
     if (pos >= maxX * 0.9) {
       setSliderPos(maxX);
+<<<<<<< HEAD
       handleSwipeInitiatedFlow();
+=======
+      openSelfieCamera();
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
     }
   };
 
@@ -403,6 +531,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     return null;
   }
 
+<<<<<<< HEAD
   return (
     <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-5 text-white shadow-2xl sm:p-7 border border-white/10">
       {/* Background glow effects */}
@@ -410,11 +539,26 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       <div className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-[#3B82F6]/15 blur-3xl" />
 
       {/* Top Location & Time Pill Header */}
+=======
+  const facilityLabel = factory.name || "GD Foods Factory";
+
+  return (
+    <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-5 text-white shadow-2xl sm:p-7 border border-white/10">
+      {/* Background ambient glow */}
+      <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#10B981]/15 blur-3xl" />
+      <div className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-[#3B82F6]/15 blur-3xl" />
+
+      {/* Top Facility & Time Header */}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-[11.5px] font-bold text-emerald-400 backdrop-blur-md">
             <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
+<<<<<<< HEAD
             GD Foods Factory · Inside Range
+=======
+            {facilityLabel} · Geofence Verified
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           </span>
         </div>
 
@@ -463,7 +607,11 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             />
           </svg>
 
+<<<<<<< HEAD
           {/* Center Digital Live Clock display */}
+=======
+          {/* Center Display */}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             {punchedIn ? (
               <>
@@ -485,14 +633,20 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               </>
             ) : (
               <>
+<<<<<<< HEAD
                 <Fingerprint className="h-8 w-8 text-emerald-400 animate-pulse" />
                 <span className="mt-1 text-[18px] font-black text-white">Ready to Start</span>
+=======
+                <Camera className="h-8 w-8 text-emerald-400 animate-pulse" />
+                <span className="mt-1 text-[18px] font-black text-white">Selfie Punch In</span>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 <span className="text-[11px] text-slate-400">General Shift (9h)</span>
               </>
             )}
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* 3 Action Buttons: Selfie Punch, Biometrics, Quick Punch */}
         {!punchedOut && (
           <div className="flex flex-wrap items-center justify-center gap-2.5 mt-1">
@@ -530,12 +684,29 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             >
               <Zap className="h-4 w-4 text-sky-400" />
               <span>1-Tap GPS</span>
+=======
+        {/* 1 Primary Action Button: Selfie Camera Punch */}
+        {!punchedOut && (
+          <div className="flex items-center justify-center mt-1">
+            <button
+              type="button"
+              onClick={openSelfieCamera}
+              disabled={punching}
+              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 px-6 py-3 text-[14px] font-extrabold text-white shadow-[0_4px_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-400/30 transition active:scale-95 hover:opacity-95"
+            >
+              <Camera className="h-5 w-5 text-white" />
+              <span>{punchedIn ? "📸 Capture Selfie Punch Out" : "📸 Capture Selfie Punch In"}</span>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             </button>
           </div>
         )}
       </div>
 
+<<<<<<< HEAD
       {/* Swipe to Punch Slider (Magnetic Slide Control) */}
+=======
+      {/* Swipe to Punch Slider */}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
       {!punchedOut && (
         <div className="relative z-10 mt-5">
           <div
@@ -544,18 +715,29 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             onTouchEnd={handleTouchEnd}
             className="relative flex h-14 w-full items-center overflow-hidden rounded-full bg-[#0F172A] border border-emerald-500/30 p-1 shadow-inner"
           >
+<<<<<<< HEAD
             {/* Track background text */}
             <div className="absolute inset-0 flex items-center justify-center text-[12.5px] font-bold uppercase tracking-wider text-emerald-400/70">
+=======
+            <div className="absolute inset-0 flex items-center justify-center text-[12.5px] font-bold uppercase tracking-wider text-emerald-400/80">
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
               {punching ? (
                 <span className="flex items-center gap-2">
                   <Spinner className="h-4 w-4 text-emerald-400" /> Recording Punch...
                 </span>
               ) : (
+<<<<<<< HEAD
                 "Slide to Verify Biometrics & Selfie →"
               )}
             </div>
 
             {/* Draggable knob */}
+=======
+                "Slide to Open Selfie Camera →"
+              )}
+            </div>
+
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             <div
               style={{ transform: `translateX(${sliderPos}px)` }}
               className="relative z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr from-[#059669] via-[#10B981] to-[#34D399] text-white shadow-[0_0_16px_rgba(16,185,129,0.5)] transition-transform duration-75"
@@ -566,11 +748,19 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
         </div>
       )}
 
+<<<<<<< HEAD
       {/* Feedback Alerts */}
       {geoState === "locating" && (
         <div className="relative z-10 mt-4 flex items-center gap-2 rounded-2xl bg-sky-500/20 border border-sky-400/30 p-3 text-[12.5px] font-semibold text-sky-200">
           <Navigation className="h-4 w-4 animate-spin text-sky-300" />
           <span>Acquiring precision GPS fix...</span>
+=======
+      {/* Alerts */}
+      {geoState === "locating" && (
+        <div className="relative z-10 mt-4 flex items-center gap-2 rounded-2xl bg-sky-500/20 border border-sky-400/30 p-3 text-[12.5px] font-semibold text-sky-200">
+          <Navigation className="h-4 w-4 animate-spin text-sky-300" />
+          <span>Verifying factory GPS position...</span>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
         </div>
       )}
 
@@ -582,7 +772,11 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
           </div>
           <button
             type="button"
+<<<<<<< HEAD
             onClick={() => executeFinalPunch()}
+=======
+            onClick={openSelfieCamera}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             className="shrink-0 rounded-lg bg-rose-500/40 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-500"
           >
             Retry
@@ -597,6 +791,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
         </div>
       )}
 
+<<<<<<< HEAD
       {/* 🔐 Step 1: Biometric Verification Modal */}
       {flowStep === "biometric_prompt" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
@@ -635,17 +830,32 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       {flowStep === "selfie_camera" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
           <div className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-[#0F172A] border border-emerald-500/30 p-5 text-white shadow-2xl">
+=======
+      {/* 📸 Clean Selfie Camera Verification Modal */}
+      {cameraModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-[#0F172A] border border-emerald-500/30 p-5 text-white shadow-2xl">
+            {/* Header */}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <Camera className="h-5 w-5 text-emerald-400" />
                 <div>
                   <h3 className="text-[16px] font-bold text-white">Selfie Face Verification</h3>
+<<<<<<< HEAD
                   <p className="text-[11px] text-emerald-400">Step 2: Align face in frame</p>
+=======
+                  <p className="text-[11px] text-emerald-400">Align face inside the oval</p>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 </div>
               </div>
               <button
                 type="button"
+<<<<<<< HEAD
                 onClick={closeAllModals}
+=======
+                onClick={closeCameraModal}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 className="rounded-full bg-white/10 p-1.5 text-slate-400 hover:text-white"
               >
                 <X className="h-5 w-5" />
@@ -653,9 +863,12 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             {/* Camera Viewfinder with Face Oval Outline */}
             <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black">
 =======
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             {/* Hidden canvas & native camera input */}
             <canvas ref={canvasRef} className="hidden" />
             <input
@@ -667,30 +880,46 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               onChange={handleNativeFileCapture}
             />
 
+<<<<<<< HEAD
             {/* Camera Viewfinder with Face Oval Outline */}
             <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black border border-white/10">
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+            {/* Camera Viewfinder */}
+            <div className="relative mt-4 aspect-square w-full overflow-hidden rounded-2xl bg-black border border-white/10">
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
               {capturedPhoto ? (
                 <img src={capturedPhoto} alt="Captured Selfie" className="h-full w-full object-cover" />
               ) : (
                 <video
+<<<<<<< HEAD
 <<<<<<< HEAD
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
 =======
+=======
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                   ref={setVideoElement}
                   autoPlay
                   playsInline
                   muted
+<<<<<<< HEAD
                   style={{ transform: "scaleX(-1)" }}
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
                   className="h-full w-full object-cover"
+=======
+                  controls={false}
+                  preload="auto"
+                  style={{ transform: "scaleX(-1)", objectFit: "cover" }}
+                  className="h-full w-full object-cover pointer-events-none"
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 />
               )}
 
               {/* Glowing Face Oval Frame */}
+<<<<<<< HEAD
 <<<<<<< HEAD
               {!capturedPhoto && (
 =======
@@ -705,6 +934,15 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               {/* Bottom Live Badge */}
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur-md text-[11px] font-semibold text-emerald-300">
 =======
+=======
+              {!capturedPhoto && !cameraError && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="h-52 w-40 rounded-[50%] border-2 border-dashed border-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.5)] animate-pulse" />
+                </div>
+              )}
+
+              {/* Fallback Camera Screen if browser stream error */}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
               {cameraError && !capturedPhoto && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-slate-900/90">
                   <Smartphone className="h-10 w-10 text-emerald-400 mb-2" />
@@ -712,13 +950,18 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                   <button
                     type="button"
                     onClick={() => nativeFileInputRef.current?.click()}
+<<<<<<< HEAD
                     className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-md"
+=======
+                    className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-[13px] font-bold text-white shadow-md active:scale-95"
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                   >
                     <Camera className="h-4 w-4" /> Open Phone Camera
                   </button>
                 </div>
               )}
 
+<<<<<<< HEAD
               {/* Bottom Live Badge */}
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-xl bg-black/70 px-3 py-1.5 backdrop-blur-md text-[11px] font-semibold text-emerald-300">
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
@@ -741,6 +984,18 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     type="button"
                     onClick={() => setCapturedPhoto(null)}
 =======
+=======
+              {/* Bottom Live Watermark Badge */}
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between rounded-xl bg-black/70 px-3 py-1.5 backdrop-blur-md text-[11px] font-semibold text-emerald-300">
+                <span className="flex items-center gap-1 truncate max-w-[220px]">
+                  <Radio className="h-3 w-3 text-emerald-400 animate-pulse shrink-0" />
+                  <span className="truncate">{facilityLabel}</span>
+                </span>
+                <span className="shrink-0">{currentTime}</span>
+              </div>
+            </div>
+
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
             {/* Modal Actions */}
             <div className="mt-4 flex flex-col gap-2.5">
               {capturedPhoto ? (
@@ -749,9 +1004,14 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     type="button"
                     onClick={() => {
                       setCapturedPhoto(null);
+<<<<<<< HEAD
                       startCamera();
                     }}
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+                      openSelfieCamera();
+                    }}
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 py-3 text-[13px] font-bold text-slate-300 hover:bg-white/15"
                   >
                     <RefreshCw className="h-4 w-4" /> Retake
@@ -763,6 +1023,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 text-[13px] font-bold text-white shadow-lg active:scale-98"
                   >
                     {punching ? <Spinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+<<<<<<< HEAD
                     Confirm Punch In
                   </button>
 <<<<<<< HEAD
@@ -776,15 +1037,25 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                   <Camera className="h-5 w-5" /> Capture Selfie & Confirm
                 </button>
 =======
+=======
+                    Confirm Punch
+                  </button>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                 </div>
               ) : (
                 <div className="flex gap-2.5">
                   <button
                     type="button"
                     onClick={captureSelfiePhoto}
+<<<<<<< HEAD
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3 text-[13.5px] font-bold text-white shadow-lg active:scale-98"
                   >
                     <Camera className="h-4 w-4" /> Snap & Confirm
+=======
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3.5 text-[14px] font-bold text-white shadow-lg active:scale-98"
+                  >
+                    <Camera className="h-5 w-5" /> Capture Selfie &amp; Confirm
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
                   </button>
                   <button
                     type="button"
@@ -793,10 +1064,15 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     title="Open device camera directly"
                   >
                     <Smartphone className="h-4 w-4 text-emerald-400" />
+<<<<<<< HEAD
                     Device Cam
                   </button>
                 </div>
 >>>>>>> 1de2f41 (fix(app): disable pull-to-refresh spinner on scroll, fix live selfie video preview, and restore full responsive desktop portal)
+=======
+                  </button>
+                </div>
+>>>>>>> 0e35bc9 (fix(punch): dedicated single-step selfie camera punch, remove blinking/play overlay, fix dynamic factory address)
               )}
             </div>
           </div>

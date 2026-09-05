@@ -139,7 +139,7 @@ export default function DashboardView({
             <span className="text-2xl animate-bounce">👋</span>
           </div>
           <p className="mt-0.5 text-[13px] font-medium text-[#64748B]">
-            Welcome to HRMate · GD Foods Moga
+            Welcome to HRMate · {factory.name || "GD Foods Mfg. (I) Pvt. Ltd."}
           </p>
         </div>
 
@@ -153,7 +153,7 @@ export default function DashboardView({
         )}
       </div>
 
-      {/* Hero Shift Progress Card with Biometric, Selfie & Swipe Punch */}
+      {/* Hero Shift Progress Card with Selfie Punch */}
       <PunchWidget canPunch={canPunch} today={today} factory={factory} />
 
       {/* 4 Bento Luxury Cards */}
@@ -208,7 +208,7 @@ export default function DashboardView({
           </div>
           {/* Avatar Pile */}
           <div className="mt-2 flex -space-x-1.5 overflow-hidden">
-            {people.slice(0, 4).map((p, idx) => (
+            {people.slice(0, 4).map((p) => (
               <span
                 key={p.id}
                 className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[9px] font-extrabold text-[#0F172A] ring-2 ring-white"
