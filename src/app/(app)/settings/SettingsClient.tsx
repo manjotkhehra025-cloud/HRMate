@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
 import {
-  ChevronRight,
   Fingerprint,
   Languages,
   SunMoon,
@@ -20,8 +19,6 @@ import {
   Save,
   CheckCircle2,
   Sliders,
-  Sparkles,
-  Info,
 } from "lucide-react";
 import GeofenceMap from "@/components/GeofenceMap";
 import { Spinner } from "@/components/ui";
@@ -29,6 +26,7 @@ import { timeAgo } from "@/lib/utils";
 import { parseCoordsFromText } from "@/lib/maps";
 import { usePrefs } from "@/components/PrefsProvider";
 import { classNames } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 const BIOMETRIC_DEVICE_KEY = "hrmate_biometric_device_registered";
 
@@ -76,7 +74,8 @@ export default function SettingsClient({
   vapidPublicKey: string;
   factoryName: string;
 }) {
-  const { prefs, t, savePrefs } = usePrefs();
+  const { prefs, savePrefs } = usePrefs();
+  const lang = prefs.language || "en";
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
   const [canSettings, setCanSettings] = useState(initialCanSettings);
@@ -94,7 +93,6 @@ export default function SettingsClient({
   const [toast, setToast] = useState("");
   const [err, setErr] = useState("");
   const [isNativeApp, setIsNativeApp] = useState(false);
-  const [nativeBiometricActive, setNativeBiometricActive] = useState(false);
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [mapsLink, setMapsLink] = useState("");
@@ -156,15 +154,9 @@ export default function SettingsClient({
   }
 
   useEffect(() => {
-    // Check if running in Android Native App container
     if (typeof window !== "undefined") {
       const isNative = !!(window as any).AndroidApp?.isNativeApp || navigator.userAgent.includes("HRMateNativeApp");
       setIsNativeApp(isNative);
-      
-      const localBio = localStorage.getItem(BIOMETRIC_DEVICE_KEY);
-      if (localBio || isNative) {
-        setNativeBiometricActive(true);
-      }
     }
 
     fetch("/api/profile", { cache: "no-store" })
@@ -187,12 +179,11 @@ export default function SettingsClient({
     setPushEnabled(prefs.notify_enabled !== 0);
   }, [prefs.notify_enabled]);
 
-  // Unified Biometrics Activation (Native Android Fingerprint Scan or Web Passkey)
+  // Unified Biometrics Activation
   async function registerBiometrics() {
     setRegistering(true);
     setErr("");
 
-    // 1. If in Native Android App, prompt native hardware biometric dialog!
     if (
       typeof window !== "undefined" &&
       (window as any).AndroidApp &&
@@ -202,7 +193,6 @@ export default function SettingsClient({
         setRegistering(false);
         if (success) {
           localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
-          setNativeBiometricActive(true);
           flash("Android Fingerprint & Face ID linked successfully ✓");
         } else {
           flash(msg === "failed" ? "Biometric scan failed" : msg || "Authentication cancelled", true);
@@ -212,7 +202,6 @@ export default function SettingsClient({
       return;
     }
 
-    // 2. WebAuthn Passkey Registration
     try {
       const optsRes = await fetch("/api/auth/passkey/register-options", { method: "POST" });
       if (!optsRes.ok) throw new Error("Failed to initialize biometrics");
@@ -228,13 +217,10 @@ export default function SettingsClient({
         throw new Error(d.error || "Registration failed");
       }
       localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
-      setNativeBiometricActive(true);
       flash("Device Biometrics registered successfully ✓");
       loadPasskeys();
     } catch (e: any) {
-      // Fallback: Enable local biometric token
       localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
-      setNativeBiometricActive(true);
       flash("Device Biometrics activated for this device ✓");
     } finally {
       setRegistering(false);
@@ -251,13 +237,6 @@ export default function SettingsClient({
     flash("Biometric key removed");
   }
 
-  function unlinkLocalBiometrics() {
-    localStorage.removeItem(BIOMETRIC_DEVICE_KEY);
-    setNativeBiometricActive(false);
-    flash("Device biometrics disabled for this device");
-  }
-
-  // Toggle App Notifications
   async function togglePush() {
     const nextState = !pushEnabled;
     setPushEnabled(nextState);
@@ -267,13 +246,11 @@ export default function SettingsClient({
       if ("Notification" in window && Notification.permission !== "granted") {
         try {
           await Notification.requestPermission();
-        } catch {
-          // ignore
-        }
+        } catch {}
       }
-      flash("App Notifications enabled ✓");
+      flash(t(lang, "appNotifications") + " " + t(lang, "activeStatus"));
     } else {
-      flash("App Notifications muted");
+      flash("Notifications muted");
     }
   }
 
@@ -292,7 +269,7 @@ export default function SettingsClient({
         }),
       });
       if (!res.ok) throw new Error("Save failed");
-      flash("Factory geofence settings saved ✓");
+      flash(t(lang, "saveArea") + " ✓");
     } catch (e: any) {
       flash(e.message, true);
     } finally {
@@ -362,16 +339,16 @@ export default function SettingsClient({
 
   return (
     <div className="space-y-6">
-      {/* Top Header - Always visible on Mobile & Desktop */}
+      {/* Top Header */}
       <div className="rounded-[22px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card">
         <div className="flex items-center gap-2.5">
           <Sliders className="h-6 w-6 text-[#1E6FE0]" />
           <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-            App Settings & Preferences
+            {t(lang, "profileSettings")}
           </h1>
         </div>
         <p className="mt-1 text-[13px] sm:text-[14px] text-[#617083]">
-          Biometrics security, app notifications, language, display preferences, and factory geofencing.
+          {t(lang, "passkeysSub")}
         </p>
       </div>
 
@@ -387,7 +364,7 @@ export default function SettingsClient({
         </div>
       )}
 
-      {/* 2-Column Grid for Web */}
+      {/* 2-Column Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Security, Biometrics, Notifications, Display */}
         <div className="space-y-6 lg:col-span-6">
@@ -399,8 +376,8 @@ export default function SettingsClient({
                   <Fingerprint className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-[16px] font-bold text-[#172334]">Device Biometrics & Security</h3>
-                  <p className="text-[12px] text-[#8A97A8]">Fingerprint scan & Face Unlock for attendance & 1-touch login</p>
+                  <h3 className="text-[16px] font-bold text-[#172334]">{t(lang, "passkeys")}</h3>
+                  <p className="text-[12px] text-[#8A97A8]">{t(lang, "passkeysSub")}</p>
                 </div>
               </div>
             </div>
@@ -414,11 +391,11 @@ export default function SettingsClient({
                   </div>
                   <div>
                     <p className="text-[14px] font-bold text-[#172334]">
-                      {isNativeApp ? "Android Hardware Biometrics" : "Device Biometrics / Touch ID"}
+                      {t(lang, "activeBiometrics")}
                     </p>
                     <p className="text-[11.5px] font-medium text-emerald-700 flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                      Ready for 1-Touch Attendance & Login
+                      {t(lang, "biometricsReady")}
                     </p>
                   </div>
                 </div>
@@ -429,12 +406,12 @@ export default function SettingsClient({
                   disabled={registering}
                   className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm active:scale-95 transition"
                 >
-                  {registering ? <Spinner className="h-4 w-4" /> : "Verify Scan"}
+                  {registering ? <Spinner className="h-4 w-4" /> : t(lang, "verifyScan")}
                 </button>
               </div>
             </div>
 
-            {/* Additional Registered Devices / Keys */}
+            {/* Additional Registered Devices */}
             {passkeys.length > 0 && (
               <div className="space-y-2 pt-1">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#8A97A8]">
@@ -472,11 +449,9 @@ export default function SettingsClient({
                 <Bell className="h-5 w-5" />
               </span>
               <div>
-                <h3 className="text-[15px] font-bold text-[#172334]">App & Shift Notifications</h3>
+                <h3 className="text-[15px] font-bold text-[#172334]">{t(lang, "appNotifications")}</h3>
                 <p className="text-[12px] text-[#8A97A8]">
-                  {pushEnabled
-                    ? "Shift reminders, punch alerts, and leave approval updates are active"
-                    : "Receive instant updates about shift reminders & approvals"}
+                  {pushEnabled ? t(lang, "notificationsActive") : t(lang, "notificationsMuted")}
                 </p>
               </div>
             </div>
@@ -491,7 +466,7 @@ export default function SettingsClient({
                   : "bg-[#1E6FE0] text-white hover:bg-[#1556B8]"
               )}
             >
-              {pushEnabled ? "Active ✓" : "Enable"}
+              {pushEnabled ? t(lang, "activeStatus") : t(lang, "enableStatus")}
             </button>
           </section>
 
@@ -500,15 +475,15 @@ export default function SettingsClient({
             <div className="flex items-center gap-2.5 border-b border-[#F0F4F8] pb-3">
               <Sliders className="h-5 w-5 text-[#1E6FE0]" />
               <div>
-                <h3 className="text-[16px] font-bold text-[#172334]">Display & Interface</h3>
-                <p className="text-[12px] text-[#8A97A8]">Language, Theme, and Font Size</p>
+                <h3 className="text-[16px] font-bold text-[#172334]">{t(lang, "display")}</h3>
+                <p className="text-[12px] text-[#8A97A8]">{t(lang, "languageSub")}</p>
               </div>
             </div>
 
             {/* Language */}
             <div>
               <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
-                <Languages className="h-4 w-4 text-[#1E6FE0]" /> Interface Language
+                <Languages className="h-4 w-4 text-[#1E6FE0]" /> {t(lang, "language")}
               </label>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
@@ -536,13 +511,13 @@ export default function SettingsClient({
             {/* Theme */}
             <div className="pt-2">
               <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
-                <SunMoon className="h-4 w-4 text-[#1E6FE0]" /> Color Mode
+                <SunMoon className="h-4 w-4 text-[#1E6FE0]" /> {t(lang, "appearance")}
               </label>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { key: "system", label: "Auto (System)" },
-                  { key: "light", label: "Light Mode" },
-                  { key: "dark", label: "Dark Mode" },
+                  { key: "system", label: t(lang, "system") },
+                  { key: "light", label: t(lang, "light") },
+                  { key: "dark", label: t(lang, "dark") },
                 ].map((th) => (
                   <button
                     key={th.key}
@@ -564,13 +539,13 @@ export default function SettingsClient({
             {/* Text Size */}
             <div className="pt-2">
               <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
-                <Type className="h-4 w-4 text-[#1E6FE0]" /> Typography Scaling
+                <Type className="h-4 w-4 text-[#1E6FE0]" /> {t(lang, "textSize")}
               </label>
               <div className="grid grid-cols-3 gap-2 pt-1">
                 {[
-                  { key: "small", label: "Compact" },
-                  { key: "medium", label: "Default" },
-                  { key: "large", label: "Spacious" },
+                  { key: "small", label: t(lang, "small") },
+                  { key: "medium", label: t(lang, "medium") },
+                  { key: "large", label: t(lang, "large") },
                 ].map((s) => (
                   <button
                     key={s.key}
@@ -591,7 +566,7 @@ export default function SettingsClient({
           </section>
         </div>
 
-        {/* Right Column: Admin Tools (Factory Geofence, Shifts, Leave Balances) */}
+        {/* Right Column: Admin Tools (Factory Geofence, Shifts) */}
         {canSettings && (
           <div className="space-y-6 lg:col-span-6">
             {/* Geofence & Factory */}
@@ -599,8 +574,8 @@ export default function SettingsClient({
               <div className="flex items-center gap-2.5 border-b border-[#F0F4F8] pb-3">
                 <MapPin className="h-5 w-5 text-[#1E6FE0]" />
                 <div>
-                  <h3 className="text-[16px] font-bold text-[#172334]">Factory Geofencing & Location</h3>
-                  <p className="text-[12px] text-[#8A97A8]">Location boundaries and GPS radius for GD Foods punches</p>
+                  <h3 className="text-[16px] font-bold text-[#172334]">{t(lang, "attendanceArea")}</h3>
+                  <p className="text-[12px] text-[#8A97A8]">{t(lang, "attendanceAreaSub")}</p>
                 </div>
               </div>
 
@@ -643,7 +618,7 @@ export default function SettingsClient({
               </div>
 
               <div>
-                <label className="label">Paste Google Maps URL or Coordinates</label>
+                <label className="label">{t(lang, "pasteMaps")}</label>
                 <div className="flex gap-2">
                   <input
                     className="input flex-1"
@@ -659,10 +634,10 @@ export default function SettingsClient({
 
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F0F4F8]">
                 <button type="button" className="btn-secondary text-xs" onClick={useMyLocation}>
-                  <Navigation className="h-3.5 w-3.5 text-[#1E6FE0]" /> Use Current Device GPS
+                  <Navigation className="h-3.5 w-3.5 text-[#1E6FE0]" /> {t(lang, "useMyLocation")}
                 </button>
                 <button type="button" className="btn-primary text-xs" onClick={saveArea} disabled={savingArea}>
-                  {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} Save Geofence Settings
+                  {savingArea ? <Spinner /> : <Save className="h-3.5 w-3.5" />} {t(lang, "saveArea")}
                 </button>
               </div>
             </section>
@@ -673,8 +648,8 @@ export default function SettingsClient({
                 <div className="flex items-center gap-2.5">
                   <Clock3 className="h-5 w-5 text-[#1E6FE0]" />
                   <div>
-                    <h3 className="text-[16px] font-bold text-[#172334]">Shift Schedule Configuration</h3>
-                    <p className="text-[12px] text-[#8A97A8]">Working shifts and automatic punch assignment</p>
+                    <h3 className="text-[16px] font-bold text-[#172334]">{t(lang, "shifts")}</h3>
+                    <p className="text-[12px] text-[#8A97A8]">{t(lang, "shiftsSub")}</p>
                   </div>
                 </div>
                 {editingShift !== "new" && (
@@ -686,7 +661,7 @@ export default function SettingsClient({
                     }}
                     className="btn-primary text-[12px] py-1.5 px-3"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Add Shift
+                    <Plus className="h-3.5 w-3.5" /> {t(lang, "add")}
                   </button>
                 )}
               </div>
@@ -721,7 +696,7 @@ export default function SettingsClient({
                           setEditingShift(sh.id);
                         }}
                       >
-                        Edit
+                        {t(lang, "edit")}
                       </button>
                       <button onClick={() => deleteShift(sh.id)} className="p-1.5 text-[#8A97A8] hover:text-[#C52B35]">
                         <Trash2 className="h-4 w-4" />
@@ -758,10 +733,10 @@ export default function SettingsClient({
                     </div>
                     <div className="flex justify-end gap-2 pt-1">
                       <button className="btn-secondary text-xs" onClick={() => setEditingShift(null)}>
-                        Cancel
+                        {t(lang, "cancel")}
                       </button>
                       <button className="btn-primary text-xs" onClick={saveShift}>
-                        Save Shift
+                        {t(lang, "save")}
                       </button>
                     </div>
                   </div>

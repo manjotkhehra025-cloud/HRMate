@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -48,15 +48,27 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-}
-#scroll-root {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  color: var(--foreground);
   background: var(--background);
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+  font-feature-settings: "tnum" 1, "cv02", "cv03", "cv04";
 }
+
+/* Suppress HTML5 video native play button in Android WebView */
+video::-webkit-media-controls {
+  display: none !important;
+}
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
 html[data-text="small"] {
   font-size: 14px;
 }
@@ -67,70 +79,72 @@ html[data-text="large"] {
   font-size: 18.5px;
 }
 
+/* 🌙 HIGH CONTRAST DARK MODE */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --background: #071827;
-  --foreground: #e8eef5;
-  --muted: #9bb0c4;
-  --line: #1a3a55;
-  --input-border: #2a4a66;
+  --background: #0B132B;
+  --foreground: #F8FAFC;
+  --muted: #94A3B8;
+  --line: #1E293B;
+  --input-border: #334155;
 }
 html[data-theme="dark"] body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #0B132B !important;
+  color: #F8FAFC !important;
 }
-html[data-theme="dark"] header,
+html[data-theme="dark"] #app-body {
+  background: #0B132B !important;
+}
+html[data-theme="dark"] header {
+  background-color: #0F172A !important;
+  border-color: #1E293B !important;
+}
 html[data-theme="dark"] .card,
-html[data-theme="dark"] nav.fixed {
-  background: #0b2743 !important;
-  border-color: #1a3a55 !important;
+html[data-theme="dark"] .bg-white {
+  background-color: #0F172A !important;
+  border-color: #1E293B !important;
+  color: #F8FAFC !important;
 }
-html[data-theme="dark"] .input,
-html[data-theme="dark"] .btn-secondary {
-  background: #071827;
-  color: #e8eef5;
-  border-color: #1a3a55;
-}
-html[data-theme="dark"] .text-ink,
-html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] .text-\[\#172334\],
+html[data-theme="dark"] .text-\[\#0F172A\],
+html[data-theme="dark"] .text-\[\#0B132B\],
 html[data-theme="dark"] .text-slate-900,
-html[data-theme="dark"] .page-title {
-  color: #e8eef5 !important;
+html[data-theme="dark"] .text-slate-800 {
+  color: #FFFFFF !important;
 }
-html[data-theme="dark"] .text-muted,
-html[data-theme="dark"] .text-slate-400,
-html[data-theme="dark"] .text-slate-500,
-html[data-theme="dark"] .text-slate-600 {
-  color: #9bb0c4 !important;
+html[data-theme="dark"] .text-\[\#617083\],
+html[data-theme="dark"] .text-\[\#64748B\],
+html[data-theme="dark"] .text-\[\#8A97A8\],
+html[data-theme="dark"] .text-\[\#94A3B8\],
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-500 {
+  color: #94A3B8 !important;
 }
-html[data-theme="dark"] .bg-white,
-html[data-theme="dark"] .bg-white\/70,
-html[data-theme="dark"] .bg-white\/80 {
-  background-color: #0b2743 !important;
+html[data-theme="dark"] .bg-\[\#F8FAFD\],
+html[data-theme="dark"] .bg-\[\#F8FAFC\],
+html[data-theme="dark"] .bg-\[\#F4F7FB\],
+html[data-theme="dark"] .bg-\[\#EEF2F7\] {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
 }
-html[data-theme="dark"] .bg-slate-50,
-html[data-theme="dark"] .bg-slate-100,
-html[data-theme="dark"] .hover\:bg-slate-50:hover,
-html[data-theme="dark"] .hover\:bg-\[\#F3F7FB\]:hover,
-html[data-theme="dark"] .hover\:bg-\[\#F8FAFD\]:hover {
-  background-color: #0a2037 !important;
+html[data-theme="dark"] .border-\[\#E3EAF1\],
+html[data-theme="dark"] .border-\[\#E2E8F0\],
+html[data-theme="dark"] .border-\[\#F0F4F8\] {
+  border-color: #1E293B !important;
 }
-html[data-theme="dark"] .border-slate-50,
-html[data-theme="dark"] .border-slate-100,
-html[data-theme="dark"] .border-slate-200,
-html[data-theme="dark"] .border-line {
-  border-color: #1a3a55 !important;
+html[data-theme="dark"] .input {
+  background-color: #0B132B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
 }
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
-  font-feature-settings: "tnum" 1, "cv02", "cv03", "cv04";
-  margin: 0;
-}
-.flow-gradient {
-  background-image: linear-gradient(135deg, #1e6fe0 0%, #258fd0 52%, #16b878 100%);
+html[data-theme="dark"] .btn-secondary {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
 }
 
 @layer components {
@@ -173,16 +187,6 @@ body {
   .kpi-card {
     @apply card relative min-w-0 pl-[17px] pr-3.5 pb-[13px] pt-[14px];
   }
-  .kpi-card::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 15px;
-    bottom: 15px;
-    width: 3px;
-    border-radius: 0 4px 4px 0;
-    background: var(--kpi, #1e6fe0);
-  }
 }
 
 @layer utilities {
@@ -192,50 +196,4 @@ body {
   .tabular {
     font-variant-numeric: tabular-nums;
   }
-}
-
-/* Login always matches the approved light mockup — even if the phone is in dark mode. */
-.login-light {
-  background: #f4f7fb !important;
-  color: #172334 !important;
-}
-.login-light .card,
-html[data-theme="dark"] .login-light .card {
-  background: #ffffff !important;
-  border-color: #dde6ef !important;
-  color: #172334 !important;
-  border-radius: 18px;
-  box-shadow: 0 7px 24px rgba(11, 37, 69, 0.14);
-}
-.login-light .input,
-html[data-theme="dark"] .login-light .input {
-  background: #ffffff !important;
-  color: #172334 !important;
-  border-color: #c9d5e2 !important;
-  border-radius: 14px;
-  min-height: 48px;
-}
-.login-light .login-card {
-  border: 0 !important;
-}
-.login-light .text-ink,
-html[data-theme="dark"] .login-light .text-ink {
-  color: #172334 !important;
-}
-.login-light .text-muted,
-html[data-theme="dark"] .login-light .text-muted {
-  color: #617083 !important;
-}
-.login-light .bg-white,
-html[data-theme="dark"] .login-light .bg-white {
-  background-color: #ffffff !important;
-}
-.login-pill-on {
-  background: #ffffff !important;
-  color: #172334 !important;
-  box-shadow: 0 1.2px 8px rgba(18, 58, 99, 0.10);
-}
-.login-pill-off {
-  background: #e7f1ff !important;
-  color: #617083 !important;
 }
