@@ -60,14 +60,9 @@ export default function LoginForm() {
       }
 
       try {
-        if (remember) {
-          localStorage.setItem(REMEMBER_KEY, email.trim());
-          if (data.biometricToken) {
-            localStorage.setItem(BIOMETRIC_TOKEN_KEY, data.biometricToken);
-          }
-        } else {
-          localStorage.removeItem(REMEMBER_KEY);
-          localStorage.removeItem(BIOMETRIC_TOKEN_KEY);
+        localStorage.setItem(REMEMBER_KEY, email.trim());
+        if (data.biometricToken) {
+          localStorage.setItem(BIOMETRIC_TOKEN_KEY, data.biometricToken);
         }
       } catch {
         /* ignore */
@@ -86,17 +81,24 @@ export default function LoginForm() {
     setError("");
     setInfo("");
 
+    const rememberedEmail = email.trim() || (typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) : null);
+    const rememberedToken = typeof window !== "undefined" ? localStorage.getItem(BIOMETRIC_TOKEN_KEY) : null;
+
     // 1. If running inside Native Android App, trigger real Android BiometricPrompt dialog!
     if (
       typeof window !== "undefined" &&
       (window as any).AndroidApp &&
       typeof (window as any).AndroidApp.authenticateBiometrics === "function"
     ) {
+      if (!rememberedEmail || !rememberedToken) {
+        setLoading(false);
+        setError("Please sign in with password once to link your fingerprint.");
+        return;
+      }
+
       (window as any).onNativeBiometricResult = async (success: boolean, msg: string) => {
         if (success) {
-          const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
-          const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
-          if (rememberedEmail && rememberedToken) {
+          try {
             const res = await fetch("/api/auth/login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -105,19 +107,24 @@ export default function LoginForm() {
                 biometricToken: rememberedToken,
               }),
             });
+            const data = await res.json();
             if (res.ok) {
+              if (data.biometricToken) {
+                localStorage.setItem(BIOMETRIC_TOKEN_KEY, data.biometricToken);
+              }
               router.push("/dashboard");
               router.refresh();
               return;
+            } else {
+              setError("Please sign in with password once to refresh your fingerprint link.");
             }
+          } catch {
+            setError("Connection failed. Please try again.");
           }
+        } else {
+          setError(msg === "failed" ? "Fingerprint not recognized" : msg || "Biometric authentication cancelled");
         }
         setLoading(false);
-        if (!success) {
-          setError(msg === "failed" ? "Fingerprint not recognized" : msg || "Biometric authentication cancelled");
-        } else {
-          setError("Please sign in with password once to link your fingerprint.");
-        }
       };
 
       (window as any).AndroidApp.authenticateBiometrics();
@@ -152,9 +159,6 @@ export default function LoginForm() {
       }
 
       // 3. Saved device biometric token fallback
-      const rememberedEmail = email.trim() || localStorage.getItem(REMEMBER_KEY);
-      const rememberedToken = localStorage.getItem(BIOMETRIC_TOKEN_KEY);
-
       if (rememberedEmail && rememberedToken) {
         const res = await fetch("/api/auth/login", {
           method: "POST",

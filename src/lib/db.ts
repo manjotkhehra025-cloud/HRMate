@@ -224,6 +224,13 @@ function ensureSchema(d: DatabaseLike) {
     auto_pick TEXT NOT NULL DEFAULT 'none',
     sort INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS device_biometrics (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    device_info TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_device_biometrics_user ON device_biometrics(user_id);
   `);
   if (!hasColumn(d, "attendance", "shift_id")) {
     d.exec(`ALTER TABLE attendance ADD COLUMN shift_id TEXT`);

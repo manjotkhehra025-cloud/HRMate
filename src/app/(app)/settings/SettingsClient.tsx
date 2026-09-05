@@ -190,13 +190,25 @@ export default function SettingsClient({
       typeof (window as any).AndroidApp.authenticateBiometrics === "function"
     ) {
       (window as any).onNativeBiometricResult = async (success: boolean, msg: string) => {
-        setRegistering(false);
         if (success) {
+          try {
+            const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+            if (bioRes.ok) {
+              const bioData = await bioRes.json();
+              if (bioData.biometricToken) {
+                localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+                localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+              }
+            }
+          } catch {
+            // ignore
+          }
           localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
           flash("Android Fingerprint & Face ID linked successfully ✓");
         } else {
           flash(msg === "failed" ? "Biometric scan failed" : msg || "Authentication cancelled", true);
         }
+        setRegistering(false);
       };
       (window as any).AndroidApp.authenticateBiometrics();
       return;
@@ -216,10 +228,33 @@ export default function SettingsClient({
         const d = await verifyRes.json();
         throw new Error(d.error || "Registration failed");
       }
+
+      // Also register device biometric fallback token
+      try {
+        const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+        if (bioRes.ok) {
+          const bioData = await bioRes.json();
+          if (bioData.biometricToken) {
+            localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+            localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+          }
+        }
+      } catch {}
+
       localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
       flash("Device Biometrics registered successfully ✓");
       loadPasskeys();
     } catch (e: any) {
+      try {
+        const bioRes = await fetch("/api/auth/biometrics/register", { method: "POST" });
+        if (bioRes.ok) {
+          const bioData = await bioRes.json();
+          if (bioData.biometricToken) {
+            localStorage.setItem("hrmate_biometric_token", bioData.biometricToken);
+            localStorage.setItem("hrmate_remember_email", bioData.email || user.email);
+          }
+        }
+      } catch {}
       localStorage.setItem(BIOMETRIC_DEVICE_KEY, "true");
       flash("Device Biometrics activated for this device ✓");
     } finally {
