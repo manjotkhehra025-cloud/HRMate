@@ -20,18 +20,10 @@ workflows:
         script: |
           java -version
           gradle -version || true
-      - name: Decode Custom Keystore if provided
-        script: |
-          if [ -n "$CM_KEYSTORE" ]; then
-            echo "Decoding CM_KEYSTORE environment variable..."
-            echo "$CM_KEYSTORE" | base64 --decode > android/app/hrmate-release.keystore
-          else
-            echo "Using repository release keystore (android/app/hrmate-release.keystore)"
-          fi
       - name: Build Android Release AAB & APK
         script: |
           cd android
-          gradle bundleRelease assembleRelease -x lint -x test --no-daemon --stacktrace || (gradle wrapper --gradle-version 8.5 && chmod +x gradlew && ./gradlew bundleRelease assembleRelease -x lint -x test --no-daemon --stacktrace)
+          gradle assembleRelease bundleRelease -x lint -x test --no-daemon --stacktrace || (gradle wrapper --gradle-version 8.5 && chmod +x gradlew && ./gradlew assembleRelease bundleRelease -x lint -x test --no-daemon --stacktrace)
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
       - android/app/build/outputs/apk/release/*.apk
