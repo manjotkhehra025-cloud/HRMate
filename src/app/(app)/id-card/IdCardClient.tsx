@@ -14,6 +14,7 @@ import {
   Printer,
   Users,
   Download,
+  Share2,
 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import TopsLogo from "@/components/TopsLogo";
@@ -81,6 +82,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadMsg, setDownloadMsg] = useState("");
 
   // Tab State: ID Card vs Gate Pass
   const [activeTab, setActiveTab] = useState<"card" | "gate_pass">("card");
@@ -128,94 +131,211 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
       typeof (window as any).AndroidApp.printPage === "function"
     ) {
       (window as any).AndroidApp.printPage();
-    } else {
+      return;
+    }
+
+    // Isolate printable badge in an iframe for 100% reliable printing on desktop & iOS
+    const el = document.getElementById("printable-id-card");
+    if (!el) {
+      window.print();
+      return;
+    }
+
+    try {
+      const printIframe = document.createElement("iframe");
+      printIframe.style.position = "fixed";
+      printIframe.style.right = "0";
+      printIframe.style.bottom = "0";
+      printIframe.style.width = "0";
+      printIframe.style.height = "0";
+      printIframe.style.border = "0";
+      document.body.appendChild(printIframe);
+
+      const doc = printIframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>ID Badge — ${profile.name}</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                font-family: sans-serif;
+                background: white;
+              }
+              .print-badge {
+                width: 54mm;
+                height: 86mm;
+                border-radius: 12px;
+                border: 1px solid #ccc;
+                box-sizing: border-box;
+                overflow: hidden;
+                page-break-inside: avoid;
+              }
+              @page { size: auto; margin: 10mm; }
+            </style>
+          </head>
+          <body>
+            ${el.innerHTML}
+          </body>
+          </html>
+        `);
+        doc.close();
+        setTimeout(() => {
+          printIframe.contentWindow?.focus();
+          printIframe.contentWindow?.print();
+          setTimeout(() => document.body.removeChild(printIframe), 2000);
+        }, 500);
+      } else {
+        window.print();
+      }
+    } catch {
       window.print();
     }
   }
 
-  function downloadBadgeImage() {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  async function handleDownloadImage() {
+    setDownloading(true);
+    setDownloadMsg("Generating badge...");
+    try {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setDownloading(false);
+        return;
+      }
 
-    const w = 920;
-    const h = 640;
-    canvas.width = w;
-    canvas.height = h;
+      const w = 920;
+      const h = 640;
+      canvas.width = w;
+      canvas.height = h;
 
-    // Background Canvas
-    ctx.fillStyle = "#F1F5F9";
-    ctx.fillRect(0, 0, w, h);
+      // Background Canvas
+      ctx.fillStyle = "#F1F5F9";
+      ctx.fillRect(0, 0, w, h);
 
-    // Front Card
-    ctx.fillStyle = isYellowCard ? "#0B132B" : "#FFFFFF";
-    ctx.fillRect(40, 40, 390, 560);
-    ctx.strokeStyle = isYellowCard ? "#10B981" : "#CBD5E1";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(40, 40, 390, 560);
+      // 1. Front Card
+      ctx.fillStyle = isYellowCard ? "#0B132B" : "#FFFFFF";
+      ctx.fillRect(40, 40, 390, 560);
+      ctx.strokeStyle = isYellowCard ? "#10B981" : "#CBD5E1";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(40, 40, 390, 560);
 
-    // Front Card Header
-    ctx.fillStyle = isYellowCard ? "#10B981" : "#D1122A";
-    ctx.font = "bold 20px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(isYellowCard ? "G.D. FOODS MFG. (I) PVT. LTD." : "TOPS — G.D. FOODS", 235, 85);
+      // Front Card Header
+      ctx.fillStyle = isYellowCard ? "#10B981" : "#D1122A";
+      ctx.font = "bold 20px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(isYellowCard ? "G.D. FOODS MFG. (I) PVT. LTD." : "TOPS — G.D. FOODS", 235, 85);
 
-    ctx.fillStyle = isYellowCard ? "#F59E0B" : "#64748B";
-    ctx.font = "bold 13px sans-serif";
-    ctx.fillText(isYellowCard ? "🟡 YELLOW CARD STAFF BADGE" : "OFFICIAL STAFF ID CARD", 235, 110);
+      ctx.fillStyle = isYellowCard ? "#F59E0B" : "#64748B";
+      ctx.font = "bold 13px sans-serif";
+      ctx.fillText(isYellowCard ? "🟡 YELLOW CARD STAFF BADGE" : "OFFICIAL STAFF ID CARD", 235, 110);
 
-    // Front Card Name & Details
-    ctx.fillStyle = isYellowCard ? "#FFFFFF" : "#0F172A";
-    ctx.font = "bold 26px sans-serif";
-    ctx.fillText(profile.name, 235, 380);
+      // Front Card Name & Details
+      ctx.fillStyle = isYellowCard ? "#FFFFFF" : "#0F172A";
+      ctx.font = "bold 26px sans-serif";
+      ctx.fillText(profile.name, 235, 380);
 
-    ctx.fillStyle = isYellowCard ? "#10B981" : "#334155";
-    ctx.font = "bold 18px sans-serif";
-    ctx.fillText(profile.department || "Production", 235, 415);
+      ctx.fillStyle = isYellowCard ? "#10B981" : "#334155";
+      ctx.font = "bold 18px sans-serif";
+      ctx.fillText(profile.department || "Production", 235, 415);
 
-    if (profile.designation) {
-      ctx.fillStyle = isYellowCard ? "#94A3B8" : "#64748B";
+      if (profile.designation) {
+        ctx.fillStyle = isYellowCard ? "#94A3B8" : "#64748B";
+        ctx.font = "15px sans-serif";
+        ctx.fillText(profile.designation, 235, 445);
+      }
+
+      ctx.fillStyle = isYellowCard ? "#F59E0B" : "#D1122A";
+      ctx.font = "bold 18px monospace";
+      ctx.fillText(`ID: ${profile.emp_code}`, 235, 485);
+
+      // 2. Back Card
+      ctx.fillStyle = isYellowCard ? "#0F172A" : "#D1122A";
+      ctx.fillRect(490, 40, 390, 560);
+      ctx.strokeStyle = isYellowCard ? "#10B981" : "#991B1B";
+      ctx.strokeRect(490, 40, 390, 560);
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "left";
+      ctx.font = "bold 20px sans-serif";
+      ctx.fillText(company.factoryName, 520, 85);
+
       ctx.font = "15px sans-serif";
-      ctx.fillText(profile.designation, 235, 445);
+      ctx.fillText(`Employee ID : ${profile.emp_code}`, 520, 135);
+      ctx.fillText(`DOJ : ${profile.doj || "27 June 2013"}`, 520, 170);
+      ctx.fillText(`DOB : ${profile.dob || "03 March 1974"}`, 520, 205);
+      ctx.fillText(`Blood Group : ${profile.blood_group || "A+"}`, 520, 240);
+      ctx.fillText(`Emergency : ${profile.emergency_contact || "+91 99148 50317"}`, 520, 275);
+
+      ctx.font = "bold 13px sans-serif";
+      ctx.fillText("Factory Location:", 520, 340);
+      ctx.font = "12px sans-serif";
+      ctx.fillText(company.factoryAddress, 520, 365, 330);
+
+      ctx.font = "bold 13px sans-serif";
+      ctx.fillText("Corporate Office:", 520, 430);
+      ctx.font = "12px sans-serif";
+      ctx.fillText(company.officeAddress, 520, 455, 330);
+      ctx.fillText(`Ph: ${company.officePhone}`, 520, 515);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const filename = `hrmate-id-${profile.emp_code || profile.id}.png`;
+
+      // A. If inside Android Native App -> Use Native Bridge
+      if (
+        typeof window !== "undefined" &&
+        (window as any).AndroidApp &&
+        typeof (window as any).AndroidApp.saveBase64Image === "function"
+      ) {
+        (window as any).AndroidApp.saveBase64Image(dataUrl, filename, "image/png");
+        setDownloadMsg("Saved to Gallery & Pictures ✓");
+        setTimeout(() => setDownloadMsg(""), 3000);
+        setDownloading(false);
+        return;
+      }
+
+      // B. If Mobile Browser supports Web Share API -> Share/Save File
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `ID Badge — ${profile.name}`,
+            text: `ID Badge for ${profile.name} (${profile.emp_code})`,
+            files: [file],
+          });
+          setDownloadMsg("Badge shared / saved ✓");
+          setTimeout(() => setDownloadMsg(""), 3000);
+          setDownloading(false);
+          return;
+        }
+      } catch (e) {
+        // Fallback to direct anchor download
+      }
+
+      // C. Standard Anchor Tag Download
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setDownloadMsg("Download started ✓");
+      setTimeout(() => setDownloadMsg(""), 3000);
+    } catch (e) {
+      setDownloadMsg("Failed to generate image");
+    } finally {
+      setDownloading(false);
     }
-
-    ctx.fillStyle = isYellowCard ? "#F59E0B" : "#D1122A";
-    ctx.font = "bold 18px monospace";
-    ctx.fillText(`ID: ${profile.emp_code}`, 235, 485);
-
-    // Back Card
-    ctx.fillStyle = isYellowCard ? "#0F172A" : "#D1122A";
-    ctx.fillRect(490, 40, 390, 560);
-    ctx.strokeStyle = isYellowCard ? "#10B981" : "#991B1B";
-    ctx.strokeRect(490, 40, 390, 560);
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.textAlign = "left";
-    ctx.font = "bold 20px sans-serif";
-    ctx.fillText(company.factoryName, 520, 85);
-
-    ctx.font = "15px sans-serif";
-    ctx.fillText(`Employee ID : ${profile.emp_code}`, 520, 135);
-    ctx.fillText(`DOJ : ${profile.doj || "27 June 2013"}`, 520, 170);
-    ctx.fillText(`DOB : ${profile.dob || "03 March 1974"}`, 520, 205);
-    ctx.fillText(`Blood Group : ${profile.blood_group || "A+"}`, 520, 240);
-    ctx.fillText(`Emergency : ${profile.emergency_contact || "+91 99148 50317"}`, 520, 275);
-
-    ctx.font = "bold 13px sans-serif";
-    ctx.fillText("Factory Location:", 520, 340);
-    ctx.font = "12px sans-serif";
-    ctx.fillText(company.factoryAddress, 520, 365, 330);
-
-    ctx.font = "bold 13px sans-serif";
-    ctx.fillText("Corporate Office:", 520, 430);
-    ctx.font = "12px sans-serif";
-    ctx.fillText(company.officeAddress, 520, 455, 330);
-    ctx.fillText(`Ph: ${company.officePhone}`, 520, 515);
-
-    const link = document.createElement("a");
-    link.download = `hrmate-id-badge-${profile.emp_code || profile.id}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
   }
 
   async function loadCard(targetUserId?: string) {
@@ -262,7 +382,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
         setIsSuperAdmin(!!d.isSuperAdmin);
         if (d.allUsers) setAllUsers(d.allUsers);
 
-        // Generate 100% ISO Scannable QR Code pointing to Public Standalone Verification Record (No website login required)
+        // Generate 100% ISO Scannable QR Code pointing to Public Standalone Verification Record
         const scanPayload = `https://gdfoods.duckdns.org/verify/${d.user.emp_code || d.user.id}`;
         const qrUrl = await generateQrDataUrl(scanPayload, {
           width: 320,
@@ -866,6 +986,12 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
               </button>
             </div>
 
+            {downloadMsg && (
+              <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-2.5 text-center text-[12.5px] font-bold text-emerald-800 animate-fade-in">
+                {downloadMsg}
+              </div>
+            )}
+
             {/* Side-by-side Front and Back badge preview */}
             <div id="printable-id-card" className="my-6 flex flex-col md:flex-row items-center justify-center gap-6">
               {/* Front Badge */}
@@ -941,10 +1067,12 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
               </button>
               <button
                 type="button"
-                onClick={downloadBadgeImage}
+                onClick={handleDownloadImage}
+                disabled={downloading}
                 className="flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 px-4 py-2.5 text-[13px] font-bold text-white shadow active:scale-95 transition"
               >
-                <Download className="h-4 w-4" /> Download Image (PNG)
+                {downloading ? <Spinner className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                Download Image (PNG)
               </button>
               <button
                 type="button"

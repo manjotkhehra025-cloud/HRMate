@@ -3,7 +3,10 @@ package com.gdfoods.hrmate;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -25,11 +28,14 @@ import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -49,7 +55,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -62,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String APP_URL = "https://gdfoods.duckdns.org";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
+    private static final int STORAGE_PERMISSION_CODE = 3001;
 
     private WebView webView;
     private LinearLayout loadingLayout;
@@ -245,6 +254,40 @@ public class MainActivity extends AppCompatActivity {
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
 
+        // Native Download Listener for blobs / urls
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+                if (url.startsWith("data:")) {
+                    saveBase64DataUrl(url, "hrmate-id-badge.png", mimeType);
+                } else {
+                    try {
+                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                        request.setMimeType(mimeType);
+                        String filename = URLUtil.guessFileName(url, contentDisposition, mimeType);
+                        request.setTitle(filename);
+                        request.setDescription("Downloading file from HRMate");
+                        request.allowScanningByMediaScanner();
+                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+
+                        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                        if (dm != null) {
+                            dm.enqueue(request);
+                            Toast.makeText(MainActivity.this, "Download started: " + filename, Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                            startActivity(intent);
+                        } catch (Exception ex) {
+                            Toast.makeText(MainActivity.this, "Download failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+            }
+        });
+
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
         webView.setWebViewClient(new CustomWebViewClient());
         webView.setWebChromeClient(new CustomWebChromeClient());
@@ -287,6 +330,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> fetchNativeLocation());
         }
 
+        // Native Android Print & Save as PDF Dialog
         @JavascriptInterface
         public void printPage() {
             runOnUiThread(() -> {
@@ -305,6 +349,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // Native High-Res Badge Image Downloader (Saves to Gallery / Downloads)
+        @JavascriptInterface
+        public void saveBase64Image(String base64Data, String filename, String mimeType) {
+            runOnUiThread(() -> saveBase64DataUrl(base64Data, filename, mimeType));
+        }
+
         @JavascriptInterface
         public void openAppSettings() {
             runOnUiThread(() -> {
@@ -316,6 +366,66 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, "Unable to open settings", Toast.LENGTH_SHORT).show();
                 }
             });
+        }
+    }
+
+    private void saveBase64DataUrl(String base64Data, String filename, String mimeType) {
+        try {
+            if (base64Data == null || base64Data.isEmpty()) return;
+
+            String cleanBase64 = base64Data;
+            if (base64Data.contains(",")) {
+                cleanBase64 = base64Data.substring(base64Data.indexOf(",") + 1);
+            }
+
+            byte[] imageBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
+            String saveName = (filename != null && !filename.isEmpty()) ? filename : ("hrmate_badge_" + System.currentTimeMillis() + ".png");
+            String actualMime = (mimeType != null && !mimeType.isEmpty()) ? mimeType : "image/png";
+
+            OutputStream fos = null;
+            Uri imageUri = null;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentResolver resolver = getContentResolver();
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, saveName);
+                contentValues.put(MediaStore.MediaColumns.MIME_TYPE, actualMime);
+                contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/HRMate");
+
+                imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+                if (imageUri != null) {
+                    fos = resolver.openOutputStream(imageUri);
+                }
+            } else {
+                File imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                File hrmateDir = new File(imagesDir, "HRMate");
+                if (!hrmateDir.exists()) hrmateDir.mkdirs();
+                File imageFile = new File(hrmateDir, saveName);
+                fos = new FileOutputStream(imageFile);
+                imageUri = Uri.fromFile(imageFile);
+            }
+
+            if (fos != null) {
+                fos.write(imageBytes);
+                fos.flush();
+                fos.close();
+                Toast.makeText(MainActivity.this, "✓ ID Badge saved to Gallery & Pictures (" + saveName + ")", Toast.LENGTH_LONG).show();
+
+                // Open share/view dialog
+                if (imageUri != null) {
+                    try {
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.setType(actualMime);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, imageUri);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(Intent.createChooser(shareIntent, "Share or View ID Badge"));
+                    } catch (Exception ignored) {}
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "Unable to save image", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(MainActivity.this, "Error saving badge: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
