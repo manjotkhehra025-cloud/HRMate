@@ -266,9 +266,67 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Printable ID Card CSS Layout */}
+      {/* 3D Hardware Accelerated & Anti-Ghosting CSS Styles */}
       <style dangerouslySetInnerHTML={{
         __html: `
+        .id-card-perspective {
+          perspective: 1200px;
+          -webkit-perspective: 1200px;
+        }
+        .id-card-inner {
+          position: relative;
+          width: 100%;
+          min-height: 550px;
+          transform-style: preserve-3d;
+          -webkit-transform-style: preserve-3d;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .id-card-inner.is-flipped {
+          transform: rotateY(180deg);
+          -webkit-transform: rotateY(180deg);
+        }
+        .id-card-face {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          -webkit-backface-visibility: hidden !important;
+          backface-visibility: hidden !important;
+          -webkit-transform-style: preserve-3d;
+          transform-style: preserve-3d;
+          border-radius: 28px;
+          overflow: hidden;
+        }
+        .id-card-face-front {
+          transform: rotateY(0deg) translateZ(1px);
+          -webkit-transform: rotateY(0deg) translateZ(1px);
+          z-index: 2;
+        }
+        .id-card-face-back {
+          transform: rotateY(180deg) translateZ(1px);
+          -webkit-transform: rotateY(180deg) translateZ(1px);
+          z-index: 1;
+        }
+        /* Extra WebKit Anti-Ghosting Safeguard */
+        .id-card-inner:not(.is-flipped) .id-card-face-back {
+          opacity: 0;
+          pointer-events: none;
+        }
+        .id-card-inner.is-flipped .id-card-face-front {
+          opacity: 0;
+          pointer-events: none;
+        }
+        .id-card-inner.is-flipped .id-card-face-back {
+          opacity: 1;
+          pointer-events: auto;
+          z-index: 10;
+        }
+        .id-card-inner:not(.is-flipped) .id-card-face-front {
+          opacity: 1;
+          pointer-events: auto;
+          z-index: 10;
+        }
+
         @media print {
           body * { visibility: hidden !important; }
           #printable-id-card, #printable-id-card * { visibility: visible !important; }
@@ -400,23 +458,13 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
       {/* Main Content Area */}
       {activeTab === "card" ? (
         <div className="flex flex-col items-center justify-center gap-5 print:hidden">
-          {/* Flip Card Container */}
-          <div className="relative w-full max-w-sm" style={{ perspective: "1200px" }}>
-            <div
-              className={classNames(
-                "relative w-full rounded-[28px] shadow-2xl transition-all duration-700 [transform-style:preserve-3d]",
-                isFlipped ? "[transform:rotateY(180deg)]" : ""
-              )}
-              style={{ minHeight: "540px" }}
-            >
+          {/* Flip Card Container with Anti-Ghosting */}
+          <div className="id-card-perspective relative w-full max-w-sm">
+            <div className={classNames("id-card-inner shadow-2xl rounded-[28px]", isFlipped ? "is-flipped" : "")}>
               {/* ==================== FRONT SIDE ==================== */}
               {isYellowCard ? (
                 /* 🟡 YELLOW CARD STAFF FRONT (Green & Blue Theme, NO Tops Logo) */
-                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-emerald-500/40 bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-6 text-white shadow-2xl [backface-visibility:hidden]">
-                  {/* Glowing Ambient Mesh */}
-                  <div className="pointer-events-none absolute -left-12 -top-12 h-44 w-44 rounded-full bg-[#10B981]/25 blur-2xl" />
-                  <div className="pointer-events-none absolute -right-12 -bottom-12 h-44 w-44 rounded-full bg-[#3B82F6]/25 blur-2xl" />
-
+                <div className="id-card-face id-card-face-front flex flex-col justify-between border-2 border-emerald-500/40 bg-[#0B132B] p-6 text-white shadow-2xl">
                   {/* Header: GD Foods Badge & QR Code */}
                   <div className="relative z-10 flex items-start justify-between border-b border-white/10 pb-3">
                     <div className="flex items-center gap-2.5">
@@ -478,11 +526,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                 </div>
               ) : (
                 /* 🔴 TOPS OFFICIAL STAFF FRONT (Official Red & White Luxury Theme, Authentic Tops Logo) */
-                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-slate-200 bg-white p-6 shadow-2xl [backface-visibility:hidden]">
-                  {/* Red Curved Accent Header */}
-                  <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-56 rounded-full bg-gradient-to-br from-[#D1122A] via-[#E11D48] to-[#EF4444] opacity-95 -z-0" />
-                  <div className="pointer-events-none absolute -left-10 -top-8 h-40 w-44 rounded-full bg-[#10B981]/25 blur-lg -z-0" />
-
+                <div className="id-card-face id-card-face-front flex flex-col justify-between border-2 border-slate-200 bg-white p-6 shadow-2xl">
                   {/* Top Header: Tops Logo + Scannable QR Code */}
                   <div className="relative z-10 flex items-start justify-between">
                     <div className="w-12" />
@@ -537,8 +581,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
 
               {/* ==================== BACK SIDE ==================== */}
               {isYellowCard ? (
-                /* 🟡 YELLOW CARD STAFF BACK (Green & Blue Navy Theme) */
-                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-emerald-500/40 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0B132B] p-6 text-white shadow-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                /* 🟡 YELLOW CARD STAFF BACK (Green & Blue Navy Theme, Solid Background, No Ghosting) */
+                <div className="id-card-face id-card-face-back flex flex-col justify-between border-2 border-emerald-500/40 bg-[#0B132B] p-6 text-white shadow-2xl">
                   <div className="relative z-10 space-y-2.5 text-left text-[12px] leading-snug">
                     <div className="border-b border-white/10 pb-2 text-center">
                       <p className="text-[13px] font-black text-amber-400">YELLOW CARD CONTRACTOR BADGE</p>
@@ -576,8 +620,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                   </div>
                 </div>
               ) : (
-                /* 🔴 TOPS OFFICIAL STAFF BACK (Official Red Card with Tops Logo) */
-                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-red-700 bg-[#D1122A] p-6 text-white shadow-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                /* 🔴 TOPS OFFICIAL STAFF BACK (Official Red Card with Tops Logo, Solid Background, No Ghosting) */
+                <div className="id-card-face id-card-face-back flex flex-col justify-between border-2 border-red-700 bg-[#D1122A] p-6 text-white shadow-2xl">
                   <div className="relative z-10 space-y-2.5 text-left text-[12px] leading-snug">
                     <div className="space-y-1 font-semibold text-white/95">
                       <p><span className="text-white/80 font-bold">Employee ID :</span> <span className="font-bold">{profile.emp_code}</span></p>
@@ -726,7 +770,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
               {/* Front Badge */}
               <div className="w-[200px] h-[310px] rounded-[14px] border border-slate-300 overflow-hidden shadow-lg relative flex flex-col justify-between p-3 text-center bg-white">
                 {isYellowCard ? (
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#0B132B] to-[#1C2541] p-3 text-white flex flex-col justify-between">
+                  <div className="absolute inset-0 bg-[#0B132B] p-3 text-white flex flex-col justify-between">
                     <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
                       <span className="text-[9px] font-black text-emerald-400">G.D. FOODS</span>
                       {qrDataUrl && <img src={qrDataUrl} alt="QR" className="h-7 w-7 bg-white p-0.5 rounded" />}
@@ -759,7 +803,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
               {/* Back Badge */}
               <div className={classNames(
                 "w-[200px] h-[310px] rounded-[14px] border overflow-hidden shadow-lg relative flex flex-col justify-between p-3 text-left",
-                isYellowCard ? "bg-[#0F172A] text-white border-slate-700" : "bg-[#D1122A] text-white border-red-800"
+                isYellowCard ? "bg-[#0B132B] text-white border-slate-700" : "bg-[#D1122A] text-white border-red-800"
               )}>
                 <div className="space-y-1 text-[7.5px] leading-tight">
                   <p><strong>Employee ID :</strong> {profile.emp_code}</p>
