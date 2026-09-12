@@ -3,11 +3,14 @@ import db from "@/lib/db";
 import { randomId } from "@/lib/crypto";
 import { requireUser, unauthorized, error, json } from "@/lib/api";
 import { hasPermission } from "@/lib/permissions";
-import { businessDays } from "@/lib/utils";
+import { businessDays, istParts } from "@/lib/utils";
 import { balancesForUser, usedInPeriod } from "@/lib/leave";
 import { approverFallback, getApprover, listApproverOptions, notifyLeaveApprovers } from "@/lib/workflow";
 import { parseWeeklyOff } from "@/lib/staff";
 import { listGraceDays } from "@/lib/jobs";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   const user = requireUser();
@@ -24,12 +27,27 @@ export async function GET() {
     )
     .all(user.id);
 
-  const types = db.prepare("SELECT * FROM leave_types ORDER BY sort").all();
+  // Fetch fresh user row to get latest staff_type
+  const userRow = db.prepare("SELECT id, name, role, staff_type, weekly_off FROM users WHERE id = ?").get(user.id) as any;
+  const staffType = userRow?.staff_type || "official";
+
   const balance = balancesForUser(user.id);
-  const openMissed = listGraceDays(user.id, parseWeeklyOff(user.weekly_off, 6));
+  const types =
+    staffType === "yellow_card"
+      ? balance
+      : (db.prepare("SELECT * FROM leave_types ORDER BY sort").all() as any[]);
+
+  const openMissed = listGraceDays(user.id, parseWeeklyOff(userRow?.weekly_off || user.weekly_off, 6));
   const approvers = listApproverOptions(user.id);
 
   return json({
+    current_user: {
+      id: user.id,
+      name: userRow?.name || user.name,
+      role: userRow?.role || user.role,
+      staff_type: staffType,
+    },
+    staff_type: staffType,
     requests,
     types,
     balance,
@@ -56,11 +74,19 @@ export async function POST(req: NextRequest) {
 
   const type = db.prepare("SELECT * FROM leave_types WHERE id = ?").get(leave_type_id) as any;
   if (!type) return error("Invalid leave type");
-  if (type.id === "lt_comp" && user.staff_type === "yellow_card") {
-    return error("Compensatory off is only for official staff");
+
+  const userRow = db.prepare("SELECT staff_type, weekly_off FROM users WHERE id = ?").get(user.id) as any;
+  const isYellowCard = (userRow?.staff_type || user.staff_type) === "yellow_card";
+
+  // Yellow card rule: only Earned Leave (15/year, 1.25/month accrual)
+  if (isYellowCard) {
+    const isEarned = type.id === "lt_earned" || type.name.toLowerCase().includes("earned");
+    if (!isEarned) {
+      return error("Yellow card staff are only eligible for Earned Leave (EL).");
+    }
   }
 
-  const days = businessDays(start_date, end_date, parseWeeklyOff(user.weekly_off, 6));
+  const days = businessDays(start_date, end_date, parseWeeklyOff(userRow?.weekly_off || user.weekly_off, 6));
   if (days <= 0) return error("Selected range has no working days");
 
   const reset = type.reset_period === "month" ? "month" : "year";
@@ -74,11 +100,26 @@ export async function POST(req: NextRequest) {
         .prepare("SELECT extra_days FROM leave_balances WHERE user_id = ? AND leave_type_id = ?")
         .get(user.id, leave_type_id) as { extra_days: number } | undefined
     )?.extra_days || 0;
-  const allowance = type.days_per_year + extra;
-  const used = usedInPeriod(user.id, leave_type_id, reset, start_date);
-  if (used + days > allowance) {
-    const unit = reset === "month" ? "this month" : "this year";
-    return error(`Insufficient balance ${unit}. You have ${allowance - used} day(s) remaining.`);
+
+  if (isYellowCard) {
+    // 1.25 days per month accrual
+    const currentMonthNum = parseInt(istParts().month, 10) || 1;
+    const accrued = Math.round(currentMonthNum * 1.25 * 100) / 100;
+    const totalAccrued = accrued + extra;
+    const used = usedInPeriod(user.id, leave_type_id, "year", start_date);
+    if (used + days > totalAccrued) {
+      const remaining = Math.max(0, Math.round((totalAccrued - used) * 100) / 100);
+      return error(
+        `Insufficient EL balance. You have ${remaining} day(s) accrued to date (1.25 days/month of 15 days/year).`
+      );
+    }
+  } else {
+    const allowance = type.days_per_year + extra;
+    const used = usedInPeriod(user.id, leave_type_id, reset, start_date);
+    if (used + days > allowance) {
+      const unit = reset === "month" ? "this month" : "this year";
+      return error(`Insufficient balance ${unit}. You have ${allowance - used} day(s) remaining.`);
+    }
   }
 
   db.prepare(

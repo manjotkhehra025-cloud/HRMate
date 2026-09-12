@@ -1,6 +1,6 @@
 import db from "./db";
 
-export type Language = "en" | "pa";
+export type Language = "en" | "pa" | "hi";
 export type Appearance = "light" | "dark" | "system";
 export type TextSize = "small" | "medium" | "large";
 
@@ -19,7 +19,7 @@ const DEFAULTS: UserPrefs = {
 };
 
 function asLanguage(v: unknown): Language {
-  return v === "pa" ? "pa" : "en";
+  return v === "pa" ? "pa" : v === "hi" ? "hi" : "en";
 }
 function asAppearance(v: unknown): Appearance {
   return v === "light" || v === "dark" || v === "system" ? v : "system";

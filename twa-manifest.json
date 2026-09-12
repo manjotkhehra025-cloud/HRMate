@@ -1,0 +1,35 @@
+{
+  "packageId": "com.gdfoods.hrmate",
+  "host": "gdfoods.duckdns.org",
+  "name": "HRMate — Smart HRMS",
+  "launcherName": "HRMate",
+  "themeColor": "#1E6FE0",
+  "navigationColor": "#FFFFFF",
+  "backgroundColor": "#F4F7FB",
+  "enableNotifications": true,
+  "startUrl": "/dashboard",
+  "iconUrl": "https://gdfoods.duckdns.org/icon.png",
+  "maskableIconUrl": "https://gdfoods.duckdns.org/icon.png",
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "minSdkVersion": 21,
+  "targetSdkVersion": 34,
+  "signingKey": {
+    "path": "./hrmate-release.keystore",
+    "alias": "hrmate"
+  },
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://gdfoods.duckdns.org/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  }
+}

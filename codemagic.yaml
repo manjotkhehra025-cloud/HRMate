@@ -1,0 +1,46 @@
+workflows:
+  android-release:
+    name: HRMate Native Android Release (APK & AAB)
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.gdfoods.hrmate"
+        CM_KEYSTORE_PASSWORD: "hrmatepassword123"
+        CM_KEY_ALIAS: "hrmate"
+        CM_KEY_PASSWORD: "hrmatepassword123"
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+    scripts:
+      - name: Set up Environment & Gradle
+        script: |
+          echo "Java version:"
+          java -version
+          cd android
+          chmod +x ./gradlew || true
+          gradle wrapper --gradle-version 8.5 || true
+          chmod +x ./gradlew
+
+      - name: Build Signed Release APK & Google Play AAB
+        script: |
+          cd android
+          ./gradlew clean assembleRelease bundleRelease -x lint -x test --no-daemon --stacktrace
+
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
+
+    publishing:
+      email:
+        recipients:
+          - manjotkhehra025@gmail.com
+        notify:
+          failure: true
+          success: true

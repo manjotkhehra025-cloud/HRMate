@@ -23,7 +23,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const PREFS_BOOT = `(function(){try{var t=localStorage.getItem("hrmate_appearance")||"system";var s=localStorage.getItem("hrmate_text_size")||"medium";var l=localStorage.getItem("hrmate_language")||"en";var theme=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",theme);document.documentElement.setAttribute("data-text",s);document.documentElement.lang=l==="pa"?"pa":"en";}catch(e){}})();`;
+const PREFS_BOOT = `(function(){try{var t=localStorage.getItem("hrmate_appearance")||"system";var s=localStorage.getItem("hrmate_text_size")||"medium";var l=localStorage.getItem("hrmate_language")||"en";var theme=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",theme);document.documentElement.setAttribute("data-text",s);document.documentElement.lang=(l==="pa"||l==="hi")?l:"en";}catch(e){}})();`;
 
 export default function RootLayout({
   children,

@@ -224,6 +224,13 @@ function ensureSchema(d: DatabaseLike) {
     auto_pick TEXT NOT NULL DEFAULT 'none',
     sort INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS device_biometrics (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    device_info TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_device_biometrics_user ON device_biometrics(user_id);
   `);
   if (!hasColumn(d, "attendance", "shift_id")) {
     d.exec(`ALTER TABLE attendance ADD COLUMN shift_id TEXT`);
@@ -281,7 +288,49 @@ function ensureSchema(d: DatabaseLike) {
     auto_absent_at INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, date)
   );
+  CREATE TABLE IF NOT EXISTS overtime_requests (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    hours REAL NOT NULL,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    approver_id TEXT,
+    reviewed_by TEXT,
+    reviewed_at INTEGER,
+    reviewed_note TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS gate_passes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'duty',
+    time_out TEXT NOT NULL,
+    time_in TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    approver_id TEXT,
+    reviewed_by TEXT,
+    reviewed_at INTEGER,
+    reviewed_note TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_ot_user ON overtime_requests(user_id);
+  CREATE INDEX IF NOT EXISTS idx_gate_user ON gate_passes(user_id);
   `);
+  if (!hasColumn(d, "users", "emp_code")) {
+    d.exec(`ALTER TABLE users ADD COLUMN emp_code TEXT NOT NULL DEFAULT ''`);
+  }
+  if (!hasColumn(d, "users", "blood_group")) {
+    d.exec(`ALTER TABLE users ADD COLUMN blood_group TEXT NOT NULL DEFAULT 'O+'`);
+  }
+  if (!hasColumn(d, "users", "emergency_contact")) {
+    d.exec(`ALTER TABLE users ADD COLUMN emergency_contact TEXT NOT NULL DEFAULT ''`);
+  }
+  if (!hasColumn(d, "users", "shift_id")) {
+    d.exec(`ALTER TABLE users ADD COLUMN shift_id TEXT NOT NULL DEFAULT 'sh_general'`);
+  }
   if (!hasColumn(d, "sessions", "last_seen")) {
     d.exec(`ALTER TABLE sessions ADD COLUMN last_seen INTEGER`);
   }
@@ -354,9 +403,10 @@ function seedShiftsAndLeave(d: DatabaseLike) {
   const shift = d.prepare(
     `INSERT OR IGNORE INTO shifts (id, name, start_time, hours, auto_pick, sort) VALUES (?, ?, ?, ?, ?, ?)`
   );
-  shift.run("sh_day", "Day", "08:00", 8, "morning", 1);
-  shift.run("sh_season", "Season day", "07:00", 8, "none", 2);
-  shift.run("sh_night", "Night", "19:00", 8, "evening", 3);
+  shift.run("sh_general", "General Shift", "09:00", 8.5, "morning", 1);
+  shift.run("sh_morning", "Shift A (Morning)", "06:00", 8, "morning", 2);
+  shift.run("sh_evening", "Shift B (Evening)", "14:00", 8, "evening", 3);
+  shift.run("sh_night", "Shift C (Night)", "22:00", 8, "evening", 4);
 }
 
 export default db;

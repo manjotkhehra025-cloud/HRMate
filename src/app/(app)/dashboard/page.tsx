@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getPermissions, type Permission } from "@/lib/permissions";
 import { getFactoryConfig } from "@/lib/geo";
@@ -42,7 +43,8 @@ function inLabel(from: string, today: string) {
 }
 
 export default function DashboardPage() {
-  const user = getSessionUser()!;
+  const user = getSessionUser();
+  if (!user) redirect("/login");
   const perms = getPermissions(user.id);
   const has = (p: Permission) => perms.isSuperAdmin || perms.has(p);
   const today = dateKey();

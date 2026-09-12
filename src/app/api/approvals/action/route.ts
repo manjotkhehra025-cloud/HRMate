@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     notify(
       row.user_id,
       `Leave ${status}`,
-      `Your ${lt.name} request (${row.start_date} to ${row.end_date}) was ${status}${note ? ` — "${note}"` : ""}`,
+      `Your ${lt?.name || "Leave"} request (${row.start_date} to ${row.end_date}) was ${status}${note ? ` — "${note}"` : ""}`,
       { type: status === "approved" ? "success" : "error", link: "/leaves" }
     );
   } else if (kind === "manual") {
@@ -72,6 +72,36 @@ export async function POST(req: NextRequest) {
       `Manual punch ${status}`,
       `Your manual ${row.type} request for ${row.date} was ${status}${note ? ` — "${note}"` : ""}`,
       { type: status === "approved" ? "success" : "error", link: "/attendance" }
+    );
+  } else if (kind === "overtime") {
+    const row = db.prepare("SELECT * FROM overtime_requests WHERE id = ?").get(id) as any;
+    if (!row) return error("Overtime request not found", 404);
+    if (row.status !== "pending") return error("Already processed");
+
+    db.prepare(
+      "UPDATE overtime_requests SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewed_note = ? WHERE id = ?"
+    ).run(status, user.id, Date.now(), note || "", id);
+
+    notify(
+      row.user_id,
+      `Overtime ${status}`,
+      `Your overtime request for ${row.hours}h on ${row.date} was ${status}${note ? ` — "${note}"` : ""}`,
+      { type: status === "approved" ? "success" : "error", link: "/attendance" }
+    );
+  } else if (kind === "gate_pass") {
+    const row = db.prepare("SELECT * FROM gate_passes WHERE id = ?").get(id) as any;
+    if (!row) return error("Gate pass request not found", 404);
+    if (row.status !== "pending") return error("Already processed");
+
+    db.prepare(
+      "UPDATE gate_passes SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewed_note = ? WHERE id = ?"
+    ).run(status, user.id, Date.now(), note || "", id);
+
+    notify(
+      row.user_id,
+      `Gate Pass ${status}`,
+      `Your gate pass request for ${row.date} (${row.time_out}) was ${status}${note ? ` — "${note}"` : ""}`,
+      { type: status === "approved" ? "success" : "error", link: "/id-card" }
     );
   } else if (kind === "change") {
     if (user.role !== "super_admin") return error("Only Super Admin can approve these changes", 403);

@@ -14,7 +14,7 @@ export const sessionCookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
   path: "/",
-  secure: IS_PRODUCTION,
+  secure: process.env.HRMATE_ORIGIN?.startsWith("https://") ?? false,
 };
 
 export interface SessionUser {

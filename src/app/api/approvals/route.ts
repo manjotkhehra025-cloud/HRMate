@@ -41,6 +41,38 @@ export async function GET() {
       .all() as any[]
   ).filter((m) => canActOnManual(actor, m));
 
+  const overtime = (
+    db
+      .prepare(
+        `SELECT ot.*, u.name AS user_name, u.color AS user_color, u.department AS user_department,
+              u.staff_type AS user_staff_type, u.avatar AS user_avatar
+       FROM overtime_requests ot JOIN users u ON u.id = ot.user_id
+       WHERE ot.status = 'pending'
+       ORDER BY ot.created_at DESC`
+      )
+      .all() as any[]
+  ).filter((o) => {
+    if (user.role === "super_admin") return true;
+    if (o.approver_id === user.id) return true;
+    return false;
+  });
+
+  const gatePasses = (
+    db
+      .prepare(
+        `SELECT gp.*, u.name AS user_name, u.color AS user_color, u.department AS user_department,
+              u.staff_type AS user_staff_type, u.avatar AS user_avatar
+       FROM gate_passes gp JOIN users u ON u.id = gp.user_id
+       WHERE gp.status = 'pending'
+       ORDER BY gp.created_at DESC`
+      )
+      .all() as any[]
+  ).filter((g) => {
+    if (user.role === "super_admin") return true;
+    if (g.approver_id === user.id) return true;
+    return false;
+  });
+
   const changes =
     user.role === "super_admin"
       ? (db
@@ -56,6 +88,8 @@ export async function GET() {
   return json({
     leaves,
     manual,
+    overtime,
+    gatePasses,
     changes: changes.map((c) => ({ ...c, payload: safeParse(c.payload) })),
   });
 }

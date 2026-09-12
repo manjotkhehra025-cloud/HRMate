@@ -1,0 +1,84 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.gdfoods.hrmate'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.gdfoods.hrmate"
+        minSdk 21
+        targetSdk 34
+        versionCode 3
+        versionName "1.2.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Universal CPU Architecture Support for Heavy Industrial & Modern Devices:
+        // arm64-v8a: Modern 64-bit ARM smartphones, tablets & foldables
+        // armeabi-v7a: 32-bit ARM devices & rugged factory scanners
+        // x86_64: 64-bit Intel/AMD Tablets, Chromebooks, Industrial PCs & Emulators
+        // x86: 32-bit Intel/AMD Android devices
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86'
+        }
+
+        multiDexEnabled true
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    signingConfigs {
+        release {
+            def ksFile = file("hrmate-release.keystore")
+            if (System.getenv("CM_KEYSTORE_PATH")) {
+                ksFile = file(System.getenv("CM_KEYSTORE_PATH"))
+            } else if (!ksFile.exists()) {
+                ksFile = file("../hrmate-release.keystore")
+            } else if (!ksFile.exists()) {
+                ksFile = file("../../hrmate-release.keystore")
+            }
+            storeFile ksFile
+            storePassword(System.getenv("CM_KEYSTORE_PASSWORD") ?: "hrmatepassword123")
+            keyAlias(System.getenv("CM_KEY_ALIAS") ?: "hrmate")
+            keyPassword(System.getenv("CM_KEY_PASSWORD") ?: "hrmatepassword123")
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.webkit:webkit:1.9.0'
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+}
