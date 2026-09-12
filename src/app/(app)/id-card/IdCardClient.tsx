@@ -5,9 +5,6 @@ import {
   IdCard,
   QrCode,
   RotateCw,
-  Phone,
-  Droplet,
-  Building2,
   Plus,
   Send,
   X,
@@ -15,15 +12,7 @@ import {
   Edit3,
   Check,
   Printer,
-  Calendar,
   Users,
-  Building,
-  Mail,
-  HelpCircle,
-  FileText,
-  ShieldAlert,
-  ShieldCheck,
-  Download,
 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import TopsLogo from "@/components/TopsLogo";
@@ -148,7 +137,6 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           setEditEmpCode(d.user.emp_code || "");
           setEditStaffType(d.user.staff_type || "official");
 
-          // Parse department & sub-department if combined (e.g. "Engineering - Electrical")
           const fullDept = d.user.department || "Production";
           if (fullDept.includes(" - ")) {
             const [mainD, subD] = fullDept.split(" - ");
@@ -274,13 +262,11 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
 
   const isYellowCard = profile.staff_type === "yellow_card";
   const photo = avatarSrc(profile.id, profile.avatar);
-
-  // Department config for sub-departments
   const currentDeptConfig = FACTORY_DEPARTMENTS.find((d) => d.name === editDept);
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Printable ID Card Style */}
+      {/* Printable ID Card CSS Layout */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @media print {
@@ -361,9 +347,9 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           </div>
         </div>
 
-        {/* Super Admin User Switcher (Responsive Box that never overflows) */}
+        {/* Super Admin User Switcher (Fit & Responsive on Mobile) */}
         {isSuperAdmin && allUsers.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 overflow-hidden">
             <div className="flex items-center gap-2 shrink-0">
               <Users className="h-4 w-4 text-[#1E6FE0]" />
               <span className="text-[13px] font-bold text-[#172334]">Super Admin Select Employee:</span>
