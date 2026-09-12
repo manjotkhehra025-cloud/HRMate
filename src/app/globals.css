@@ -148,6 +148,9 @@ html[data-theme="dark"] .btn-secondary {
 }
 
 @layer components {
+  .flow-gradient {
+    background: linear-gradient(135deg, #0B192C 0%, #1E6FE0 50%, #10B981 100%);
+  }
   .card {
     @apply rounded-card border border-line bg-white shadow-card;
   }

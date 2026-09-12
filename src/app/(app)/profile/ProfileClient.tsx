@@ -284,31 +284,47 @@ export default function ProfileClient({
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Profile Card Banner */}
-        <div className="flow-gradient rounded-[18px] p-6 text-white shadow-glow lg:col-span-2 lg:row-start-1">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar name={user.name} color={user.color} size={76} src={photo} className="ring-4 ring-white/30 shadow-md" />
-              <div className="min-w-0">
-                <p className="truncate text-xl font-bold">{user.name}</p>
-                <p className="truncate text-[13.5px] text-white/85">{user.email}</p>
+        {/* Profile Card Banner - Ultra high contrast modern card */}
+        <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-6 text-white shadow-2xl border border-white/10 lg:col-span-2 lg:row-start-1">
+          {/* Ambient background glow */}
+          <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[#10B981]/20 blur-2xl" />
+          <div className="pointer-events-none absolute -left-12 -bottom-12 h-48 w-48 rounded-full bg-[#3B82F6]/20 blur-2xl" />
+
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Avatar
+                name={user.name}
+                color={user.color}
+                size={80}
+                src={photo}
+                className="ring-4 ring-emerald-400/40 shadow-xl"
+              />
+              <div className="min-w-0 space-y-1.5">
+                <h2 className="truncate text-[22px] font-black text-white tracking-tight drop-shadow-sm">
+                  {user.name}
+                </h2>
+                <p className="truncate text-[13.5px] font-medium text-slate-300">
+                  {user.email}
+                </p>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                  <span className="rounded-full bg-blue-500/25 border border-blue-400/30 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-200 backdrop-blur-md">
                     {user.role.replace("_", " ")}
                   </span>
-                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                  <span className="rounded-full bg-emerald-500/25 border border-emerald-400/30 px-3 py-1 text-[11px] font-bold text-emerald-200 backdrop-blur-md">
                     {staffType === "yellow_card" ? "🟡 Yellow Card Staff" : "Official Staff"}
                   </span>
                   <a
                     href="/id-card"
-                    className="inline-flex items-center gap-1 rounded-full bg-emerald-400 text-slate-950 px-3 py-0.5 text-[11px] font-extrabold shadow-sm hover:bg-emerald-300 transition"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 px-3.5 py-1 text-[11.5px] font-black shadow-md hover:brightness-110 active:scale-95 transition"
                   >
-                    🪪 View Digital ID Card & Pass →
+                    <span>🪪 View Digital ID Card & Pass →</span>
                   </a>
                 </div>
               </div>
             </div>
-            <PhotoPicker prefix="profile" tone="onGradient" layout="stack" disabled={uploading} onPicked={onPhoto} />
+            <div className="shrink-0 self-start sm:self-center">
+              <PhotoPicker prefix="profile" tone="onGradient" layout="stack" disabled={uploading} onPicked={onPhoto} />
+            </div>
           </div>
         </div>
 
@@ -332,7 +348,7 @@ export default function ProfileClient({
               {canFull ? (
                 <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               ) : (
-                <input className="input bg-[#F4F7FB]" value={user.email} disabled />
+                <input className="input bg-[#F4F7FB] text-[#172334] font-medium" value={user.email} disabled />
               )}
             </div>
             <div>
@@ -344,8 +360,8 @@ export default function ProfileClient({
                 </select>
               ) : (
                 <input
-                  className="input bg-[#F4F7FB]"
-                  value={staffType === "yellow_card" ? "Yellow card (15 EL)" : "Official Staff"}
+                  className="input bg-[#F4F7FB] text-[#172334] font-bold"
+                  value={staffType === "yellow_card" ? "🟡 Yellow card (15 EL Only)" : "Official Staff"}
                   disabled
                 />
               )}
@@ -353,7 +369,7 @@ export default function ProfileClient({
             <div>
               <label className="label">{t("department")}</label>
               {canFull ? (
-                <select className="input" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                <select className="input font-medium" value={department} onChange={(e) => setDepartment(e.target.value)}>
                   {department && !DEPARTMENTS.some((d) => d.name === department) && (
                     <option value={department}>{department}</option>
                   )}
@@ -364,15 +380,15 @@ export default function ProfileClient({
                   ))}
                 </select>
               ) : (
-                <input className="input bg-[#F4F7FB]" value={user.department || "—"} disabled />
+                <input className="input bg-[#F4F7FB] text-[#172334] font-medium" value={user.department || "—"} disabled />
               )}
             </div>
             <div>
               <label className="label">{t("designation")}</label>
               {canFull ? (
-                <input className="input" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+                <input className="input font-medium" value={designation} onChange={(e) => setDesignation(e.target.value)} />
               ) : (
-                <input className="input bg-[#F4F7FB]" value={user.designation || "—"} disabled />
+                <input className="input bg-[#F4F7FB] text-[#172334] font-medium" value={user.designation || "—"} disabled />
               )}
             </div>
           </div>
