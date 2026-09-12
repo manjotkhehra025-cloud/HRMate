@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { usePrefs } from "@/components/PrefsProvider";
+import HRMateLogo from "@/components/HRMateLogo";
 
 const REMEMBER_KEY = "hrmate_remember_email";
 const BIOMETRIC_TOKEN_KEY = "hrmate_biometric_token";
@@ -245,11 +246,11 @@ export default function LoginForm() {
       <div className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[32px] border border-white/20 bg-white p-6 shadow-2xl sm:p-8">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#059669] via-[#10B981] to-[#34D399] text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] ring-4 ring-emerald-500/20">
-            <Fingerprint className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="mt-3 text-[22px] font-black tracking-tight text-[#0F172A]">HRMate</h1>
-          <p className="text-[12px] font-bold uppercase tracking-wider text-[#059669]">
+          <HRMateLogo size={58} />
+          <h1 className="mt-2.5 text-[24px] font-black tracking-tight text-[#0F172A]">
+            HR<span className="text-[#1E6FE0]">Mate</span>
+          </h1>
+          <p className="mt-0.5 text-[12px] font-bold uppercase tracking-wider text-[#10B981]">
             GD Foods Mfg. (I) Pvt. Ltd. · Workforce Portal
           </p>
         </div>

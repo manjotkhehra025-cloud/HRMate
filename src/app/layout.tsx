@@ -13,7 +13,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "HRMate",
   },
-  icons: { apple: "/icon.png" },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {

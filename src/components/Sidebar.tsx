@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, Fingerprint, ChevronRight } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import Avatar, { avatarSrc } from "./Avatar";
+import HRMateLogo from "./HRMateLogo";
 
 export interface NavItem {
   href: string;
@@ -69,17 +70,7 @@ export default function Sidebar({
         {/* Brand Header */}
         <div className="flex h-[68px] items-center justify-between border-b border-[#153452]/70 px-5">
           <Link href="/dashboard" className="flex items-center gap-3 group" onClick={onClose}>
-            <div className="flow-gradient flex h-10 w-10 items-center justify-center rounded-[12px] shadow-flow transition group-hover:scale-105">
-              <Fingerprint className="h-5 w-5 text-white" />
-            </div>
-            <div className="leading-tight">
-              <span className="block text-[16px] font-bold tracking-tight text-white">
-                HRMate
-              </span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-[#78B4FF]">
-                Smart HRMS
-              </span>
-            </div>
+            <HRMateLogo size={40} textColor="white" withText={true} subtitle="Smart HRMS" />
           </Link>
           <button
             onClick={onDismiss || onClose}

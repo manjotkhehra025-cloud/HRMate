@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { X, LogOut } from "lucide-react";
 import Avatar, { avatarSrc } from "./Avatar";
 import type { NavItem, SessionUserShape } from "./Sidebar";
+import HRMateLogo from "./HRMateLogo";
 import { classNames } from "@/lib/utils";
 
 const TILE_COLORS = [
@@ -36,35 +37,33 @@ export default function ModuleMenu({
   const pathname = usePathname();
   if (!open) return null;
 
+  const roleDisplay = user.role.replace(/_/g, " ");
+
   return (
-    <div className="absolute inset-0 z-[80] flex justify-start">
+    <div className="fixed inset-0 z-[80] flex justify-start">
       <button
         type="button"
         aria-label="Close menu"
-        className="absolute inset-0 bg-navy/40"
+        className="fixed inset-0 bg-[#0B192C]/50 backdrop-blur-[2px] transition-opacity duration-300"
         onClick={onClose}
       />
-      <div className="relative z-[81] flex h-full w-[min(20rem,46vw)] min-w-[16.5rem] flex-col bg-white shadow-pop">
-        <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-line bg-white px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flow-gradient flex h-9 w-9 items-center justify-center rounded-[12px] text-sm font-bold text-white">
-              H
-            </div>
-            <div>
-              <p className="text-[15px] font-bold text-ink">HRMate</p>
-              <p className="text-[11px] capitalize text-muted">{user.role.replace("_", " ")}</p>
-            </div>
-          </div>
+      <div className="relative z-[81] flex h-full w-[min(20.5rem,85vw)] flex-col bg-white shadow-2xl animate-slide-in">
+        {/* Menu Header with Modern HRMate Brand Logo */}
+        <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-4 py-3.5">
+          <Link href="/dashboard" onClick={onClose} className="group flex items-center">
+            <HRMateLogo size={36} withText={true} subtitle={roleDisplay} />
+          </Link>
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-muted hover:bg-[#F3F7FB]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-3 pb-3 pt-4">
+        {/* Navigation Grid Tiles */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC]/50 px-3.5 pb-4 pt-4">
           <div className="grid grid-cols-3 gap-2.5">
             {nav.map((item, i) => {
               const c = TILE_COLORS[i % TILE_COLORS.length];
@@ -76,20 +75,28 @@ export default function ModuleMenu({
                   href={item.href}
                   onClick={onClose}
                   className={classNames(
-                    "flex min-h-[88px] flex-col items-center justify-center gap-1.5 rounded-[16px] px-1.5 py-3 text-center",
-                    active ? "ring-2 ring-brand-500/40" : ""
+                    "flex min-h-[92px] flex-col items-center justify-center gap-1.5 rounded-[18px] px-2 py-3 text-center transition-all duration-150 active:scale-95",
+                    active
+                      ? "bg-white shadow-[0_4px_16px_rgba(30,111,224,0.16)] ring-2 ring-[#1E6FE0]"
+                      : "hover:shadow-sm"
                   )}
-                  style={{ background: c.bg }}
+                  style={{ background: active ? "#FFFFFF" : c.bg }}
                 >
-                  <span style={{ color: c.fg }}>{item.icon}</span>
-                  <span className="text-[11.5px] font-semibold leading-tight text-ink">{item.label}</span>
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-xl transition"
+                    style={{ color: c.fg }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="text-[12px] font-bold leading-tight text-[#0F172A]">{item.label}</span>
                 </Link>
               );
             })}
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2.5 border-t border-line bg-white px-3 py-3">
+        {/* Bottom Profile Footer */}
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-[#E2E8F0] bg-white px-3.5 py-3">
           <Avatar
             name={user.name}
             color={user.color}
@@ -97,12 +104,12 @@ export default function ModuleMenu({
             src={avatarSrc(user.id, (user as any).avatar)}
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
-            <p className="truncate text-xs text-muted">{user.email}</p>
+            <p className="truncate text-sm font-bold text-[#0F172A]">{user.name}</p>
+            <p className="truncate text-[11px] text-[#64748B]">{user.email}</p>
           </div>
           <button
             onClick={onLogout}
-            className="rounded-xl p-2 text-[#C52B35] hover:bg-rose-50"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#EF4444] transition hover:bg-rose-50 active:scale-95"
             title="Sign out"
           >
             <LogOut className="h-5 w-5" />

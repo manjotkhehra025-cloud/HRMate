@@ -26,6 +26,7 @@ import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
 import MobileNav from "./MobileNav";
 import Avatar, { avatarSrc } from "./Avatar";
 import ModuleMenu from "./ModuleMenu";
+import HRMateLogo from "./HRMateLogo";
 import { timeAgo } from "@/lib/utils";
 import { classNames } from "@/lib/utils";
 import { usePrefs } from "./PrefsProvider";
@@ -221,9 +222,7 @@ export default function AppShell({
 
           <div className="flex items-center gap-2.5">
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0F172A] via-[#1E3E62] to-[#1E6FE0] text-white shadow-sm">
-                <Sparkles className="h-4 w-4 text-[#10B981]" />
-              </div>
+              <HRMateLogo size={36} />
               <div className="min-w-0">
                 <h1 className="text-[16px] font-extrabold tracking-tight text-[#0F172A] leading-tight sm:text-[18px]">
                   {currentLabel}
