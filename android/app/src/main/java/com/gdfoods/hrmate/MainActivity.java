@@ -12,6 +12,10 @@ import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,7 +37,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -59,49 +62,124 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
 
     private WebView webView;
+    private LinearLayout loadingLayout;
     private LinearLayout offlineLayout;
     private Button btnRetry;
 
     private ValueCallback<Uri[]> filePathCallback;
     private String cameraPhotoPath;
     private long lastBackPressedTime = 0;
+    private boolean isPageError = false;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         // Native Edge-to-Edge Theme Integration
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setStatusBarColor(0xFF0F172A);
-            getWindow().setNavigationBarColor(0xFFFFFFFF);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                );
-            }
+            getWindow().setNavigationBarColor(0xFF0F172A);
         }
 
         setContentView(R.layout.activity_main);
 
         webView = findViewById(R.id.webView);
+        loadingLayout = findViewById(R.id.loadingLayout);
         offlineLayout = findViewById(R.id.offlineLayout);
         btnRetry = findViewById(R.id.btnRetry);
 
         checkAndRequestPermissions();
         configureWebView();
+        setupNetworkMonitoring();
 
-        btnRetry.setOnClickListener(v -> {
+        btnRetry.setOnClickListener(v -> retryLoading());
+
+        if (isNetworkAvailable()) {
+            isPageError = false;
+            loadingLayout.setVisibility(View.VISIBLE);
             offlineLayout.setVisibility(View.GONE);
             webView.setVisibility(View.VISIBLE);
-            webView.reload();
-        });
-
-        if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
+            if (savedInstanceState == null) {
+                webView.loadUrl(APP_URL);
+            } else {
+                webView.restoreState(savedInstanceState);
+            }
         } else {
-            webView.restoreState(savedInstanceState);
+            showOfflineScreen();
         }
+    }
+
+    private boolean isNetworkAvailable() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Network network = cm.getActiveNetwork();
+                if (network == null) return false;
+                NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+                return capabilities != null && (
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                );
+            } else {
+                android.net.NetworkInfo activeNetworkInfo = cm.getActiveNetworkInfo();
+                return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+            }
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void setupNetworkMonitoring() {
+        try {
+            connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (connectivityManager != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                networkCallback = new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(@NonNull Network network) {
+                        runOnUiThread(() -> {
+                            if (isPageError || offlineLayout.getVisibility() == View.VISIBLE) {
+                                retryLoading();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onLost(@NonNull Network network) {
+                        runOnUiThread(() -> {
+                            // Only switch if main webview isn't loaded
+                        });
+                    }
+                };
+                connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void showOfflineScreen() {
+        isPageError = true;
+        runOnUiThread(() -> {
+            try {
+                webView.stopLoading();
+                webView.loadUrl("about:blank");
+            } catch (Exception ignored) {}
+            loadingLayout.setVisibility(View.GONE);
+            webView.setVisibility(View.GONE);
+            offlineLayout.setVisibility(View.VISIBLE);
+            offlineLayout.bringToFront();
+        });
+    }
+
+    private void retryLoading() {
+        isPageError = false;
+        offlineLayout.setVisibility(View.GONE);
+        loadingLayout.setVisibility(View.VISIBLE);
+        webView.setVisibility(View.VISIBLE);
+        webView.loadUrl(APP_URL);
     }
 
     private void checkAndRequestPermissions() {
@@ -131,7 +209,6 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
-        // Enforce GPU Hardware Acceleration for Heavy Workloads & Large Displays
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         webView.setBackgroundColor(0xFF0B132B);
 
@@ -152,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
-        // Performance & Heavy Work Optimization
         settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
 
@@ -169,9 +245,7 @@ public class MainActivity extends AppCompatActivity {
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
 
-        // Bridge native Android Biometrics to Web / App
         webView.addJavascriptInterface(new WebAppInterface(this), "AndroidApp");
-
         webView.setWebViewClient(new CustomWebViewClient());
         webView.setWebChromeClient(new CustomWebChromeClient());
     }
@@ -179,7 +253,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // Handle rotation on foldables, tablets and kiosks seamlessly without reloading webView
     }
 
     public class WebAppInterface {
@@ -201,46 +274,28 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void authenticateBiometrics() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    showNativeBiometricPrompt();
-                }
-            });
+            runOnUiThread(() -> showNativeBiometricPrompt());
         }
 
         @JavascriptInterface
         public void requestLocationPermission() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    checkAndRequestPermissions();
-                }
-            });
+            runOnUiThread(() -> checkAndRequestPermissions());
         }
 
         @JavascriptInterface
         public void getNativeGpsLocation() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    fetchNativeLocation();
-                }
-            });
+            runOnUiThread(() -> fetchNativeLocation());
         }
 
         @JavascriptInterface
         public void openAppSettings() {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        intent.setData(Uri.fromParts("package", getPackageName(), null));
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        Toast.makeText(MainActivity.this, "Unable to open settings", Toast.LENGTH_SHORT).show();
-                    }
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    intent.setData(Uri.fromParts("package", getPackageName(), null));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Unable to open settings", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -312,15 +367,12 @@ public class MainActivity extends AppCompatActivity {
             locationManager.requestLocationUpdates(provider, 0, 0, locationListener, Looper.getMainLooper());
 
             final Location fallback = bestLocation;
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        locationManager.removeUpdates(locationListener);
-                    } catch (Exception ignored) {}
-                    if (fallback != null) {
-                        sendNativeGpsToWeb(true, fallback.getLatitude(), fallback.getLongitude(), "cached");
-                    }
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    locationManager.removeUpdates(locationListener);
+                } catch (Exception ignored) {}
+                if (fallback != null) {
+                    sendNativeGpsToWeb(true, fallback.getLatitude(), fallback.getLongitude(), "cached");
                 }
             }, 3500);
 
@@ -330,13 +382,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendNativeGpsToWeb(final boolean success, final double lat, final double lng, final String message) {
-        webView.post(new Runnable() {
-            @Override
-            public void run() {
-                String safeMsg = message != null ? message.replace("'", "\\'") : "";
-                String js = "window.onNativeGpsResult && window.onNativeGpsResult(" + success + ", " + lat + ", " + lng + ", '" + safeMsg + "');";
-                webView.evaluateJavascript(js, null);
-            }
+        webView.post(() -> {
+            String safeMsg = message != null ? message.replace("'", "\\'") : "";
+            String js = "window.onNativeGpsResult && window.onNativeGpsResult(" + success + ", " + lat + ", " + lng + ", '" + safeMsg + "');";
+            webView.evaluateJavascript(js, null);
         });
     }
 
@@ -358,34 +407,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                webView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, '" + errString + "');", null);
-                    }
-                });
+                webView.post(() -> webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, '" + errString + "');", null));
             }
 
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                webView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(true, 'success');", null);
-                    }
-                });
+                webView.post(() -> webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(true, 'success');", null));
             }
 
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                webView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, 'Fingerprint not recognized');", null);
-                    }
-                });
+                webView.post(() -> webView.evaluateJavascript("window.onNativeBiometricResult && window.onNativeBiometricResult(false, 'Fingerprint not recognized');", null));
             }
         });
 
@@ -412,13 +446,11 @@ public class MainActivity extends AppCompatActivity {
 
         private boolean handleUri(String url) {
             if (url == null) return false;
-            
-            // Keep internal domain urls inside WebView
-            if (url.startsWith("https://gdfoods.duckdns.org") || url.startsWith("http://gdfoods.duckdns.org")) {
+
+            if (url.startsWith("https://gdfoods.duckdns.org") || url.startsWith("http://gdfoods.duckdns.org") || url.startsWith("about:")) {
                 return false;
             }
 
-            // External protocols (tel, mailto, whatsapp, sms, maps)
             if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") ||
                 url.startsWith("whatsapp:") || url.startsWith("geo:") || url.startsWith("market:")) {
                 try {
@@ -431,7 +463,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // External website links
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(intent);
@@ -443,26 +474,34 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            if (!isPageError && !url.equals("about:blank")) {
+                loadingLayout.setVisibility(View.VISIBLE);
+            }
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
+            if (!isPageError && !url.equals("about:blank")) {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    loadingLayout.setVisibility(View.GONE);
+                }, 300);
+            }
         }
 
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
             if (request.isForMainFrame()) {
-                webView.setVisibility(View.GONE);
-                offlineLayout.setVisibility(View.VISIBLE);
+                showOfflineScreen();
             }
+        }
+
+        @Override
+        public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+            showOfflineScreen();
         }
     }
 
     private class CustomWebChromeClient extends WebChromeClient {
-        @Override
-        public void onProgressChanged(WebView view, int newProgress) {
-        }
-
         @Override
         public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
             callback.invoke(origin, true, true);
@@ -470,17 +509,13 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onPermissionRequest(PermissionRequest request) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        request.grant(request.getResources());
-                    }
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    request.grant(request.getResources());
                 }
             });
         }
 
-        // File/Camera picker for photo uploads, selfies, avatar
         @Override
         public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
             if (MainActivity.this.filePathCallback != null) {
@@ -494,9 +529,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     photoFile = createImageFile();
                     takePictureIntent.putExtra("PhotoPath", cameraPhotoPath);
-                } catch (IOException ex) {
-                    // Error occurred while creating the File
-                }
+                } catch (IOException ignored) {}
 
                 if (photoFile != null) {
                     cameraPhotoPath = "file:" + photoFile.getAbsolutePath();
@@ -588,6 +621,16 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Press back again to exit HRMate", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            if (connectivityManager != null && networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            }
+        } catch (Exception ignored) {}
     }
 
     @Override
