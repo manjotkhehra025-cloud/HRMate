@@ -96,14 +96,25 @@ html[data-theme="dark"] #app-body {
   background: #0B132B !important;
 }
 html[data-theme="dark"] header {
-  background-color: #0F172A !important;
+  background-color: rgba(11, 19, 43, 0.95) !important;
   border-color: #1E293B !important;
 }
+html[data-theme="dark"] nav {
+  background-color: rgba(11, 19, 43, 0.95) !important;
+  border-color: #1E293B !important;
+}
+html[data-theme="dark"] nav .ring-white {
+  --tw-ring-color: #0B132B !important;
+}
 html[data-theme="dark"] .card,
-html[data-theme="dark"] .bg-white {
+html[data-theme="dark"] .bg-white:not(.module-tile) {
   background-color: #0F172A !important;
   border-color: #1E293B !important;
   color: #F8FAFC !important;
+}
+html[data-theme="dark"] .module-tile {
+  background-color: #1E293B !important;
+  border-color: #334155 !important;
 }
 html[data-theme="dark"] h1,
 html[data-theme="dark"] h2,
