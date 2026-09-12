@@ -323,13 +323,19 @@ function ensureSchema(d: DatabaseLike) {
     d.exec(`ALTER TABLE users ADD COLUMN emp_code TEXT NOT NULL DEFAULT ''`);
   }
   if (!hasColumn(d, "users", "blood_group")) {
-    d.exec(`ALTER TABLE users ADD COLUMN blood_group TEXT NOT NULL DEFAULT 'O+'`);
+    d.exec(`ALTER TABLE users ADD COLUMN blood_group TEXT NOT NULL DEFAULT 'A+'`);
   }
   if (!hasColumn(d, "users", "emergency_contact")) {
     d.exec(`ALTER TABLE users ADD COLUMN emergency_contact TEXT NOT NULL DEFAULT ''`);
   }
+  if (!hasColumn(d, "users", "doj")) {
+    d.exec(`ALTER TABLE users ADD COLUMN doj TEXT NOT NULL DEFAULT ''`);
+  }
+  if (!hasColumn(d, "users", "dob")) {
+    d.exec(`ALTER TABLE users ADD COLUMN dob TEXT NOT NULL DEFAULT ''`);
+  }
   if (!hasColumn(d, "users", "shift_id")) {
-    d.exec(`ALTER TABLE users ADD COLUMN shift_id TEXT NOT NULL DEFAULT 'sh_general'`);
+    d.exec(`ALTER TABLE users ADD COLUMN shift_id TEXT NOT NULL DEFAULT 'sh_general_day'`);
   }
   if (!hasColumn(d, "sessions", "last_seen")) {
     d.exec(`ALTER TABLE sessions ADD COLUMN last_seen INTEGER`);
@@ -379,13 +385,20 @@ function seed(d: DatabaseLike) {
 /** Fill missing keys only — never overwrite a saved factory location. */
 function seedFactoryDefaults(d: DatabaseLike) {
   const setSetting = d.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`);
-  setSetting.run("factory_name", "My Factory");
-  setSetting.run("factory_lat", "28.6139");
-  setSetting.run("factory_lng", "77.2090");
-  setSetting.run("factory_radius", "200");
-  setSetting.run("factory_address", "");
-  setSetting.run("work_start", "09:00");
-  setSetting.run("work_end", "18:00");
+  setSetting.run("factory_name", "GD Foods Mfg. (I) Pvt. Ltd.");
+  setSetting.run("factory_lat", "31.4286");
+  setSetting.run("factory_lng", "75.1481");
+  setSetting.run("factory_radius", "250");
+  setSetting.run("factory_address", "Khadur Sahib, Khadur Sahib Tahsil, Tarn Taran, Punjab, 143117, India");
+  setSetting.run("brand_name", "Tops");
+  setSetting.run(
+    "office_address",
+    "4th Floor, Novotel City Centre Hotel, Plot No. 1, Community Centre, DB Gupta Road, Motia Khan, Jhandewalan, New Delhi - 110055"
+  );
+  setSetting.run("office_phone", "+91-11-45233333");
+  setSetting.run("office_email", "response@tops.in");
+  setSetting.run("work_start", "08:00");
+  setSetting.run("work_end", "17:00");
 }
 
 function seedShiftsAndLeave(d: DatabaseLike) {
