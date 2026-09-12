@@ -15,13 +15,15 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.provider.MediaStore;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -150,9 +152,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onLost(@NonNull Network network) {
-                        runOnUiThread(() -> {
-                            // Only switch if main webview isn't loaded
-                        });
+                        // Keep current view
                     }
                 };
                 connectivityManager.registerDefaultNetworkCallback(networkCallback);
@@ -285,6 +285,24 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void getNativeGpsLocation() {
             runOnUiThread(() -> fetchNativeLocation());
+        }
+
+        @JavascriptInterface
+        public void printPage() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    try {
+                        PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                        if (printManager != null) {
+                            String jobName = "HRMate_ID_Badge_" + System.currentTimeMillis();
+                            PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(jobName);
+                            printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Printing not supported on this device", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
         }
 
         @JavascriptInterface
