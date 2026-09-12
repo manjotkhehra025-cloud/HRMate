@@ -164,8 +164,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
         setIsSuperAdmin(!!d.isSuperAdmin);
         if (d.allUsers) setAllUsers(d.allUsers);
 
-        // Generate 100% ISO Scannable QR Code
-        const scanPayload = `https://gdfoods.duckdns.org/id-card?emp=${d.user.emp_code}&id=${d.user.id}`;
+        // Generate 100% ISO Scannable QR Code pointing to Public Standalone Verification Record (No website login required)
+        const scanPayload = `https://gdfoods.duckdns.org/verify/${d.user.emp_code || d.user.id}`;
         const qrUrl = await generateQrDataUrl(scanPayload, {
           width: 320,
           fgColor: "#000000",

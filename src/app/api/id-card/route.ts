@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     },
     isSuperAdmin,
     allUsers,
-    verifyUrl: `https://gdfoods.duckdns.org/id-card?emp=${empId}&id=${row.id}`,
+    verifyUrl: `https://gdfoods.duckdns.org/verify/${empId}`,
   });
 }
 

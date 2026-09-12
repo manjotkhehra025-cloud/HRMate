@@ -322,6 +322,7 @@ function ensureSchema(d: DatabaseLike) {
   if (!hasColumn(d, "users", "emp_code")) {
     d.exec(`ALTER TABLE users ADD COLUMN emp_code TEXT NOT NULL DEFAULT ''`);
   }
+  d.prepare(`UPDATE users SET emp_code = 'NS000001' WHERE (emp_code IS NULL OR emp_code = '') AND role = 'super_admin'`).run();
   if (!hasColumn(d, "users", "blood_group")) {
     d.exec(`ALTER TABLE users ADD COLUMN blood_group TEXT NOT NULL DEFAULT 'A+'`);
   }
