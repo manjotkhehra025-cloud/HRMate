@@ -6,7 +6,7 @@ import Avatar, { avatarSrc } from "@/components/Avatar";
 import PhotoPicker, { postAvatar } from "@/components/PhotoPicker";
 import { Spinner, StatusBadge } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/permission-constants";
-import { APPROVER_DESIGNATIONS, DEPARTMENTS, MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
+import { APPROVER_DESIGNATIONS, FACTORY_DEPARTMENTS, MANAGER_SCOPES, WEEKDAYS } from "@/lib/staff";
 import PermissionPanel from "./PermissionPanel";
 
 interface UserItem {
@@ -68,7 +68,6 @@ export default function UsersTab({
   });
   const [caps, setCaps] = useState({ total: 70, yellow_card: 50, official: 20 });
   const [counts, setCounts] = useState({ total: 0, yellow: 0, official: 0 });
-  const deptNames = DEPARTMENTS.map((d) => d.name);
 
   async function load() {
     const res = await fetch("/api/admin/users");
@@ -283,31 +282,56 @@ export default function UsersTab({
               )}
             </div>
             <div>
-              <label className="label">Department</label>
-              <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required>
-                {deptNames.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+              <label className="label">Department (6 Factory Departments)</label>
+              <select
+                className="input font-semibold"
+                value={form.department.split(" - ")[0]}
+                onChange={(e) => {
+                  const dName = e.target.value;
+                  const cfg = FACTORY_DEPARTMENTS.find((d) => d.name === dName);
+                  if (cfg?.subDepartments && cfg.subDepartments.length > 0) {
+                    setForm({ ...form, department: `${dName} - ${cfg.subDepartments[0]}` });
+                  } else {
+                    setForm({ ...form, department: dName });
+                  }
+                }}
+                required
+              >
+                {FACTORY_DEPARTMENTS.map((d) => (
+                  <option key={d.name} value={d.name}>{d.name}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="label">Designation</label>
-              {isControl ? (
+
+            {FACTORY_DEPARTMENTS.find((d) => d.name === form.department.split(" - ")[0])?.subDepartments && (
+              <div>
+                <label className="label text-[#1E6FE0] font-bold">
+                  Sub-Department ({form.department.split(" - ")[0]})
+                </label>
                 <select
-                  className="input"
-                  value={form.designation}
-                  onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                  required
+                  className="input font-bold text-[#1E6FE0]"
+                  value={form.department.split(" - ")[1] || ""}
+                  onChange={(e) => {
+                    const mainD = form.department.split(" - ")[0];
+                    setForm({ ...form, department: `${mainD} - ${e.target.value}` });
+                  }}
                 >
-                  {APPROVER_DESIGNATIONS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                  {FACTORY_DEPARTMENTS.find((d) => d.name === form.department.split(" - ")[0])?.subDepartments?.map((s) => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
-                  <option value="Admin">Admin</option>
-                  <option value="Super Admin">Super Admin</option>
                 </select>
-              ) : (
-                <input className="input" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="e.g. Machine Operator" />
-              )}
+              </div>
+            )}
+
+            <div>
+              <label className="label">Designation (Manual Entry)</label>
+              <input
+                className="input font-medium"
+                value={form.designation}
+                onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                placeholder="e.g. Senior Officer, Assistant Manager, Operator"
+                required
+              />
             </div>
             <div>
               <label className="label">Staff Type</label>
@@ -557,29 +581,54 @@ export default function UsersTab({
                 />
               </div>
               <div>
-                <label className="label">Department</label>
-                <select className="input" value={editing.department} onChange={(e) => setEditing({ ...editing, department: e.target.value })}>
-                  {editing.department && !deptNames.includes(editing.department) && (
-                    <option value={editing.department}>{editing.department}</option>
-                  )}
-                  {deptNames.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                <label className="label">Department (6 Factory Departments)</label>
+                <select
+                  className="input font-semibold"
+                  value={editing.department.split(" - ")[0]}
+                  onChange={(e) => {
+                    const dName = e.target.value;
+                    const cfg = FACTORY_DEPARTMENTS.find((d) => d.name === dName);
+                    if (cfg?.subDepartments && cfg.subDepartments.length > 0) {
+                      setEditing({ ...editing, department: `${dName} - ${cfg.subDepartments[0]}` });
+                    } else {
+                      setEditing({ ...editing, department: dName });
+                    }
+                  }}
+                >
+                  {FACTORY_DEPARTMENTS.map((d) => (
+                    <option key={d.name} value={d.name}>{d.name}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="label">Designation</label>
-                {isControl ? (
-                  <select className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })}>
-                    {APPROVER_DESIGNATIONS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
+
+              {FACTORY_DEPARTMENTS.find((d) => d.name === editing.department.split(" - ")[0])?.subDepartments && (
+                <div>
+                  <label className="label text-[#1E6FE0] font-bold">
+                    Sub-Department ({editing.department.split(" - ")[0]})
+                  </label>
+                  <select
+                    className="input font-bold text-[#1E6FE0]"
+                    value={editing.department.split(" - ")[1] || ""}
+                    onChange={(e) => {
+                      const mainD = editing.department.split(" - ")[0];
+                      setEditing({ ...editing, department: `${mainD} - ${e.target.value}` });
+                    }}
+                  >
+                    {FACTORY_DEPARTMENTS.find((d) => d.name === editing.department.split(" - ")[0])?.subDepartments?.map((s) => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
-                    <option value="Admin">Admin</option>
-                    <option value="Super Admin">Super Admin</option>
                   </select>
-                ) : (
-                  <input className="input" value={editing.designation} onChange={(e) => setEditing({ ...editing, designation: e.target.value })} />
-                )}
+                </div>
+              )}
+
+              <div>
+                <label className="label">Designation (Manual Entry)</label>
+                <input
+                  className="input font-medium"
+                  value={editing.designation}
+                  onChange={(e) => setEditing({ ...editing, designation: e.target.value })}
+                  placeholder="e.g. Senior Officer, Operator, Assistant Manager"
+                />
               </div>
               <div>
                 <label className="label">Weekly Off</label>

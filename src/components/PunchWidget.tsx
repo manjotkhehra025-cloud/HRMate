@@ -435,33 +435,30 @@ export default function PunchWidget({ canPunch, today, factory, shift }: PunchWi
           </svg>
 
           {/* Center Display */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3">
             {punchedIn ? (
-              <div className="flex flex-col items-center justify-center space-y-0.5">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-emerald-400 max-w-[140px] truncate">
-                  {activeShift.name}
-                </span>
-                <span className="text-[11px] font-bold text-slate-300 tabular-nums">
+              <div className="flex flex-col items-center justify-center space-y-1">
+                <span className="text-[12px] font-bold text-emerald-400 tabular-nums">
                   {String(hrs).padStart(2, "0")}h {String(mins).padStart(2, "0")}m / {targetFormatted}
                 </span>
-                <span className="my-0.5 text-[24px] font-black tracking-tight text-white tabular-nums drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]">
+                <span className="text-[26px] font-black tracking-tight text-white tabular-nums drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]">
                   {String(hrs).padStart(2, "0")}:{String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
                 </span>
-                <span className="text-[10px] font-medium text-slate-400">
+                <span className="text-[10.5px] font-semibold text-slate-400">
                   {t("punchedInAt")}: {formatTime(record.punch_in_at)}
                 </span>
               </div>
             ) : punchedOut ? (
-              <div className="flex flex-col items-center justify-center space-y-0.5">
-                <CheckCircle2 className="h-7 w-7 text-emerald-400 mb-0.5" />
-                <span className="text-[15px] font-black text-white">{t("shiftFinished")}</span>
-                <span className="text-[10.5px] text-slate-400">{t("outAt")} {formatTime(record.punch_out_at)}</span>
+              <div className="flex flex-col items-center justify-center space-y-1">
+                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                <span className="text-[16px] font-black text-white">{t("shiftFinished")}</span>
+                <span className="text-[11px] text-slate-400">{t("outAt")} {formatTime(record.punch_out_at)}</span>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center space-y-0.5">
-                <Fingerprint className="h-7 w-7 text-emerald-400 animate-pulse mb-0.5" />
-                <span className="text-[17px] font-black text-white">{t("punchIn")}</span>
-                <span className="text-[10.5px] font-bold text-emerald-300 max-w-[140px] truncate">
+              <div className="flex flex-col items-center justify-center space-y-1">
+                <Fingerprint className="h-8 w-8 text-emerald-400 animate-pulse" />
+                <span className="text-[18px] font-black text-white">{t("punchIn")}</span>
+                <span className="text-[11px] font-bold text-emerald-300">
                   {activeShift.name} ({shiftHours}h)
                 </span>
               </div>

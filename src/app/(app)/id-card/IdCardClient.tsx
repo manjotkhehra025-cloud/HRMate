@@ -21,6 +21,9 @@ import {
   Mail,
   HelpCircle,
   FileText,
+  ShieldAlert,
+  ShieldCheck,
+  Download,
 } from "lucide-react";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import TopsLogo from "@/components/TopsLogo";
@@ -28,7 +31,7 @@ import { Spinner } from "@/components/ui";
 import { generateQrDataUrl } from "@/lib/qrcode";
 import { classNames, formatDate } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
-import { DEPARTMENTS } from "@/lib/staff";
+import { FACTORY_DEPARTMENTS } from "@/lib/staff";
 
 interface UserProfile {
   id: string;
@@ -37,6 +40,7 @@ interface UserProfile {
   role: string;
   department: string;
   designation: string;
+  staff_type?: string;
   color: string;
   avatar?: string;
   emp_code?: string;
@@ -109,7 +113,9 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmpCode, setEditEmpCode] = useState("");
-  const [editDept, setEditDept] = useState("");
+  const [editStaffType, setEditStaffType] = useState("official");
+  const [editDept, setEditDept] = useState("Production");
+  const [editSubDept, setEditSubDept] = useState("");
   const [editDesig, setEditDesig] = useState("");
   const [editBlood, setEditBlood] = useState("A+");
   const [editEmergency, setEditEmergency] = useState("");
@@ -121,6 +127,9 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
   const [editOfficePhone, setEditOfficePhone] = useState("");
   const [editOfficeEmail, setEditOfficeEmail] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  // Full Screen Print / Preview Modal
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   async function loadCard(targetUserId?: string) {
     setLoading(true);
@@ -137,7 +146,19 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           setProfile(d.user);
           setEditName(d.user.name || "");
           setEditEmpCode(d.user.emp_code || "");
-          setEditDept(d.user.department || "");
+          setEditStaffType(d.user.staff_type || "official");
+
+          // Parse department & sub-department if combined (e.g. "Engineering - Electrical")
+          const fullDept = d.user.department || "Production";
+          if (fullDept.includes(" - ")) {
+            const [mainD, subD] = fullDept.split(" - ");
+            setEditDept(mainD);
+            setEditSubDept(subD);
+          } else {
+            setEditDept(fullDept);
+            setEditSubDept("");
+          }
+
           setEditDesig(d.user.designation || "");
           setEditBlood(d.user.blood_group || "A+");
           setEditEmergency(d.user.emergency_contact || "+91 95016 06877");
@@ -158,7 +179,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
         // Generate 100% ISO Scannable QR Code
         const scanPayload = `https://gdfoods.duckdns.org/id-card?emp=${d.user.emp_code}&id=${d.user.id}`;
         const qrUrl = await generateQrDataUrl(scanPayload, {
-          width: 300,
+          width: 320,
           fgColor: "#000000",
           bgColor: "#FFFFFF",
         });
@@ -220,6 +241,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
     e.preventDefault();
     setEditSaving(true);
     try {
+      const finalDept = editSubDept ? `${editDept} - ${editSubDept}` : editDept;
       const res = await fetch("/api/id-card", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -227,7 +249,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           user_id: profile.id,
           name: editName,
           emp_code: editEmpCode,
-          department: editDept,
+          staff_type: editStaffType,
+          department: finalDept,
           designation: editDesig,
           blood_group: editBlood,
           emergency_contact: editEmergency,
@@ -249,106 +272,71 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
     }
   }
 
+  const isYellowCard = profile.staff_type === "yellow_card";
   const photo = avatarSrc(profile.id, profile.avatar);
+
+  // Department config for sub-departments
+  const currentDeptConfig = FACTORY_DEPARTMENTS.find((d) => d.name === editDept);
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Printable ID Card (Rendered only on print) */}
-      <div className="hidden print:block print:p-0">
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @media print {
-            body * { visibility: hidden !important; }
-            #printable-id-card, #printable-id-card * { visibility: visible !important; }
-            #printable-id-card {
-              position: fixed !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100vw !important;
-              height: 100vh !important;
-              display: flex !important;
-              flex-direction: row !important;
-              justify-content: center !important;
-              align-items: center !important;
-              gap: 20px !important;
-              background: white !important;
-              padding: 20px !important;
-            }
-            .print-badge {
-              width: 54mm !important;
-              height: 86mm !important;
-              box-shadow: none !important;
-              border: 1px solid #ccc !important;
-              page-break-inside: avoid !important;
-            }
+      {/* Printable ID Card Style */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @media print {
+          body * { visibility: hidden !important; }
+          #printable-id-card, #printable-id-card * { visibility: visible !important; }
+          #printable-id-card {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 20px !important;
+            background: white !important;
+            padding: 20px !important;
           }
-        `}} />
-        <div id="printable-id-card">
-          {/* Front Badge */}
-          <div className="print-badge relative flex flex-col justify-between overflow-hidden rounded-[14px] bg-white p-3 text-center border border-slate-300">
-            {/* Red Top Curve */}
-            <div className="absolute -left-10 -top-10 h-28 w-44 rounded-full bg-[#D1122A] -z-0" />
-            <div className="relative z-10 flex items-start justify-between">
-              <div className="w-10" />
-              <div className="flex flex-col items-center">
-                <TopsLogo className="h-7 w-auto" />
-              </div>
-              <div className="flex flex-col items-center">
-                {qrDataUrl && <img src={qrDataUrl} alt="QR" className="h-10 w-10 border border-slate-300 p-0.5 rounded" />}
-                <span className="text-[6px] font-bold text-slate-600 mt-0.5">Scan For Details</span>
-              </div>
-            </div>
+          .print-badge {
+            width: 54mm !important;
+            height: 86mm !important;
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            page-break-inside: avoid !important;
+          }
+        }
+      `}} />
 
-            <div className="relative z-10 my-auto flex flex-col items-center">
-              <div className="h-28 w-24 overflow-hidden rounded border border-slate-400 bg-slate-100 shadow-sm">
-                <img src={photo} alt={profile.name} className="h-full w-full object-cover" />
-              </div>
-              <h2 className="mt-2 text-[13px] font-black text-slate-900 leading-tight">{profile.name}</h2>
-              <p className="text-[10.5px] font-bold text-slate-700">{profile.department || "Engineering"}</p>
-            </div>
-            <div className="text-[7px] text-slate-400">Official Tops ID Card</div>
-          </div>
-
-          {/* Back Badge */}
-          <div className="print-badge relative flex flex-col justify-between overflow-hidden rounded-[14px] bg-[#D1122A] p-3 text-white">
-            <div className="space-y-1 text-left text-[8px] leading-tight">
-              <p><strong className="text-white/80">Employee ID :</strong> {profile.emp_code}</p>
-              <p><strong className="text-white/80">DOJ :</strong> {profile.doj}</p>
-              <p><strong className="text-white/80">DOB :</strong> {profile.dob}</p>
-              <p><strong className="text-white/80">Blood Group :</strong> {profile.blood_group}</p>
-              <p><strong className="text-white/80">In Case of Emergency Contact :</strong> {profile.emergency_contact}</p>
-              <div className="pt-1 text-[7px] space-y-0.5 text-white/90">
-                <p className="font-bold">Instructions:</p>
-                <p>1. This card is property of {company.factoryName}.</p>
-                <p>2. Must be displayed by employee while on duty.</p>
-                <p>3. Loss must be reported immediately to HR.</p>
-              </div>
-              <div className="pt-1 text-[6.5px] text-white/85">
-                <p className="font-bold">If found please return to :</p>
-                <p className="font-semibold">{company.factoryName}</p>
-                <p>{company.officeAddress}</p>
-                <p>Ph: {company.officePhone} | {company.officeEmail}</p>
-              </div>
-            </div>
-            <div className="flex justify-center pt-1">
-              <TopsLogo className="h-6 w-auto" showOutline />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Screen View */}
-      {/* Top Header */}
+      {/* Screen Header */}
       <div className="rounded-[22px] bg-white p-4 sm:p-6 border border-[#E3EAF1] shadow-card print:hidden">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#D1122A] to-[#1E6FE0] text-white shadow-md">
+            <div className={classNames(
+              "flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md",
+              isYellowCard
+                ? "bg-gradient-to-tr from-[#0F172A] via-[#1E6FE0] to-[#10B981]"
+                : "bg-gradient-to-tr from-[#D1122A] to-[#1E6FE0]"
+            )}>
               <IdCard className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
-                Tops Official ID Card & Gate Pass
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-[#172334]">
+                  {isYellowCard ? "GD Foods Staff ID & Gate Pass" : "Tops Official ID & Gate Pass"}
+                </h1>
+                {isYellowCard ? (
+                  <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10.5px] font-black text-amber-800">
+                    🟡 YELLOW CARD
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-[10.5px] font-black text-emerald-800">
+                    TOPS OFFICIAL
+                  </span>
+                )}
+              </div>
               <p className="mt-0.5 text-[12.5px] sm:text-[13.5px] text-[#617083]">
                 Official G.D. Foods Badge, ISO Scannable QR Code & Gate Security.
               </p>
@@ -358,10 +346,10 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => setShowPrintModal(true)}
               className="flex items-center gap-1.5 rounded-xl border border-[#CBD6E2] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#172334] shadow-sm hover:bg-[#F8FAFD] active:scale-95 transition"
             >
-              <Printer className="h-4 w-4 text-[#1E6FE0]" /> Print ID Badge
+              <Printer className="h-4 w-4 text-[#1E6FE0]" /> Print / View Badge
             </button>
             <button
               type="button"
@@ -373,12 +361,12 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
           </div>
         </div>
 
-        {/* Super Admin User Switcher Selector */}
+        {/* Super Admin User Switcher (Responsive Box that never overflows) */}
         {isSuperAdmin && allUsers.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 pt-4 border-t border-[#F0F4F8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+            <div className="flex items-center gap-2 shrink-0">
               <Users className="h-4 w-4 text-[#1E6FE0]" />
-              <span className="text-[13px] font-bold text-[#172334]">Super Admin View / Edit Employee Card:</span>
+              <span className="text-[13px] font-bold text-[#172334]">Super Admin Select Employee:</span>
             </div>
             <select
               value={profile.id}
@@ -386,11 +374,11 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                 setSelectedUserId(e.target.value);
                 loadCard(e.target.value);
               }}
-              className="rounded-xl border border-[#CBD6E2] bg-[#F8FAFD] px-3.5 py-2 text-[13px] font-bold text-[#172334] focus:outline-none focus:ring-2 focus:ring-[#1E6FE0]"
+              className="w-full sm:max-w-md truncate rounded-xl border border-[#CBD6E2] bg-[#F8FAFD] px-3.5 py-2.5 text-[13px] font-bold text-[#172334] focus:outline-none focus:ring-2 focus:ring-[#1E6FE0]"
             >
               {allUsers.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.name} ({u.emp_code || u.id}) — {u.designation || u.department || "Staff"}
+                  {u.name} ({u.emp_code || u.id}) — {u.department || "Staff"} · {u.staff_type === "yellow_card" ? "🟡 Yellow Card" : "Official"}
                 </option>
               ))}
             </select>
@@ -408,7 +396,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
             activeTab === "card" ? "bg-white text-[#172334] shadow-sm" : "text-[#8A97A8] hover:text-[#172334]"
           )}
         >
-          <IdCard className="h-4 w-4 text-[#D1122A]" /> Official Tops ID Card
+          <IdCard className={classNames("h-4 w-4", isYellowCard ? "text-[#10B981]" : "text-[#D1122A]")} />
+          {isYellowCard ? "Yellow Card ID Badge" : "Official Tops ID Card"}
         </button>
         <button
           type="button"
@@ -434,105 +423,208 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
               )}
               style={{ minHeight: "540px" }}
             >
-              {/* ==================== FRONT SIDE (Official Tops White Card) ==================== */}
-              <div
-                className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-slate-200 bg-white p-6 shadow-2xl [backface-visibility:hidden]"
-              >
-                {/* Red Curved Accent Header */}
-                <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-56 rounded-full bg-gradient-to-br from-[#D1122A] via-[#E11D48] to-[#EF4444] opacity-95 -z-0" />
-                <div className="pointer-events-none absolute -left-10 -top-8 h-40 w-44 rounded-full bg-[#10B981]/25 blur-lg -z-0" />
+              {/* ==================== FRONT SIDE ==================== */}
+              {isYellowCard ? (
+                /* 🟡 YELLOW CARD STAFF FRONT (Green & Blue Theme, NO Tops Logo) */
+                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-emerald-500/40 bg-gradient-to-br from-[#0B132B] via-[#0F172A] to-[#1C2541] p-6 text-white shadow-2xl [backface-visibility:hidden]">
+                  {/* Glowing Ambient Mesh */}
+                  <div className="pointer-events-none absolute -left-12 -top-12 h-44 w-44 rounded-full bg-[#10B981]/25 blur-2xl" />
+                  <div className="pointer-events-none absolute -right-12 -bottom-12 h-44 w-44 rounded-full bg-[#3B82F6]/25 blur-2xl" />
 
-                {/* Top Header: Tops Logo + Scannable QR Code */}
-                <div className="relative z-10 flex items-start justify-between">
-                  <div className="w-12" />
-                  <div className="flex flex-col items-center pt-1">
-                    <TopsLogo className="h-10 w-auto drop-shadow-sm" />
+                  {/* Header: GD Foods Badge & QR Code */}
+                  <div className="relative z-10 flex items-start justify-between border-b border-white/10 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 font-black text-white shadow-md">
+                        GD
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-black tracking-wider text-white">G.D. FOODS</p>
+                        <p className="text-[9.5px] font-bold uppercase tracking-widest text-emerald-400">Mfg. (I) Pvt. Ltd.</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      {qrDataUrl && (
+                        <div className="rounded-lg bg-white p-1 shadow-md">
+                          <img src={qrDataUrl} alt="QR" className="h-11 w-11" />
+                        </div>
+                      )}
+                      <span className="mt-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-300">
+                        Scan For Details
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center">
-                    {qrDataUrl ? (
-                      <div className="rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
-                        <img src={qrDataUrl} alt="Scan QR Code" className="h-14 w-14" />
-                      </div>
-                    ) : (
-                      <div className="h-14 w-14 rounded-xl bg-slate-100 flex items-center justify-center">
-                        <Spinner className="h-5 w-5 text-[#1E6FE0]" />
-                      </div>
-                    )}
-                    <span className="mt-1 text-[8.5px] font-black uppercase tracking-wider text-slate-600">
-                      Scan For Details
+
+                  {/* Yellow Card Badge Strip */}
+                  <div className="relative z-10 my-1 text-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 px-3 py-0.5 text-[11px] font-black tracking-wide text-amber-300">
+                      🟡 YELLOW CARD STAFF
                     </span>
                   </div>
-                </div>
 
-                {/* Center Employee Photo */}
-                <div className="relative z-10 my-auto flex flex-col items-center text-center">
-                  <div className="relative">
-                    <div className="h-44 w-36 overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-50 p-1 shadow-md">
-                      <img
-                        src={photo}
-                        alt={profile.name}
-                        className="h-full w-full rounded-xl object-cover"
-                      />
+                  {/* Photo & Identity */}
+                  <div className="relative z-10 my-auto flex flex-col items-center text-center">
+                    <div className="relative">
+                      <div className="h-36 w-32 overflow-hidden rounded-2xl border-2 border-emerald-400/50 bg-[#0F172A] p-1 shadow-lg">
+                        <img src={photo} alt={profile.name} className="h-full w-full rounded-xl object-cover" />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-amber-400 ring-4 ring-[#0F172A]" />
                     </div>
-                    <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-[#10B981] ring-4 ring-white" />
+
+                    <h2 className="mt-3 text-[22px] font-black tracking-tight text-white leading-tight">
+                      {profile.name}
+                    </h2>
+                    <p className="mt-0.5 text-[15px] font-bold text-emerald-400">
+                      {profile.department || "Production"}
+                    </p>
+                    {profile.designation && (
+                      <span className="mt-1 rounded-full bg-white/10 px-3 py-0.5 text-[11px] font-semibold text-slate-300">
+                        {profile.designation}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Full Name & Department exactly matching physical card */}
-                  <h2 className="mt-3.5 text-[22px] font-black tracking-tight text-slate-900 leading-tight">
-                    {profile.name}
-                  </h2>
-                  <p className="mt-1 text-[16px] font-bold text-slate-700">
-                    {profile.department || profile.designation || "Engineering"}
-                  </p>
-                </div>
-
-                {/* Bottom Footer */}
-                <div className="relative z-10 flex items-center justify-between border-t border-slate-100 pt-2 text-[10.5px] font-bold text-slate-400">
-                  <span>ID: {profile.emp_code}</span>
-                  <span className="text-emerald-600 font-extrabold">● ACTIVE EMPLOYEE</span>
-                </div>
-              </div>
-
-              {/* ==================== BACK SIDE (Official Tops Red Card) ==================== */}
-              <div
-                className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-red-700 bg-[#D1122A] p-6 text-white shadow-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]"
-              >
-                {/* Curved white accent ribbon at top & bottom */}
-                <div className="pointer-events-none absolute -left-12 -top-12 h-32 w-52 rounded-full bg-white/10 blur-sm" />
-                <div className="pointer-events-none absolute -right-12 -bottom-12 h-32 w-52 rounded-full bg-white/10 blur-sm" />
-
-                <div className="relative z-10 space-y-2.5 text-left text-[12px] leading-snug">
-                  <div className="space-y-1 font-semibold text-white/95">
-                    <p><span className="text-white/80 font-bold">Employee ID :</span> <span className="font-bold">{profile.emp_code}</span></p>
-                    <p><span className="text-white/80 font-bold">DOJ :</span> {profile.doj || "27 June 2013"}</p>
-                    <p><span className="text-white/80 font-bold">DOB :</span> {profile.dob || "03 March 1974"}</p>
-                    <p><span className="text-white/80 font-bold">Blood Group :</span> <span className="font-black text-white">{profile.blood_group || "A+"}</span></p>
-                    <p><span className="text-white/80 font-bold">In Case of Emergency Contact :</span> <span className="font-mono font-bold">{profile.emergency_contact || "9914850317"}</span></p>
-                  </div>
-
-                  {/* Official Card Instructions */}
-                  <div className="rounded-xl bg-white/10 p-2.5 text-[10px] text-white/95 space-y-1 leading-normal border border-white/15">
-                    <p className="font-bold uppercase tracking-wider text-white">Instructions:</p>
-                    <p>1. This card is the property of {company.factoryName} and should returned upon request.</p>
-                    <p>2. It Should always be worn & displayed by the respective employee while on duty.</p>
-                    <p>3. The loss of this card must be reported immediately to the issuing authority.</p>
-                  </div>
-
-                  {/* Return Address */}
-                  <div className="rounded-xl bg-white/10 p-2.5 text-[9.5px] text-white/95 space-y-0.5 border border-white/15">
-                    <p className="font-bold text-white">If found please return it to :</p>
-                    <p className="font-black text-white">{company.factoryName}</p>
-                    <p className="text-white/85 leading-tight">{company.officeAddress}</p>
-                    <p className="text-white/90 font-mono">Ph. : {company.officePhone}</p>
-                    <p className="text-white/90">Email : {company.officeEmail}</p>
+                  {/* Footer */}
+                  <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-2 text-[11px] font-bold">
+                    <span className="text-slate-300 font-mono">ID: {profile.emp_code}</span>
+                    <span className="text-emerald-400">● VERIFIED CONTRACTOR</span>
                   </div>
                 </div>
+              ) : (
+                /* 🔴 TOPS OFFICIAL STAFF FRONT (Official Red & White Luxury Theme, Authentic Tops Logo) */
+                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-slate-200 bg-white p-6 shadow-2xl [backface-visibility:hidden]">
+                  {/* Red Curved Accent Header */}
+                  <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-56 rounded-full bg-gradient-to-br from-[#D1122A] via-[#E11D48] to-[#EF4444] opacity-95 -z-0" />
+                  <div className="pointer-events-none absolute -left-10 -top-8 h-40 w-44 rounded-full bg-[#10B981]/25 blur-lg -z-0" />
 
-                {/* Bottom Tops Logo */}
-                <div className="relative z-10 flex items-center justify-center pt-2">
-                  <TopsLogo className="h-8 w-auto" showOutline />
+                  {/* Top Header: Tops Logo + Scannable QR Code */}
+                  <div className="relative z-10 flex items-start justify-between">
+                    <div className="w-12" />
+                    <div className="flex flex-col items-center pt-1">
+                      <TopsLogo className="h-10 w-auto drop-shadow-sm" />
+                    </div>
+                    <div className="flex flex-col items-center">
+                      {qrDataUrl ? (
+                        <div className="rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
+                          <img src={qrDataUrl} alt="Scan QR Code" className="h-14 w-14" />
+                        </div>
+                      ) : (
+                        <div className="h-14 w-14 rounded-xl bg-slate-100 flex items-center justify-center">
+                          <Spinner className="h-5 w-5 text-[#1E6FE0]" />
+                        </div>
+                      )}
+                      <span className="mt-1 text-[8.5px] font-black uppercase tracking-wider text-slate-600">
+                        Scan For Details
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Center Employee Photo */}
+                  <div className="relative z-10 my-auto flex flex-col items-center text-center">
+                    <div className="relative">
+                      <div className="h-44 w-36 overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-50 p-1 shadow-md">
+                        <img
+                          src={photo}
+                          alt={profile.name}
+                          className="h-full w-full rounded-xl object-cover"
+                        />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-[#10B981] ring-4 ring-white" />
+                    </div>
+
+                    {/* Full Name & Department exactly matching physical card */}
+                    <h2 className="mt-3.5 text-[22px] font-black tracking-tight text-slate-900 leading-tight">
+                      {profile.name}
+                    </h2>
+                    <p className="mt-1 text-[16px] font-bold text-slate-700">
+                      {profile.department || profile.designation || "Engineering"}
+                    </p>
+                  </div>
+
+                  {/* Bottom Footer */}
+                  <div className="relative z-10 flex items-center justify-between border-t border-slate-100 pt-2 text-[10.5px] font-bold text-slate-400">
+                    <span>ID: {profile.emp_code}</span>
+                    <span className="text-emerald-600 font-extrabold">● ACTIVE EMPLOYEE</span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* ==================== BACK SIDE ==================== */}
+              {isYellowCard ? (
+                /* 🟡 YELLOW CARD STAFF BACK (Green & Blue Navy Theme) */
+                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-emerald-500/40 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0B132B] p-6 text-white shadow-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                  <div className="relative z-10 space-y-2.5 text-left text-[12px] leading-snug">
+                    <div className="border-b border-white/10 pb-2 text-center">
+                      <p className="text-[13px] font-black text-amber-400">YELLOW CARD CONTRACTOR BADGE</p>
+                      <p className="text-[10px] text-slate-400">{company.factoryName}</p>
+                    </div>
+
+                    <div className="space-y-1 font-semibold text-white/95">
+                      <p><span className="text-slate-400 font-bold">Employee ID :</span> <span className="font-bold">{profile.emp_code}</span></p>
+                      <p><span className="text-slate-400 font-bold">DOJ :</span> {profile.doj || "27 June 2013"}</p>
+                      <p><span className="text-slate-400 font-bold">DOB :</span> {profile.dob || "03 March 1974"}</p>
+                      <p><span className="text-slate-400 font-bold">Blood Group :</span> <span className="font-black text-amber-400">{profile.blood_group || "A+"}</span></p>
+                      <p><span className="text-slate-400 font-bold">In Case of Emergency Contact :</span> <span className="font-mono font-bold">{profile.emergency_contact || "9914850317"}</span></p>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="rounded-xl bg-white/5 p-2.5 text-[10px] text-slate-300 space-y-1 border border-white/10">
+                      <p className="font-bold uppercase tracking-wider text-amber-300">Instructions:</p>
+                      <p>1. This badge is property of {company.factoryName} (Yellow Card Category).</p>
+                      <p>2. Must be displayed on duty. Quota is strictly 15 EL only.</p>
+                      <p>3. Loss must be reported immediately to Security Gate / HR.</p>
+                    </div>
+
+                    {/* Return Address */}
+                    <div className="rounded-xl bg-white/5 p-2.5 text-[9.5px] text-slate-300 space-y-0.5 border border-white/10">
+                      <p className="font-bold text-white">Factory Location :</p>
+                      <p className="font-bold text-emerald-400">{company.factoryName}</p>
+                      <p className="text-slate-300">{company.factoryAddress}</p>
+                      <p className="text-slate-400 font-mono">Emergency: {profile.emergency_contact}</p>
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-2 text-[10px] text-slate-400">
+                    <span>G.D. FOODS MFG. (I) PVT. LTD.</span>
+                    <span className="font-bold text-emerald-400">SECURITY VERIFIED</span>
+                  </div>
+                </div>
+              ) : (
+                /* 🔴 TOPS OFFICIAL STAFF BACK (Official Red Card with Tops Logo) */
+                <div className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-[28px] border-2 border-red-700 bg-[#D1122A] p-6 text-white shadow-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
+                  <div className="relative z-10 space-y-2.5 text-left text-[12px] leading-snug">
+                    <div className="space-y-1 font-semibold text-white/95">
+                      <p><span className="text-white/80 font-bold">Employee ID :</span> <span className="font-bold">{profile.emp_code}</span></p>
+                      <p><span className="text-white/80 font-bold">DOJ :</span> {profile.doj || "27 June 2013"}</p>
+                      <p><span className="text-white/80 font-bold">DOB :</span> {profile.dob || "03 March 1974"}</p>
+                      <p><span className="text-white/80 font-bold">Blood Group :</span> <span className="font-black text-white">{profile.blood_group || "A+"}</span></p>
+                      <p><span className="text-white/80 font-bold">In Case of Emergency Contact :</span> <span className="font-mono font-bold">{profile.emergency_contact || "9914850317"}</span></p>
+                    </div>
+
+                    {/* Official Card Instructions */}
+                    <div className="rounded-xl bg-white/10 p-2.5 text-[10px] text-white/95 space-y-1 leading-normal border border-white/15">
+                      <p className="font-bold uppercase tracking-wider text-white">Instructions:</p>
+                      <p>1. This card is the property of {company.factoryName} and should returned upon request.</p>
+                      <p>2. It Should always be worn & displayed by the respective employee while on duty.</p>
+                      <p>3. The loss of this card must be reported immediately to the issuing authority.</p>
+                    </div>
+
+                    {/* Return Address */}
+                    <div className="rounded-xl bg-white/10 p-2.5 text-[9.5px] text-white/95 space-y-0.5 border border-white/15">
+                      <p className="font-bold text-white">If found please return it to :</p>
+                      <p className="font-black text-white">{company.factoryName}</p>
+                      <p className="text-white/85 leading-tight">{company.officeAddress}</p>
+                      <p className="text-white/90 font-mono">Ph. : {company.officePhone}</p>
+                      <p className="text-white/90">Email : {company.officeEmail}</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom Tops Logo */}
+                  <div className="relative z-10 flex items-center justify-center pt-2">
+                    <TopsLogo className="h-8 w-auto" showOutline />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -542,7 +634,8 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
             onClick={() => setIsFlipped((f) => !f)}
             className="flex items-center gap-2 rounded-2xl bg-white border border-[#CBD6E2] px-6 py-3 text-[14px] font-black text-[#172334] shadow-md hover:bg-[#F8FAFD] active:scale-95 transition"
           >
-            <RotateCw className="h-4 w-4 text-[#D1122A]" /> Flip to {isFlipped ? "Front Side (Photo & Name)" : "Back Side (Details & Rules)"}
+            <RotateCw className={classNames("h-4 w-4", isYellowCard ? "text-[#10B981]" : "text-[#D1122A]")} />
+            Flip to {isFlipped ? "Front Side (Photo & Name)" : "Back Side (Details & Rules)"}
           </button>
         </div>
       ) : (
@@ -624,6 +717,110 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
         </div>
       )}
 
+      {/* ==================== FULL SCREEN PRINT / BADGE PREVIEW MODAL ==================== */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-2xl border border-slate-300 my-8">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2">
+                <Printer className="h-5 w-5 text-[#1E6FE0]" />
+                <h3 className="text-[17px] font-bold text-slate-900">Print / Download ID Badge</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:text-slate-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Side-by-side Front and Back badge preview */}
+            <div className="my-6 flex flex-col md:flex-row items-center justify-center gap-6">
+              {/* Front Badge */}
+              <div className="w-[200px] h-[310px] rounded-[14px] border border-slate-300 overflow-hidden shadow-lg relative flex flex-col justify-between p-3 text-center bg-white">
+                {isYellowCard ? (
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#0B132B] to-[#1C2541] p-3 text-white flex flex-col justify-between">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-1.5">
+                      <span className="text-[9px] font-black text-emerald-400">G.D. FOODS</span>
+                      {qrDataUrl && <img src={qrDataUrl} alt="QR" className="h-7 w-7 bg-white p-0.5 rounded" />}
+                    </div>
+                    <div className="flex flex-col items-center my-auto">
+                      <img src={photo} alt={profile.name} className="h-20 w-16 object-cover rounded border border-emerald-400" />
+                      <p className="text-[11px] font-black mt-1 text-white">{profile.name}</p>
+                      <p className="text-[9px] font-bold text-emerald-400">{profile.department}</p>
+                    </div>
+                    <div className="text-[7px] text-amber-300 font-bold border-t border-white/10 pt-1">🟡 YELLOW CARD STAFF</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="absolute -left-6 -top-6 h-20 w-28 rounded-full bg-[#D1122A] -z-0" />
+                    <div className="relative z-10 flex items-start justify-between">
+                      <div className="w-4" />
+                      <TopsLogo className="h-6 w-auto" />
+                      {qrDataUrl && <img src={qrDataUrl} alt="QR" className="h-7 w-7 border p-0.5 rounded" />}
+                    </div>
+                    <div className="relative z-10 flex flex-col items-center my-auto">
+                      <img src={photo} alt={profile.name} className="h-24 w-20 object-cover rounded border border-slate-300" />
+                      <p className="text-[11px] font-black mt-1 text-slate-900 leading-tight">{profile.name}</p>
+                      <p className="text-[9px] font-bold text-slate-700">{profile.department}</p>
+                    </div>
+                    <div className="text-[7px] text-slate-400 border-t pt-1">TOPS OFFICIAL ID</div>
+                  </>
+                )}
+              </div>
+
+              {/* Back Badge */}
+              <div className={classNames(
+                "w-[200px] h-[310px] rounded-[14px] border overflow-hidden shadow-lg relative flex flex-col justify-between p-3 text-left",
+                isYellowCard ? "bg-[#0F172A] text-white border-slate-700" : "bg-[#D1122A] text-white border-red-800"
+              )}>
+                <div className="space-y-1 text-[7.5px] leading-tight">
+                  <p><strong>Employee ID :</strong> {profile.emp_code}</p>
+                  <p><strong>DOJ :</strong> {profile.doj}</p>
+                  <p><strong>DOB :</strong> {profile.dob}</p>
+                  <p><strong>Blood Group :</strong> {profile.blood_group}</p>
+                  <p><strong>Emergency Contact :</strong> {profile.emergency_contact}</p>
+                  <div className="border-t border-white/20 pt-1 text-[6.5px] space-y-0.5">
+                    <p className="font-bold">Instructions:</p>
+                    <p>1. Property of {company.factoryName}.</p>
+                    <p>2. Display while on duty.</p>
+                  </div>
+                  <div className="border-t border-white/20 pt-1 text-[6px]">
+                    <p className="font-bold">Return to: {company.factoryName}</p>
+                    <p>{company.officeAddress}</p>
+                  </div>
+                </div>
+                {!isYellowCard && (
+                  <div className="flex justify-center pt-1">
+                    <TopsLogo className="h-5 w-auto" showOutline />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-[13px] font-bold text-slate-600"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                }}
+                className="flex items-center gap-1.5 rounded-xl bg-[#1E6FE0] px-5 py-2.5 text-[13px] font-bold text-white shadow-md hover:bg-[#1556B8] active:scale-95"
+              >
+                <Printer className="h-4 w-4" /> Print / Save as PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ==================== EDIT ID CARD & ADDRESS MODAL ==================== */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
@@ -638,7 +835,7 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                   <h3 className="text-[17px] font-bold text-[#172334]">
                     {isSuperAdmin ? `Edit ID Card — ${profile.name}` : "Edit Personal ID Info"}
                   </h3>
-                  <p className="text-[11.5px] text-[#8A97A8]">Fill all employee card & company details</p>
+                  <p className="text-[11.5px] text-[#8A97A8]">Fill employee card, department, & company details</p>
                 </div>
               </div>
               <button
@@ -679,15 +876,37 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                   />
                 </div>
 
+                {isSuperAdmin && (
+                  <div>
+                    <label className="label">Staff Category</label>
+                    <select
+                      className="input font-bold"
+                      value={editStaffType}
+                      onChange={(e) => setEditStaffType(e.target.value)}
+                    >
+                      <option value="official">Official Staff (Tops ID Card)</option>
+                      <option value="yellow_card">🟡 Yellow Card / Third Party (15 EL Only)</option>
+                    </select>
+                  </div>
+                )}
+
                 <div>
-                  <label className="label">Department</label>
+                  <label className="label">Department (6 Factory Departments)</label>
                   {isSuperAdmin ? (
                     <select
                       className="input font-semibold"
                       value={editDept}
-                      onChange={(e) => setEditDept(e.target.value)}
+                      onChange={(e) => {
+                        setEditDept(e.target.value);
+                        const cfg = FACTORY_DEPARTMENTS.find((d) => d.name === e.target.value);
+                        if (cfg?.subDepartments && cfg.subDepartments.length > 0) {
+                          setEditSubDept(cfg.subDepartments[0]);
+                        } else {
+                          setEditSubDept("");
+                        }
+                      }}
                     >
-                      {DEPARTMENTS.map((d) => (
+                      {FACTORY_DEPARTMENTS.map((d) => (
                         <option key={d.name} value={d.name}>{d.name}</option>
                       ))}
                     </select>
@@ -696,14 +915,32 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                   )}
                 </div>
 
+                {/* Sub-department selector if department has sub-units */}
+                {isSuperAdmin && currentDeptConfig?.subDepartments && currentDeptConfig.subDepartments.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <label className="label text-[#1E6FE0] font-bold">
+                      Sub-Department ({editDept})
+                    </label>
+                    <select
+                      className="input font-bold text-[#1E6FE0] border-[#1E6FE0]/40"
+                      value={editSubDept}
+                      onChange={(e) => setEditSubDept(e.target.value)}
+                    >
+                      {currentDeptConfig.subDepartments.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
-                  <label className="label">Designation</label>
+                  <label className="label">Designation (Manual Custom Entry)</label>
                   <input
                     className="input font-medium"
                     value={editDesig}
                     onChange={(e) => setEditDesig(e.target.value)}
                     disabled={!isSuperAdmin}
-                    placeholder="e.g. Assistant Manager"
+                    placeholder="e.g. Senior Officer, Assistant Manager, Operator"
                   />
                 </div>
 
@@ -900,6 +1137,24 @@ export default function IdCardClient({ user: initialUser }: { user: UserProfile 
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <Users className="h-4 w-4 text-[#1E6FE0]" /> Approver (Send Request To)
+              </label>
+              <select
+                className="input font-semibold"
+                value={gpApproverId}
+                onChange={(e) => setGpApproverId(e.target.value)}
+                required
+              >
+                {approvers.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label || a.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
