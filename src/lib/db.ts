@@ -37,6 +37,7 @@ function getDb(): DatabaseLike {
   seed(db);
   seedFactoryDefaults(db);
   seedShiftsAndLeave(db);
+  seedHolidays(db);
   globalForDb.__hrmateDb = db;
   startJobsSafe();
   return db;
@@ -316,6 +317,18 @@ function ensureSchema(d: DatabaseLike) {
     reviewed_note TEXT DEFAULT '',
     created_at INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS holidays (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'public_holiday',
+    is_off INTEGER NOT NULL DEFAULT 1,
+    description TEXT,
+    color TEXT DEFAULT '#1E6FE0',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date);
+  CREATE INDEX IF NOT EXISTS idx_holidays_off ON holidays(is_off);
   CREATE INDEX IF NOT EXISTS idx_ot_user ON overtime_requests(user_id);
   CREATE INDEX IF NOT EXISTS idx_gate_user ON gate_passes(user_id);
   `);
@@ -432,6 +445,64 @@ function seedShiftsAndLeave(d: DatabaseLike) {
     upsertShift.run("sh_night", "Night Shift", "19:00", 12, "evening", 2);
     upsertShift.run("sh_season_day", "Season Day Shift", "07:00", 12, "morning", 3);
   } catch {}
+}
+
+function seedHolidays(d: DatabaseLike) {
+  const count = d.prepare("SELECT COUNT(*) AS c FROM holidays").get() as any;
+  if (count && count.c > 0) return;
+
+  const now = Date.now();
+  const insertHoliday = d.prepare(
+    `INSERT OR IGNORE INTO holidays (id, title, date, type, is_off, description, color, created_at)
+     VALUES (@id, @title, @date, @type, @is_off, @description, @color, @created_at)`
+  );
+
+  const HOLIDAYS_2026 = [
+    { id: "hol_2026_01", title: "New Year's Day", date: "2026-01-01", type: "festival_observance", is_off: 0, description: "Celebration of New Year 2026", color: "#3B82F6" },
+    { id: "hol_2026_02", title: "Guru Gobind Singh Ji Parkash Purab", date: "2026-01-05", type: "public_holiday", is_off: 1, description: "Birth anniversary of 10th Sikh Guru", color: "#F59E0B" },
+    { id: "hol_2026_03", title: "Lohri", date: "2026-01-13", type: "festival_observance", is_off: 0, description: "Traditional harvest festival of Punjab", color: "#F97316" },
+    { id: "hol_2026_04", title: "Makar Sankranti / Maghi", date: "2026-01-14", type: "festival_observance", is_off: 0, description: "Solar cycle harvest festival & Maghi Mela", color: "#EAB308" },
+    { id: "hol_2026_05", title: "Republic Day", date: "2026-01-26", type: "national_holiday", is_off: 1, description: "National holiday commemorating the Constitution of India", color: "#EF4444" },
+    { id: "hol_2026_06", title: "Guru Ravidas Jayanti", date: "2026-02-01", type: "public_holiday", is_off: 1, description: "Birth anniversary of Guru Ravidas Ji", color: "#8B5CF6" },
+    { id: "hol_2026_07", title: "Maha Shivratri", date: "2026-02-15", type: "festival_observance", is_off: 0, description: "Great night of Lord Shiva", color: "#6366F1" },
+    { id: "hol_2026_08", title: "Holi / Holla Mohalla", date: "2026-03-03", type: "public_holiday", is_off: 1, description: "Festival of Colors & Sikh martial festival at Anandpur Sahib", color: "#EC4899" },
+    { id: "hol_2026_09", title: "Holla Mohalla (Day 2)", date: "2026-03-04", type: "festival_observance", is_off: 0, description: "Traditional festivities and martial gatherings", color: "#F43F5E" },
+    { id: "hol_2026_10", title: "Eid-ul-Fitr", date: "2026-03-20", type: "public_holiday", is_off: 1, description: "Islamic festival marking the end of Ramadan", color: "#10B981" },
+    { id: "hol_2026_11", title: "Shaheed Diwas (Bhagat Singh, Rajguru, Sukhdev)", date: "2026-03-23", type: "festival_observance", is_off: 0, description: "Martyrdom tribute to Shaheed Bhagat Singh and comrades", color: "#F59E0B" },
+    { id: "hol_2026_12", title: "Ram Navami", date: "2026-03-27", type: "festival_observance", is_off: 0, description: "Celebration of the birth of Lord Rama", color: "#F97316" },
+    { id: "hol_2026_13", title: "Good Friday", date: "2026-04-03", type: "public_holiday", is_off: 1, description: "Christian holy day commemorating the crucifixion of Jesus", color: "#6B7280" },
+    { id: "hol_2026_14", title: "Baisakhi (Khalsa Sajna Divas)", date: "2026-04-13", type: "public_holiday", is_off: 1, description: "Harvest festival and Foundation of Khalsa Panth (1699)", color: "#F59E0B" },
+    { id: "hol_2026_15", title: "Dr. B.R. Ambedkar Jayanti", date: "2026-04-14", type: "public_holiday", is_off: 1, description: "Birth anniversary of the Father of the Indian Constitution", color: "#1E6FE0" },
+    { id: "hol_2026_16", title: "Parshuram Jayanti", date: "2026-04-20", type: "festival_observance", is_off: 0, description: "Birth anniversary of Lord Parshuram", color: "#8B5CF6" },
+    { id: "hol_2026_17", title: "International Labour Day / May Day", date: "2026-05-01", type: "festival_observance", is_off: 0, description: "Worldwide celebration of workers and factory workforce", color: "#EF4444" },
+    { id: "hol_2026_18", title: "Buddha Purnima", date: "2026-05-02", type: "festival_observance", is_off: 0, description: "Birth of Gautama Buddha", color: "#EAB308" },
+    { id: "hol_2026_19", title: "Eid-ul-Adha (Bakrid)", date: "2026-05-27", type: "public_holiday", is_off: 1, description: "Feast of the Sacrifice", color: "#10B981" },
+    { id: "hol_2026_20", title: "Guru Arjan Dev Ji Martyrdom Day", date: "2026-06-16", type: "public_holiday", is_off: 1, description: "Shaheedi Diwas of 5th Sikh Guru", color: "#F59E0B" },
+    { id: "hol_2026_21", title: "International Yoga Day", date: "2026-06-21", type: "festival_observance", is_off: 0, description: "Global health and wellness celebration", color: "#06B6D4" },
+    { id: "hol_2026_22", title: "Muharram", date: "2026-06-26", type: "public_holiday", is_off: 1, description: "First month of Islamic calendar / Ashura", color: "#475569" },
+    { id: "hol_2026_23", title: "Independence Day", date: "2026-08-15", type: "national_holiday", is_off: 1, description: "79th Indian Independence Day celebration", color: "#EF4444" },
+    { id: "hol_2026_24", title: "Raksha Bandhan", date: "2026-08-27", type: "festival_observance", is_off: 0, description: "Celebration of sibling bond and protection", color: "#EC4899" },
+    { id: "hol_2026_25", title: "Janmashtami", date: "2026-09-04", type: "festival_observance", is_off: 0, description: "Birth anniversary of Lord Krishna", color: "#3B82F6" },
+    { id: "hol_2026_26", title: "Teachers' Day", date: "2026-09-05", type: "festival_observance", is_off: 0, description: "Dr. Sarvepalli Radhakrishnan birth tribute", color: "#8B5CF6" },
+    { id: "hol_2026_27", title: "Mahatma Gandhi Jayanti", date: "2026-10-02", type: "national_holiday", is_off: 1, description: "National holiday honouring Mahatma Gandhi", color: "#10B981" },
+    { id: "hol_2026_28", title: "Maharaja Agrasen Jayanti", date: "2026-10-10", type: "festival_observance", is_off: 0, description: "Celebration of Maharaja Agrasen", color: "#F97316" },
+    { id: "hol_2026_29", title: "Dussehra / Vijayadashami", date: "2026-10-20", type: "public_holiday", is_off: 1, description: "Victory of good over evil", color: "#F59E0B" },
+    { id: "hol_2026_30", title: "Maharishi Valmiki Jayanti", date: "2026-10-25", type: "public_holiday", is_off: 1, description: "Birth anniversary of Adi Kavi Maharishi Valmiki", color: "#F97316" },
+    { id: "hol_2026_31", title: "Karwa Chauth", date: "2026-10-29", type: "festival_observance", is_off: 0, description: "Traditional fasting festival", color: "#F43F5E" },
+    { id: "hol_2026_32", title: "Diwali / Bandi Chhor Divas", date: "2026-11-08", type: "public_holiday", is_off: 1, description: "Festival of Lights & Historic release of Guru Hargobind Ji", color: "#F59E0B" },
+    { id: "hol_2026_33", title: "Govardhan Puja", date: "2026-11-09", type: "festival_observance", is_off: 0, description: "Day following Diwali celebration", color: "#EAB308" },
+    { id: "hol_2026_34", title: "Vishwakarma Day", date: "2026-11-10", type: "public_holiday", is_off: 1, description: "Factory tools and machinery puja celebration", color: "#1E6FE0" },
+    { id: "hol_2026_35", title: "Bhai Dooj", date: "2026-11-11", type: "festival_observance", is_off: 0, description: "Celebration between brothers and sisters", color: "#EC4899" },
+    { id: "hol_2026_36", title: "Children's Day", date: "2026-11-14", type: "festival_observance", is_off: 0, description: "Pandit Jawaharlal Nehru birthday tribute", color: "#3B82F6" },
+    { id: "hol_2026_37", title: "Chhath Puja", date: "2026-11-15", type: "festival_observance", is_off: 0, description: "Solar deity thanksgiving worship", color: "#F97316" },
+    { id: "hol_2026_38", title: "Guru Nanak Dev Ji Parkash Purab", date: "2026-11-24", type: "public_holiday", is_off: 1, description: "Birth anniversary of the 1st Sikh Guru", color: "#F59E0B" },
+    { id: "hol_2026_39", title: "Guru Tegh Bahadur Ji Martyrdom Day", date: "2026-12-08", type: "public_holiday", is_off: 1, description: "Shaheedi Diwas of 9th Sikh Guru (Hind Di Chadar)", color: "#64748B" },
+    { id: "hol_2026_40", title: "Christmas Day", date: "2026-12-25", type: "public_holiday", is_off: 1, description: "Christian celebration of the birth of Jesus Christ", color: "#EF4444" },
+  ];
+
+  for (const h of HOLIDAYS_2026) {
+    insertHoliday.run({ ...h, created_at: now });
+  }
 }
 
 export default db;

@@ -241,10 +241,13 @@ export default function DashboardView({
         </Link>
 
         {/* Card 3: Upcoming Holiday */}
-        <div className="relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm">
+        <Link
+          href="/leaves?tab=holidays"
+          className="group relative overflow-hidden rounded-3xl border border-[#E2E8F0] bg-white p-4 shadow-sm transition active:scale-95 hover:border-amber-400 hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11.5px] font-bold text-[#64748B]">{t("upcomingHoliday")}</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition group-hover:scale-110">
               <PartyPopper className="h-4 w-4" />
             </div>
           </div>
@@ -259,7 +262,7 @@ export default function DashboardView({
               {nextHoliday.in}
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 4: My Attendance Stats */}
         <Link

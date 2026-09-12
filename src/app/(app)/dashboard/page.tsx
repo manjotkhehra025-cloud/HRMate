@@ -239,7 +239,27 @@ export default function DashboardPage() {
        ORDER BY lr.start_date ASC LIMIT 4`
     )
     .all(today) as any[];
-  const events: DashEvent[] = upcoming.map((r) => ({
+  const nextHolidayRow = db
+    .prepare(`SELECT * FROM holidays WHERE date >= ? ORDER BY date ASC LIMIT 1`)
+    .get(today) as any;
+
+  let holidayEvent: DashEvent | null = null;
+  if (nextHolidayRow) {
+    const diffDays = Math.round(
+      (new Date(nextHolidayRow.date + "T12:00:00+05:30").getTime() - new Date(today + "T12:00:00+05:30").getTime()) /
+        86400000
+    );
+    const inText = diffDays === 0 ? "Today 🎉" : diffDays === 1 ? "Tomorrow" : `in ${diffDays}d`;
+    holidayEvent = {
+      id: nextHolidayRow.id,
+      title: nextHolidayRow.title,
+      when: `${formatDate(nextHolidayRow.date)}${nextHolidayRow.is_off ? " · Factory Off" : " · Festival"}`,
+      in: inText,
+      color: nextHolidayRow.color || (nextHolidayRow.is_off ? "#EF4444" : "#10B981"),
+    };
+  }
+
+  const events: DashEvent[] = holidayEvent ? [holidayEvent] : upcoming.map((r) => ({
     id: r.id,
     title: `${r.name} · ${r.type}`,
     when: `${formatDate(r.start_date)}${r.start_date !== r.end_date ? ` – ${formatDate(r.end_date)}` : ""}`,

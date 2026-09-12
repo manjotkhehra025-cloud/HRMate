@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   Send,
@@ -15,11 +16,13 @@ import {
   Check,
   Sliders,
   UserCheck,
+  PartyPopper,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { classNames, formatDate } from "@/lib/utils";
 import { usePrefs } from "@/components/PrefsProvider";
 import { translateLeaveName } from "@/lib/i18n";
+import HolidaysCalendar from "@/components/HolidaysCalendar";
 
 interface LeaveType {
   id: string;
@@ -70,6 +73,10 @@ export default function LeavesClient({
   currentUserId?: string;
 }) {
   const { t, prefs } = usePrefs();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams?.get("tab") === "holidays" ? "holidays" : "leaves";
+  const [activeTab, setActiveTab] = useState<"leaves" | "holidays">(initialTab);
+
   const [currentStaffType, setCurrentStaffType] = useState(initialStaffType || "official");
   const [balance, setBalance] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -430,7 +437,42 @@ export default function LeavesClient({
         )}
       </div>
 
-      {/* Super Admin Direct Balance Adjuster Module */}
+      {/* Primary Sub-Tabs Navigation (Leaves vs Holidays & Festivals) */}
+      <div className="flex items-center gap-2 border-b border-[#E2E8F0] pb-2 dark:border-[#1E293B]">
+        <button
+          type="button"
+          onClick={() => setActiveTab("leaves")}
+          className={classNames(
+            "flex items-center gap-2 rounded-2xl px-4 py-2.5 text-[13.5px] font-bold transition-all duration-150 active:scale-95",
+            activeTab === "leaves"
+              ? "bg-[#1E6FE0] text-white shadow-md"
+              : "bg-white text-[#64748B] hover:bg-[#F1F5F9] border border-[#E2E8F0] dark:bg-[#0F172A] dark:text-[#94A3B8] dark:border-[#1E293B]"
+          )}
+        >
+          <CalendarDays className="h-4 w-4" />
+          {t("leavesManagement")}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("holidays")}
+          className={classNames(
+            "flex items-center gap-2 rounded-2xl px-4 py-2.5 text-[13.5px] font-bold transition-all duration-150 active:scale-95",
+            activeTab === "holidays"
+              ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md"
+              : "bg-white text-[#64748B] hover:bg-[#F1F5F9] border border-[#E2E8F0] dark:bg-[#0F172A] dark:text-[#94A3B8] dark:border-[#1E293B]"
+          )}
+        >
+          <PartyPopper className="h-4 w-4 text-amber-400" />
+          {t("holidaysTab")}
+        </button>
+      </div>
+
+      {activeTab === "holidays" ? (
+        <HolidaysCalendar canManage={canAdjust} />
+      ) : (
+        <>
+          {/* Super Admin Direct Balance Adjuster Module */}
       {showAdjust && canAdjust && (
         <form
           onSubmit={submitAdjustment}
@@ -872,6 +914,8 @@ export default function LeavesClient({
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
