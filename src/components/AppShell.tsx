@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -60,9 +60,34 @@ export default function AppShell({
   const [userMenu, setUserMenu] = useState(false);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(unread);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { t, prefs } = usePrefs();
+
+  // Close notifications & user menu immediately on outside touch/click anywhere on screen
+  useEffect(() => {
+    function handleOutsideInteraction(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (notifOpen && notifRef.current && !notifRef.current.contains(target)) {
+        setNotifOpen(false);
+      }
+      if (userMenu && userMenuRef.current && !userMenuRef.current.contains(target)) {
+        setUserMenu(false);
+      }
+    }
+
+    if (notifOpen || userMenu) {
+      document.addEventListener("mousedown", handleOutsideInteraction, true);
+      document.addEventListener("touchstart", handleOutsideInteraction, { passive: true, capture: true });
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideInteraction, true);
+      document.removeEventListener("touchstart", handleOutsideInteraction, true);
+    };
+  }, [notifOpen, userMenu]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -213,8 +238,8 @@ export default function AppShell({
 
         {/* Right: Notifications & User Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Notifications */}
-          <div className="relative">
+          {/* Notifications Dropdown Container */}
+          <div ref={notifRef} className="relative">
             <button
               onClick={() => {
                 setNotifOpen((o) => !o);
@@ -233,7 +258,11 @@ export default function AppShell({
 
             {notifOpen && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setNotifOpen(false)} />
+                <div
+                  className="fixed inset-0 z-20 cursor-default"
+                  onClick={() => setNotifOpen(false)}
+                  onTouchStart={() => setNotifOpen(false)}
+                />
                 <div className="fixed right-3 top-[68px] z-30 w-[min(24rem,calc(100vw-1.5rem))] animate-slide-in overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-2xl sm:right-6">
                   <div className="flex items-center justify-between border-b border-[#F1F5F9] bg-[#F8FAFC] px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -292,8 +321,8 @@ export default function AppShell({
             )}
           </div>
 
-          {/* User Profile Pill */}
-          <div className="relative">
+          {/* User Profile Pill Container */}
+          <div ref={userMenuRef} className="relative">
             <button
               onClick={() => setUserMenu((o) => !o)}
               className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-1 pr-2 transition active:scale-95 hover:bg-[#F1F5F9]"
@@ -314,7 +343,11 @@ export default function AppShell({
 
             {userMenu && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setUserMenu(false)} />
+                <div
+                  className="fixed inset-0 z-20 cursor-default"
+                  onClick={() => setUserMenu(false)}
+                  onTouchStart={() => setUserMenu(false)}
+                />
                 <div className="fixed right-3 top-[68px] z-30 w-56 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white py-1.5 shadow-2xl sm:right-6 animate-fade-in">
                   <div className="border-b border-[#F1F5F9] px-3.5 py-2.5">
                     <p className="truncate text-[13px] font-bold text-[#0F172A]">{user.name}</p>
