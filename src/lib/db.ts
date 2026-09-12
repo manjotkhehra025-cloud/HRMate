@@ -403,10 +403,21 @@ function seedShiftsAndLeave(d: DatabaseLike) {
   const shift = d.prepare(
     `INSERT OR IGNORE INTO shifts (id, name, start_time, hours, auto_pick, sort) VALUES (?, ?, ?, ?, ?, ?)`
   );
-  shift.run("sh_general", "General Shift", "09:00", 8.5, "morning", 1);
-  shift.run("sh_morning", "Shift A (Morning)", "06:00", 8, "morning", 2);
-  shift.run("sh_evening", "Shift B (Evening)", "14:00", 8, "evening", 3);
-  shift.run("sh_night", "Shift C (Night)", "22:00", 8, "evening", 4);
+  shift.run("sh_general_day", "General Day Shift", "08:00", 9, "morning", 1);
+  shift.run("sh_night", "Night Shift", "19:00", 12, "evening", 2);
+  shift.run("sh_season_day", "Season Day Shift", "07:00", 12, "morning", 3);
+
+  // Permanently configure the 3 core shifts
+  try {
+    const upsertShift = d.prepare(
+      `INSERT INTO shifts (id, name, start_time, hours, auto_pick, sort)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET name = excluded.name, start_time = excluded.start_time, hours = excluded.hours, sort = excluded.sort`
+    );
+    upsertShift.run("sh_general_day", "General Day Shift", "08:00", 9, "morning", 1);
+    upsertShift.run("sh_night", "Night Shift", "19:00", 12, "evening", 2);
+    upsertShift.run("sh_season_day", "Season Day Shift", "07:00", 12, "morning", 3);
+  } catch {}
 }
 
 export default db;

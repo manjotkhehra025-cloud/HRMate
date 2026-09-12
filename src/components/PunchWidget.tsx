@@ -317,6 +317,7 @@ export default function PunchWidget({ canPunch, today, factory, shift }: PunchWi
         return;
       }
       setRecord(data.record);
+      if (data.shift) setActiveShift(data.shift);
       setGeoState("idle");
       const action = data.record.punch_out_at ? t("punchOut") : t("punchIn");
       setMessage(`${action} ✓ ${formatTime(Date.now())}`);
@@ -394,11 +395,11 @@ export default function PunchWidget({ canPunch, today, factory, shift }: PunchWi
 
       {/* Center Shift Progress Speedometer / Radial Ring */}
       <div className="relative z-10 my-6 flex flex-col items-center justify-center text-center">
-        <p className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="text-[12px] font-bold uppercase tracking-wider text-slate-300">
           {punchedOut
             ? t("shiftCompleted")
             : punchedIn
-            ? t("liveShiftProgress")
+            ? `${activeShift.name} (${shiftHours} Hours)`
             : `${activeShift.name} (${activeShift.start_time} · ${shiftHours} Hours)`}
         </p>
 
@@ -438,7 +439,7 @@ export default function PunchWidget({ canPunch, today, factory, shift }: PunchWi
             {punchedIn ? (
               <>
                 <span className="text-[11px] font-bold text-emerald-400">
-                  {String(hrs).padStart(2, "0")}h {String(mins).padStart(2, "0")}m / {targetFormatted}
+                  {activeShift.name} · {String(hrs).padStart(2, "0")}h {String(mins).padStart(2, "0")}m / {targetFormatted}
                 </span>
                 <span className="text-[26px] font-black tracking-tight text-white tabular-nums drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]">
                   {String(hrs).padStart(2, "0")}:{String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
@@ -457,7 +458,7 @@ export default function PunchWidget({ canPunch, today, factory, shift }: PunchWi
               <>
                 <Fingerprint className="h-8 w-8 text-emerald-400 animate-pulse" />
                 <span className="mt-1 text-[18px] font-black text-white">{t("punchIn")}</span>
-                <span className="text-[11px] text-slate-400">{activeShift.name} ({shiftHours}h)</span>
+                <span className="text-[11px] font-bold text-emerald-300">{activeShift.name} ({activeShift.start_time} · {shiftHours}h)</span>
               </>
             )}
           </div>

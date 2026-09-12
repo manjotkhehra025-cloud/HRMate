@@ -8,6 +8,7 @@ import PushRegistration from "@/components/PushRegistration";
 import { getVapidPublicKey } from "@/lib/push";
 import { balancesForUser } from "@/lib/leave";
 import { parseWeeklyOff } from "@/lib/staff";
+import { pickShiftForNow } from "@/lib/shifts";
 import { dayStatus } from "@/lib/reports";
 import { istParts, formatDate } from "@/lib/utils";
 import DashboardView, {
@@ -62,6 +63,12 @@ export default function DashboardPage() {
   let activeShift = null;
   if (record?.shift_id) {
     activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+  }
+  if (!activeShift && record?.punch_in_at) {
+    activeShift = pickShiftForNow(record.punch_in_at, user.id);
+  }
+  if (!activeShift) {
+    activeShift = pickShiftForNow(Date.now(), user.id);
   }
   if (!activeShift && userRow?.shift_id) {
     activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(userRow.shift_id) as any;

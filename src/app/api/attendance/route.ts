@@ -15,27 +15,37 @@ export async function GET() {
   if (!user) return unauthorized();
 
   const today = dateKey();
-  const record = db
+  let record = db
     .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
     .get(user.id, today) as any;
 
-  const userRow = db.prepare("SELECT shift_id FROM users WHERE id = ?").get(user.id) as any;
   let shift = null;
   if (record?.shift_id) {
     shift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
   }
-  if (!shift && userRow?.shift_id) {
-    shift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(userRow.shift_id) as any;
+
+  // If already punched in but no shift recorded, auto-assign based on punch in timestamp
+  if (!shift && record?.punch_in_at) {
+    shift = pickShiftForNow(record.punch_in_at, user.id);
+    if (shift) {
+      db.prepare("UPDATE attendance SET shift_id = ? WHERE id = ?").run(shift.id, record.id);
+    }
   }
+
+  // If not yet punched today, preview expected shift based on current time (IST)
   if (!shift) {
-    shift = pickShiftForNow() || (db.prepare("SELECT * FROM shifts ORDER BY sort LIMIT 1").get() as any);
+    shift = pickShiftForNow(Date.now(), user.id);
+  }
+
+  if (!shift) {
+    shift = db.prepare("SELECT * FROM shifts ORDER BY sort LIMIT 1").get() as any;
   }
 
   return json({
     today: record || null,
     factory: getFactoryConfig(),
     date: today,
-    shift: shift || { name: "General Shift", hours: 8, start_time: "09:00" },
+    shift: shift || { name: "General Day Shift", hours: 9, start_time: "08:00" },
   });
 }
 
@@ -68,18 +78,27 @@ export async function POST(req: NextRequest) {
     .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
     .get(user.id, today) as any;
 
+  let activeShift = null;
+
   if (!record) {
-    const shift = pickShiftForNow(now);
+    // ⚡ Intelligent Auto Shift Detection on Punch In
+    activeShift = pickShiftForNow(now, user.id);
+    const shiftId = activeShift?.id || null;
+
     db.prepare(
       `INSERT INTO attendance (id, user_id, date, punch_in_at, punch_in_lat, punch_in_lng, punch_in_geofence, shift_id)
        VALUES (?, ?, ?, ?, ?, ?, 1, ?)`
-    ).run(randomId("a_"), user.id, today, now, lat, lng, shift?.id || null);
+    ).run(randomId("a_"), user.id, today, now, lat, lng, shiftId);
     creditCompOffIfWorked(user.id, today);
   } else if (!record.punch_out_at) {
     db.prepare(
       `UPDATE attendance SET punch_out_at = ?, punch_out_lat = ?, punch_out_lng = ?, punch_out_geofence = 1
        WHERE id = ?`
     ).run(now, lat, lng, record.id);
+
+    if (record.shift_id) {
+      activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+    }
   } else {
     return error("You've already punched in and out today.");
   }
@@ -88,5 +107,17 @@ export async function POST(req: NextRequest) {
     .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
     .get(user.id, today);
 
-  return json({ ok: true, record, geo });
+  if (!activeShift && record?.shift_id) {
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+  }
+  if (!activeShift) {
+    activeShift = pickShiftForNow(record?.punch_in_at || now, user.id);
+  }
+
+  return json({
+    ok: true,
+    record,
+    shift: activeShift || { name: "General Day Shift", hours: 9, start_time: "08:00" },
+    geo,
+  });
 }
