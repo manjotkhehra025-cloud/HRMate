@@ -1,4 +1,4 @@
-const CACHE = "hrmate-v4";
+const CACHE = "hrmate-v5";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
