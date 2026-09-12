@@ -852,7 +852,6 @@ export default function AttendanceClient({
           </form>
         </div>
       )}
-      </div>
     </div>
   );
 }

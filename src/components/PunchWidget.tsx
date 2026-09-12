@@ -9,10 +9,10 @@ import {
   CheckCircle2,
   Clock,
   Radio,
-  ChevronRight,
   RefreshCw,
   X,
   Smartphone,
+  Fingerprint,
 } from "lucide-react";
 import { Spinner } from "./ui";
 import { formatTime, IST } from "@/lib/utils";
@@ -24,12 +24,16 @@ interface PunchWidgetProps {
   canPunch: boolean;
   today: any;
   factory: { name: string; radius: number; address: string };
+  shift?: { name: string; hours: number; start_time: string };
 }
 
-export default function PunchWidget({ canPunch, today, factory }: PunchWidgetProps) {
+export default function PunchWidget({ canPunch, today, factory, shift }: PunchWidgetProps) {
   const router = useRouter();
   const { t } = usePrefs();
   const [record, setRecord] = useState(today);
+  const [activeShift, setActiveShift] = useState(
+    shift || { name: "General Shift", hours: 8, start_time: "09:00" }
+  );
   const [punching, setPunching] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "locating" | "outside" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -47,12 +51,12 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Swipe slider state
-  const [sliderPos, setSliderPos] = useState(0);
-  const sliderTrackRef = useRef<HTMLDivElement>(null);
-
   // Shift progress timer state
   const [elapsedSec, setElapsedSec] = useState(0);
+
+  useEffect(() => {
+    if (shift) setActiveShift(shift);
+  }, [shift]);
 
   useEffect(() => {
     const updateTime = () => {
@@ -87,7 +91,10 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     fetch("/api/attendance", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        if (!cancelled && d.today !== undefined) setRecord(d.today);
+        if (!cancelled) {
+          if (d.today !== undefined) setRecord(d.today);
+          if (d.shift) setActiveShift(d.shift);
+        }
       })
       .catch(() => {});
     return () => {
@@ -98,12 +105,18 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
   const punchedIn = record?.punch_in_at && !record?.punch_out_at;
   const punchedOut = record?.punch_in_at && record?.punch_out_at;
 
-  // Format Elapsed Hours & Minutes
+  // Dynamic Shift Target Calculations
+  const shiftHours = activeShift?.hours || 8;
+  const targetShiftSec = Math.max(1, Math.round(shiftHours * 3600));
+  const shiftPct = Math.min(100, Math.round((elapsedSec / targetShiftSec) * 100));
+
   const hrs = Math.floor(elapsedSec / 3600);
   const mins = Math.floor((elapsedSec % 3600) / 60);
   const secs = elapsedSec % 60;
-  const targetShiftSec = 8 * 3600; // 8 hours standard
-  const shiftPct = Math.min(100, Math.round((elapsedSec / targetShiftSec) * 100));
+
+  const targetHoursWhole = Math.floor(shiftHours);
+  const targetMinsWhole = Math.round((shiftHours % 1) * 60);
+  const targetFormatted = `${String(targetHoursWhole).padStart(2, "0")}h ${String(targetMinsWhole).padStart(2, "0")}m`;
 
   function getLocation(): Promise<{ lat: number; lng: number }> {
     return new Promise((resolve, reject) => {
@@ -167,15 +180,12 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
           return;
         }
 
-        // Tier 1: Fast cached / network position (resolves in <50ms without waiting for satellites)
         navigator.geolocation.getCurrentPosition(
           (pos) => finishSuccess(pos.coords.latitude, pos.coords.longitude),
           () => {
-            // Tier 2: Try High Accuracy GPS
             navigator.geolocation.getCurrentPosition(
               (pos) => finishSuccess(pos.coords.latitude, pos.coords.longitude),
               (err2) => {
-                // Tier 3: Final fallback with relaxed network constraints
                 navigator.geolocation.getCurrentPosition(
                   (pos) => finishSuccess(pos.coords.latitude, pos.coords.longitude),
                   (err3) => {
@@ -278,7 +288,6 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     stopCamera();
     setCameraModalOpen(false);
     setCapturedPhoto(null);
-    setSliderPos(0);
     setCameraError("");
   }
 
@@ -319,7 +328,6 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       setError(e.message || "Failed to acquire GPS location");
     } finally {
       setPunching(false);
-      setSliderPos(0);
     }
   }
 
@@ -355,30 +363,6 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
     }
   };
 
-  // Swipe slider touch handlers
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (punchedOut || punching) return;
-    if (!sliderTrackRef.current) return;
-    const rect = sliderTrackRef.current.getBoundingClientRect();
-    const touchX = e.touches[0].clientX - rect.left;
-    const maxX = rect.width - 56;
-    const pos = Math.max(0, Math.min(touchX - 28, maxX));
-    setSliderPos(pos);
-    if (pos >= maxX * 0.9) {
-      setSliderPos(maxX);
-      openSelfieCamera();
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!sliderTrackRef.current) return;
-    const rect = sliderTrackRef.current.getBoundingClientRect();
-    const maxX = rect.width - 56;
-    if (sliderPos < maxX * 0.9) {
-      setSliderPos(0);
-    }
-  };
-
   if (!canPunch) {
     return null;
   }
@@ -411,7 +395,11 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
       {/* Center Shift Progress Speedometer / Radial Ring */}
       <div className="relative z-10 my-6 flex flex-col items-center justify-center text-center">
         <p className="text-[12px] font-bold uppercase tracking-wider text-slate-400">
-          {punchedOut ? t("shiftCompleted") : punchedIn ? t("liveShiftProgress") : t("shiftSchedule")}
+          {punchedOut
+            ? t("shiftCompleted")
+            : punchedIn
+            ? t("liveShiftProgress")
+            : `${activeShift.name} (${activeShift.start_time} · ${shiftHours} Hours)`}
         </p>
 
         {/* Circular Glowing Ring */}
@@ -450,7 +438,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
             {punchedIn ? (
               <>
                 <span className="text-[11px] font-bold text-emerald-400">
-                  {String(hrs).padStart(2, "0")}h {String(mins).padStart(2, "0")}m / 08h 00m
+                  {String(hrs).padStart(2, "0")}h {String(mins).padStart(2, "0")}m / {targetFormatted}
                 </span>
                 <span className="text-[26px] font-black tracking-tight text-white tabular-nums drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]">
                   {String(hrs).padStart(2, "0")}:{String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
@@ -467,58 +455,29 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
               </>
             ) : (
               <>
-                <Camera className="h-8 w-8 text-emerald-400 animate-pulse" />
-                <span className="mt-1 text-[18px] font-black text-white">{t("selfiePunchIn")}</span>
-                <span className="text-[11px] text-slate-400">{t("generalShift")}</span>
+                <Fingerprint className="h-8 w-8 text-emerald-400 animate-pulse" />
+                <span className="mt-1 text-[18px] font-black text-white">{t("punchIn")}</span>
+                <span className="text-[11px] text-slate-400">{activeShift.name} ({shiftHours}h)</span>
               </>
             )}
           </div>
         </div>
 
-        {/* 1 Primary Action Button: Selfie Camera Punch */}
+        {/* 1 Clean Primary Action Button: Punch In / Punch Out */}
         {!punchedOut && (
-          <div className="flex items-center justify-center mt-1">
+          <div className="w-full max-w-xs mt-2">
             <button
               type="button"
               onClick={openSelfieCamera}
               disabled={punching}
-              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 px-6 py-3 text-[14px] font-extrabold text-white shadow-[0_4px_20px_rgba(16,185,129,0.35)] ring-2 ring-emerald-400/30 transition active:scale-95 hover:opacity-95"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 py-3.5 px-6 text-[16px] font-black text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/30 transition active:scale-95 hover:opacity-95"
             >
-              <Camera className="h-5 w-5 text-white" />
-              <span>{punchedIn ? t("captureSelfiePunchOut") : t("captureSelfiePunchIn")}</span>
+              <Fingerprint className="h-5 w-5 text-white" />
+              <span>{punchedIn ? t("punchOut") : t("punchIn")}</span>
             </button>
           </div>
         )}
       </div>
-
-      {/* Swipe to Punch Slider */}
-      {!punchedOut && (
-        <div className="relative z-10 mt-5">
-          <div
-            ref={sliderTrackRef}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className="relative flex h-14 w-full items-center overflow-hidden rounded-full bg-[#0F172A] border border-emerald-500/30 p-1 shadow-inner"
-          >
-            <div className="absolute inset-0 flex items-center justify-center pl-10 pr-4 text-[12px] font-bold uppercase tracking-wider text-emerald-400/90 text-center select-none">
-              {punching ? (
-                <span className="flex items-center gap-2">
-                  <Spinner className="h-4 w-4 text-emerald-400" /> {t("recording")}
-                </span>
-              ) : (
-                t("slidePunch")
-              )}
-            </div>
-
-            <div
-              style={{ transform: `translateX(${sliderPos}px)` }}
-              className="relative z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr from-[#059669] via-[#10B981] to-[#34D399] text-white shadow-[0_0_16px_rgba(16,185,129,0.5)] transition-transform duration-75"
-            >
-              <ChevronRight className="h-6 w-6 text-white animate-pulse" />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Alerts */}
       {geoState === "locating" && (
@@ -685,7 +644,7 @@ export default function PunchWidget({ canPunch, today, factory }: PunchWidgetPro
                     onClick={captureSelfiePhoto}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3.5 text-[14px] font-bold text-white shadow-lg active:scale-98"
                   >
-                    <Camera className="h-5 w-5" /> {t("captureSelfieConfirm")}
+                    <Camera className="h-5 w-5" /> {punchedIn ? t("punchOut") : t("punchIn")}
                   </button>
                   <button
                     type="button"

@@ -67,6 +67,7 @@ export default function DashboardView({
   canPunch,
   today,
   factory,
+  shift,
   kpis,
   sparks,
   overview,
@@ -84,6 +85,7 @@ export default function DashboardView({
   canPunch: boolean;
   today: any;
   factory: { name: string; radius: number; address: string };
+  shift?: { name: string; hours: number; start_time: string };
   kpis: DashKpi;
   sparks: { employees: number[]; present: number[]; leave: number[]; pending: number[] };
   overview: { present: number; absent: number; onLeave: number };
@@ -173,7 +175,7 @@ export default function DashboardView({
       </div>
 
       {/* Hero Shift Progress Card with Selfie Punch */}
-      <PunchWidget canPunch={canPunch} today={today} factory={factory} />
+      <PunchWidget canPunch={canPunch} today={today} factory={factory} shift={shift} />
 
       {/* 4 Bento Luxury Cards */}
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">

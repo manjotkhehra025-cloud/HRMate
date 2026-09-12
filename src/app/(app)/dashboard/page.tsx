@@ -58,6 +58,18 @@ export default function DashboardPage() {
   const factory = getFactoryConfig();
   const balances = balancesForUser(user.id);
 
+  const userRow = db.prepare("SELECT shift_id FROM users WHERE id = ?").get(user.id) as any;
+  let activeShift = null;
+  if (record?.shift_id) {
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+  }
+  if (!activeShift && userRow?.shift_id) {
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(userRow.shift_id) as any;
+  }
+  if (!activeShift) {
+    activeShift = db.prepare("SELECT * FROM shifts ORDER BY sort LIMIT 1").get() as any;
+  }
+
   const teamView = has("attendance.team") || has("reports.view");
   const people = (
     teamView
@@ -241,6 +253,7 @@ export default function DashboardPage() {
         canPunch={has("attendance.punch")}
         today={record}
         factory={factory}
+        shift={activeShift || { name: "General Shift", hours: 8, start_time: "09:00" }}
         kpis={{
           employees: people.length,
           hiredThisMonth,

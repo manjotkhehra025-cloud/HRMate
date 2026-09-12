@@ -19,10 +19,23 @@ export async function GET() {
     .prepare("SELECT * FROM attendance WHERE user_id = ? AND date = ?")
     .get(user.id, today) as any;
 
+  const userRow = db.prepare("SELECT shift_id FROM users WHERE id = ?").get(user.id) as any;
+  let shift = null;
+  if (record?.shift_id) {
+    shift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+  }
+  if (!shift && userRow?.shift_id) {
+    shift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(userRow.shift_id) as any;
+  }
+  if (!shift) {
+    shift = pickShiftForNow() || (db.prepare("SELECT * FROM shifts ORDER BY sort LIMIT 1").get() as any);
+  }
+
   return json({
     today: record || null,
     factory: getFactoryConfig(),
     date: today,
+    shift: shift || { name: "General Shift", hours: 8, start_time: "09:00" },
   });
 }
 
