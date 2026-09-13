@@ -38,6 +38,10 @@ import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -103,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         btnRetry = findViewById(R.id.btnRetry);
 
         checkAndRequestPermissions();
+        createNotificationChannel();
         configureWebView();
         setupNetworkMonitoring();
 
@@ -213,6 +218,21 @@ public class MainActivity extends AppCompatActivity {
 
         if (!permissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+        }
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "HRMate Notifications";
+            String description = "Attendance reminders, birthday wishes and approvals";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel("hrmate_channel", name, importance);
+            channel.setDescription(description);
+            channel.enableVibration(true);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
         }
     }
 
@@ -353,6 +373,40 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void saveBase64Image(String base64Data, String filename, String mimeType) {
             runOnUiThread(() -> saveBase64DataUrl(base64Data, filename, mimeType));
+        }
+
+        // Native Notification Trigger (Attendance Reminders & Birthday Alerts)
+        @JavascriptInterface
+        public void showNativeNotification(String title, String body, String type) {
+            runOnUiThread(() -> {
+                try {
+                    NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null) {
+                        Intent intent = new Intent(MainActivity.this, MainActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        PendingIntent pi = PendingIntent.getActivity(
+                            MainActivity.this,
+                            0,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                        );
+
+                        NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, "hrmate_channel")
+                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setContentTitle(title)
+                            .setContentText(body)
+                            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setAutoCancel(true)
+                            .setContentIntent(pi)
+                            .setDefaults(NotificationCompat.DEFAULT_ALL);
+
+                        nm.notify((int) System.currentTimeMillis(), builder.build());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
 
         @JavascriptInterface

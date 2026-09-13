@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Sparkles,
   IdCard,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
 import MobileNav from "./MobileNav";
@@ -110,6 +111,7 @@ export default function AppShell({
     ...(has("leaves.view") || has("leaves.apply")
       ? [{ href: "/leaves", label: "Leaves", icon: <CalendarDays className="h-5 w-5" /> }]
       : []),
+    { href: "/calendar", label: "Calendar", icon: <CalendarIcon className="h-5 w-5" /> },
     ...(has("wall.view")
       ? [{ href: "/wall", label: "Social Wall", icon: <MessageSquare className="h-5 w-5" /> }]
       : []),

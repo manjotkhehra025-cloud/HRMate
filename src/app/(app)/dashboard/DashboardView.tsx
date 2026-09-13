@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -8,12 +9,16 @@ import {
   Send,
   PartyPopper,
   BarChart3,
+  Cake,
+  Heart,
+  CheckCircle2,
 } from "lucide-react";
 import PunchWidget from "@/components/PunchWidget";
 import Avatar, { avatarSrc } from "@/components/Avatar";
 import { usePrefs } from "@/components/PrefsProvider";
 import { translateGreeting, translateLeaveName, translateTimeAgo } from "@/lib/i18n";
-import { istParts } from "@/lib/utils";
+import { istParts, classNames } from "@/lib/utils";
+import { Spinner } from "@/components/ui";
 
 export type DashKpi = {
   employees: number;
@@ -116,6 +121,43 @@ export default function DashboardView({
     color: "#10B981",
   };
 
+  const [todayBirthdays, setTodayBirthdays] = useState<any[]>([]);
+  const [wishingId, setWishingId] = useState<string | null>(null);
+  const [wishedSet, setWishedSet] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetch("/api/birthdays")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && Array.isArray(d.today)) {
+          setTodayBirthdays(d.today);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const sendWish = async (targetUserId: string, name: string) => {
+    try {
+      setWishingId(targetUserId);
+      const res = await fetch("/api/birthdays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetUserId,
+          message: `🎉 Wishing you a wonderful and blessed Birthday, ${name}! 🎂 Best wishes from all of us at GD Foods!`,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setWishedSet((prev) => new Set([...Array.from(prev), targetUserId]));
+      }
+    } catch (e) {
+      console.error("Wish error", e);
+    } finally {
+      setWishingId(null);
+    }
+  };
+
   // Find next holiday
   const nextHoliday = events[0] || {
     title: t("upcomingHoliday"),
@@ -173,6 +215,78 @@ export default function DashboardView({
           )}
         </div>
       </div>
+
+      {/* Today's Birthday Celebration Banner (if any employee has birthday today) */}
+      {todayBirthdays.length > 0 && (
+        <div className="relative overflow-hidden rounded-3xl border border-pink-200 bg-gradient-to-r from-[#1A0B2E] via-[#2D124D] to-[#0F172A] p-4 sm:p-5 text-white shadow-xl animate-fade-in">
+          <div className="relative z-10 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 rounded-full bg-pink-500/20 px-3 py-1 text-[11.5px] font-black text-pink-300 ring-1 ring-pink-500/40">
+                <Cake className="h-4 w-4 text-pink-400 animate-bounce" />
+                TODAY'S BIRTHDAY CELEBRATION 🎉
+              </span>
+              <Link href="/calendar" className="text-[12px] font-bold text-pink-300 hover:underline">
+                View Calendar →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {todayBirthdays.map((b) => {
+                const alreadyWished = wishedSet.has(b.id);
+                return (
+                  <div
+                    key={b.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur-md"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative">
+                        <Avatar
+                          name={b.name}
+                          color={b.color}
+                          size={42}
+                          src={avatarSrc(b.id, b.avatar)}
+                          className="ring-2 ring-pink-400"
+                        />
+                        <span className="absolute -top-1 -right-1 text-xs">👑</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-black text-white">{b.name}</p>
+                        <p className="truncate text-[11px] text-pink-200 font-medium">
+                          {b.department} · {b.designation}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={alreadyWished || wishingId === b.id}
+                      onClick={() => sendWish(b.id, b.name)}
+                      className={classNames(
+                        "flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[11.5px] font-black transition active:scale-95 shrink-0",
+                        alreadyWished
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:brightness-110"
+                      )}
+                    >
+                      {wishingId === b.id ? (
+                        <Spinner className="h-3 w-3" />
+                      ) : alreadyWished ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3" /> Wished!
+                        </>
+                      ) : (
+                        <>
+                          <Heart className="h-3 w-3 fill-current" /> Wish 🎉
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Shift Progress Card with Selfie Punch */}
       <PunchWidget canPunch={canPunch} today={today} factory={factory} shift={shift} />

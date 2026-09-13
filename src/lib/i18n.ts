@@ -4,6 +4,7 @@ const en = {
   // Navigation & Shell
   reports: "Reports",
   dashboard: "Dashboard",
+  calendarNav: "Calendar",
   attendance: "Attendance",
   leaves: "Leaves",
   wall: "Social Wall",
@@ -308,6 +309,7 @@ const pa: Record<keyof typeof en, string> = {
   // Navigation & Shell
   reports: "ਰਿਪੋਰਟਾਂ",
   dashboard: "ਡੈਸ਼ਬੋਰਡ",
+  calendarNav: "ਕੈਲੰਡਰ",
   attendance: "ਹਾਜ਼ਰੀ",
   leaves: "ਛੁੱਟੀਆਂ",
   wall: "ਸੋਸ਼ਲ ਵਾਲ",
@@ -612,6 +614,7 @@ const hi: Record<keyof typeof en, string> = {
   // Navigation & Shell
   reports: "रिपोर्ट्स",
   dashboard: "डैशबोर्ड",
+  calendarNav: "कैलेंडर",
   attendance: "उपस्थिति",
   leaves: "छुट्टियां",
   wall: "सोशल वॉल",
@@ -923,6 +926,7 @@ export function t(lang: Lang, key: I18nKey): string {
 export function navLabel(lang: Lang, href: string, fallback: string): string {
   const map: Record<string, I18nKey> = {
     "/dashboard": "dashboard",
+    "/calendar": "calendarNav",
     "/attendance": "attendance",
     "/leaves": "leaves",
     "/wall": "wall",

@@ -18,6 +18,9 @@ import {
   Save,
   CheckCircle2,
   Sliders,
+  ShieldAlert,
+  Timer,
+  Send,
 } from "lucide-react";
 import GeofenceMap from "@/components/GeofenceMap";
 import { Spinner } from "@/components/ui";
@@ -92,6 +95,8 @@ export default function SettingsClient({
   const [isNativeApp, setIsNativeApp] = useState(false);
 
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [autoLogoutMins, setAutoLogoutMins] = useState<string>("30");
+  const [testingNotif, setTestingNotif] = useState(false);
   const [mapsLink, setMapsLink] = useState("");
   const [savingArea, setSavingArea] = useState(false);
   const [placeName, setPlaceName] = useState("");
@@ -112,6 +117,42 @@ export default function SettingsClient({
       setErr("");
     }, 4000);
   }
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hrmate_auto_logout_mins");
+      if (saved) setAutoLogoutMins(saved);
+    } catch {}
+  }, []);
+
+  const handleSaveAutoLogout = (val: string) => {
+    setAutoLogoutMins(val);
+    try {
+      localStorage.setItem("hrmate_auto_logout_mins", val);
+      flash(`Auto-logout preference saved (${val === "never" ? "Never" : val + " Minutes"})`);
+    } catch {}
+  };
+
+  const handleTestPunchNotification = async () => {
+    try {
+      setTestingNotif(true);
+      const res = await fetch("/api/notifications/attendance-remind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "test" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        flash("Test punch reminder notification sent! Check notifications bell.");
+      } else {
+        flash(data.error || "Failed to trigger reminder", true);
+      }
+    } catch (e: any) {
+      flash(e.message || "Network error", true);
+    } finally {
+      setTestingNotif(false);
+    }
+  };
 
   async function loadPasskeys() {
     try {
@@ -594,6 +635,57 @@ export default function SettingsClient({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Auto Logout Security */}
+            <div className="pt-2">
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <Timer className="h-4 w-4 text-[#1E6FE0]" /> Auto-Logout on Inactivity
+              </label>
+              <p className="text-[11.5px] text-[#64748B] mb-1.5">
+                Automatically signs out your session if left idle to protect your account.
+              </p>
+              <div className="grid grid-cols-4 gap-2 pt-1">
+                {[
+                  { key: "15", label: "15 Mins" },
+                  { key: "30", label: "30 Mins" },
+                  { key: "60", label: "1 Hour" },
+                  { key: "never", label: "Never" },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleSaveAutoLogout(item.key)}
+                    className={classNames(
+                      "rounded-[12px] border p-2 text-[12px] font-bold transition",
+                      autoLogoutMins === item.key
+                        ? "border-[#1E6FE0] bg-[#E7F1FF] text-[#1E6FE0]"
+                        : "border-[#E3EAF1] bg-white text-[#617083] hover:bg-[#F8FAFD]"
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Attendance Punch Reminders Test */}
+            <div className="pt-2 border-t border-[#F0F4F8]">
+              <label className="label flex items-center gap-1.5 font-bold text-[#172334]">
+                <Bell className="h-4 w-4 text-[#1E6FE0]" /> Attendance Reminders & Push
+              </label>
+              <p className="text-[11.5px] text-[#64748B] mb-2">
+                Sends automated punch-in & punch-out reminders on mobile and web app.
+              </p>
+              <button
+                type="button"
+                disabled={testingNotif}
+                onClick={handleTestPunchNotification}
+                className="flex items-center gap-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] px-3.5 py-2 text-[12.5px] font-bold text-[#0F172A] shadow-sm hover:bg-[#EEF2F7] active:scale-95 transition"
+              >
+                {testingNotif ? <Spinner className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5 text-[#1E6FE0]" />}
+                Send Test Attendance Notification
+              </button>
             </div>
           </section>
         </div>

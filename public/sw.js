@@ -1,4 +1,4 @@
-const CACHE = "hrmate-v7";
+const CACHE = "hrmate-v8";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
