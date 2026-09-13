@@ -22,6 +22,7 @@ import {
   Sparkles,
   IdCard,
   Calendar as CalendarIcon,
+  Download,
 } from "lucide-react";
 import Sidebar, { NavItem, SessionUserShape } from "./Sidebar";
 import MobileNav from "./MobileNav";
@@ -239,6 +240,16 @@ export default function AppShell({
 
         {/* Right: Notifications & User Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Download App Quick Link */}
+          <Link
+            href="/download"
+            className="flex h-10 items-center gap-1.5 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 sm:px-3 text-[12px] font-bold text-[#0F172A] transition active:scale-95 hover:bg-[#F1F5F9] dark:border-[#1E293B] dark:bg-[#0F172A] dark:text-white"
+            title="Download Android App (APK)"
+          >
+            <Download className="h-4 w-4 text-[#1E6FE0]" />
+            <span className="hidden sm:inline">Get App</span>
+          </Link>
+
           {/* Notifications Dropdown Container */}
           <div ref={notifRef} className="relative">
             <button

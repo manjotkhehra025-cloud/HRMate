@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, Smartphone, Download } from "lucide-react";
 import Avatar, { avatarSrc } from "./Avatar";
 import type { NavItem, SessionUserShape } from "./Sidebar";
 import HRMateLogo from "./HRMateLogo";
@@ -97,6 +97,21 @@ export default function ModuleMenu({
               );
             })}
           </div>
+        </div>
+
+        {/* Download App Banner */}
+        <div className="px-3.5 pb-2">
+          <Link
+            href="/download"
+            onClick={onClose}
+            className="flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-r from-[#1E6FE0] to-[#10B981] p-2.5 px-3 text-[12.5px] font-bold text-white shadow-md transition active:scale-95"
+          >
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-4 w-4" />
+              <span>Get Android App (APK)</span>
+            </div>
+            <Download className="h-4 w-4" />
+          </Link>
         </div>
 
         {/* Bottom Profile Footer */}

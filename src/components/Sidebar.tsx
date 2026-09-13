@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight, Download, Smartphone } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import Avatar, { avatarSrc } from "./Avatar";
 import HRMateLogo from "./HRMateLogo";
@@ -123,6 +123,19 @@ export default function Sidebar({
             );
           })}
         </nav>
+
+        {/* Download Android App Button */}
+        <div className="px-3 pb-2">
+          <Link
+            href="/download"
+            onClick={onClose}
+            className="flex items-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#174678]/80 to-[#10B981]/30 p-2.5 text-[12.5px] font-bold text-white ring-1 ring-white/10 transition hover:brightness-110"
+          >
+            <Smartphone className="h-4 w-4 text-[#38BDF8]" />
+            <span className="flex-1">Get Android App</span>
+            <Download className="h-3.5 w-3.5 text-emerald-400" />
+          </Link>
+        </div>
 
         {/* User Card at bottom */}
         <div className="border-t border-[#153452] p-3.5">

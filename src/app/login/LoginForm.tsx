@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { startAuthentication } from "@simplewebauthn/browser";
 import {
   Fingerprint,
@@ -12,6 +13,8 @@ import {
   Globe,
   ChevronDown,
   Check,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { usePrefs } from "@/components/PrefsProvider";
@@ -371,9 +374,19 @@ export default function LoginForm() {
         </p>
       </div>
 
-      <p className="relative z-10 mt-5 text-center text-[12.5px] font-medium text-slate-400">
-        New employee? Contact your HR Manager at GD Foods
-      </p>
+      <div className="relative z-10 mt-6 flex flex-col items-center gap-2.5">
+        <Link
+          href="/download"
+          className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2.5 text-[12.5px] font-bold text-white ring-1 ring-white/20 backdrop-blur-md shadow-lg transition hover:bg-white/20 active:scale-95"
+        >
+          <Smartphone className="h-4 w-4 text-[#38BDF8]" />
+          <span>Download Android App (APK)</span>
+          <Download className="h-3.5 w-3.5 text-emerald-400" />
+        </Link>
+        <p className="text-center text-[12px] font-medium text-slate-400">
+          New employee? Contact your HR Manager at GD Foods
+        </p>
+      </div>
     </div>
   );
 }

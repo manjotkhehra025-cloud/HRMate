@@ -3,6 +3,7 @@ import "./globals.css";
 import PrefsProvider from "@/components/PrefsProvider";
 import PwaRegister from "@/components/PwaRegister";
 import ScrollRoot from "@/components/ScrollRoot";
+import ApkInstallBanner from "@/components/ApkInstallBanner";
 
 export const metadata: Metadata = {
   title: "HRMate — Smart HRMS",
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} />
         <PwaRegister />
+        <ApkInstallBanner />
         <ScrollRoot>
           <PrefsProvider>{children}</PrefsProvider>
         </ScrollRoot>
