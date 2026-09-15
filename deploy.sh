@@ -56,7 +56,7 @@ fi
 
 cd "$INSTALL_DIR"
 
-# Ensure .env file exists
+# Ensure .env file exists and has MOBILE_JWT_SECRET
 if [ ! -f .env ]; then
   info "Creating default .env file..."
   cat << 'EOF' > .env
@@ -65,7 +65,12 @@ PORT=3000
 HRMATE_DB=/app/data/hrmate.db
 PRIMARY_DOMAIN=hr.flavorflow.co.in
 FALLBACK_DOMAIN=gdfoods.duckdns.org
+MOBILE_JWT_SECRET=hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib
 EOF
+else
+  if ! grep -q "MOBILE_JWT_SECRET" .env; then
+    echo "MOBILE_JWT_SECRET=hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib" >> .env
+  fi
 fi
 
 # Ensure data directory permissions

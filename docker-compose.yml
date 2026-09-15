@@ -7,10 +7,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      HRMATE_DOMAIN: gdfoods.duckdns.org
-      HRMATE_RP_ID: gdfoods.duckdns.org
-      HRMATE_ORIGIN: https://gdfoods.duckdns.org
+      HRMATE_DOMAIN: ${HRMATE_DOMAIN:-hr.flavorflow.co.in}
+      HRMATE_RP_ID: ${HRMATE_RP_ID:-hr.flavorflow.co.in}
+      HRMATE_ORIGIN: ${HRMATE_ORIGIN:-https://hr.flavorflow.co.in}
       HRMATE_DB: /app/data/hrmate.db
+      MOBILE_JWT_SECRET: ${MOBILE_JWT_SECRET:-hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib}
       # Optional custom VAPID keys for Web Push. Leave empty to use demo keys.
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
