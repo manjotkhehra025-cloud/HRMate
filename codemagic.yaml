@@ -1,16 +1,13 @@
 workflows:
-  flutter-android:
-    name: HRMate WebView Shell Android (Release APK & AAB)
+  flutter-android-beta:
+    name: HRMate Native Android Beta (Release APK)
     max_build_duration: 30
     instance_type: linux_x2
     environment:
       flutter: default
       java: 17
       vars:
-        PACKAGE_NAME: "com.gdfoods.hrmate"
-        CM_KEYSTORE_PASSWORD: "hrmatepassword123"
-        CM_KEY_ALIAS: "hrmate"
-        CM_KEY_PASSWORD: "hrmatepassword123"
+        PACKAGE_NAME: "in.flavorflow.hrmate.beta"
     triggering:
       events:
         - push
@@ -25,19 +22,25 @@ workflows:
           cd mobile
           flutter pub get
 
-      - name: Build Signed Release APK
+      - name: Flutter Analyze
         script: |
           cd mobile
-          flutter build apk --release
+          flutter analyze
 
-      - name: Build Signed Google Play AAB
+      - name: Flutter Test
         script: |
           cd mobile
-          flutter build appbundle --release
+          flutter test
+
+      - name: Build Native Beta Release APK
+        script: |
+          cd mobile
+          flutter build apk --release --flavor beta \
+            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
 
     artifacts:
       - mobile/build/app/outputs/flutter-apk/*.apk
-      - mobile/build/app/outputs/bundle/release/*.aab
+      - mobile/build/app/outputs/bundle/betaRelease/*.aab
 
     publishing:
       email:
@@ -47,17 +50,15 @@ workflows:
           failure: true
           success: true
 
-  native-android:
-    name: HRMate Native Android Gradle Build (Release APK & AAB)
+  flutter-android-prod:
+    name: HRMate Native Android Prod (Release APK & AAB)
     max_build_duration: 30
     instance_type: linux_x2
     environment:
+      flutter: default
       java: 17
       vars:
-        PACKAGE_NAME: "com.gdfoods.hrmate"
-        CM_KEYSTORE_PASSWORD: "hrmatepassword123"
-        CM_KEY_ALIAS: "hrmate"
-        CM_KEY_PASSWORD: "hrmatepassword123"
+        PACKAGE_NAME: "in.flavorflow.hrmate"
     triggering:
       events:
         - push
@@ -67,19 +68,26 @@ workflows:
           include: true
           source: true
     scripts:
-      - name: Set up local.properties
+      - name: Flutter Pub Get
         script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+          cd mobile
+          flutter pub get
 
-      - name: Build Android Release APK & AAB
+      - name: Build Native Prod Release APK
         script: |
-          cd android
-          chmod +x ./gradlew
-          ./gradlew assembleRelease bundleRelease
+          cd mobile
+          flutter build apk --release --flavor prod \
+            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
+
+      - name: Build Native Prod Release AppBundle
+        script: |
+          cd mobile
+          flutter build appbundle --release --flavor prod \
+            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
 
     artifacts:
-      - android/app/build/outputs/apk/release/*.apk
-      - android/app/build/outputs/bundle/release/*.aab
+      - mobile/build/app/outputs/flutter-apk/*.apk
+      - mobile/build/app/outputs/bundle/prodRelease/*.aab
 
     publishing:
       email:
