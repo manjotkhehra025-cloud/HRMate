@@ -3,10 +3,12 @@ import { verifyAuthentication } from "@/lib/passkeys";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { error, json } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const session = await verifyAuthentication(body);
+    const session = await verifyAuthentication(body, req);
     const res = json({ ok: true });
     res.cookies.set(SESSION_COOKIE, session.token, {
       ...sessionCookieOptions,

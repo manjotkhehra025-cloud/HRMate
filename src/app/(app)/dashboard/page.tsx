@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getPermissions, type Permission } from "@/lib/permissions";
 import { getFactoryConfig } from "@/lib/geo";
@@ -7,6 +8,7 @@ import PushRegistration from "@/components/PushRegistration";
 import { getVapidPublicKey } from "@/lib/push";
 import { balancesForUser } from "@/lib/leave";
 import { parseWeeklyOff } from "@/lib/staff";
+import { pickShiftForNow } from "@/lib/shifts";
 import { dayStatus } from "@/lib/reports";
 import { istParts, formatDate } from "@/lib/utils";
 import DashboardView, {
@@ -42,7 +44,8 @@ function inLabel(from: string, today: string) {
 }
 
 export default function DashboardPage() {
-  const user = getSessionUser()!;
+  const user = getSessionUser();
+  if (!user) redirect("/login");
   const perms = getPermissions(user.id);
   const has = (p: Permission) => perms.isSuperAdmin || perms.has(p);
   const today = dateKey();
@@ -55,6 +58,24 @@ export default function DashboardPage() {
     .get(user.id, today) as any;
   const factory = getFactoryConfig();
   const balances = balancesForUser(user.id);
+
+  const userRow = db.prepare("SELECT shift_id FROM users WHERE id = ?").get(user.id) as any;
+  let activeShift = null;
+  if (record?.shift_id) {
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(record.shift_id) as any;
+  }
+  if (!activeShift && record?.punch_in_at) {
+    activeShift = pickShiftForNow(record.punch_in_at, user.id);
+  }
+  if (!activeShift) {
+    activeShift = pickShiftForNow(Date.now(), user.id);
+  }
+  if (!activeShift && userRow?.shift_id) {
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = ?").get(userRow.shift_id) as any;
+  }
+  if (!activeShift) {
+    activeShift = db.prepare("SELECT * FROM shifts ORDER BY sort LIMIT 1").get() as any;
+  }
 
   const teamView = has("attendance.team") || has("reports.view");
   const people = (
@@ -218,7 +239,27 @@ export default function DashboardPage() {
        ORDER BY lr.start_date ASC LIMIT 4`
     )
     .all(today) as any[];
-  const events: DashEvent[] = upcoming.map((r) => ({
+  const nextHolidayRow = db
+    .prepare(`SELECT * FROM holidays WHERE date >= ? ORDER BY date ASC LIMIT 1`)
+    .get(today) as any;
+
+  let holidayEvent: DashEvent | null = null;
+  if (nextHolidayRow) {
+    const diffDays = Math.round(
+      (new Date(nextHolidayRow.date + "T12:00:00+05:30").getTime() - new Date(today + "T12:00:00+05:30").getTime()) /
+        86400000
+    );
+    const inText = diffDays === 0 ? "Today 🎉" : diffDays === 1 ? "Tomorrow" : `in ${diffDays}d`;
+    holidayEvent = {
+      id: nextHolidayRow.id,
+      title: nextHolidayRow.title,
+      when: `${formatDate(nextHolidayRow.date)}${nextHolidayRow.is_off ? " · Factory Off" : " · Festival"}`,
+      in: inText,
+      color: nextHolidayRow.color || (nextHolidayRow.is_off ? "#EF4444" : "#10B981"),
+    };
+  }
+
+  const events: DashEvent[] = holidayEvent ? [holidayEvent] : upcoming.map((r) => ({
     id: r.id,
     title: `${r.name} · ${r.type}`,
     when: `${formatDate(r.start_date)}${r.start_date !== r.end_date ? ` – ${formatDate(r.end_date)}` : ""}`,
@@ -239,6 +280,7 @@ export default function DashboardPage() {
         canPunch={has("attendance.punch")}
         today={record}
         factory={factory}
+        shift={activeShift || { name: "General Shift", hours: 8, start_time: "09:00" }}
         kpis={{
           employees: people.length,
           hiredThisMonth,

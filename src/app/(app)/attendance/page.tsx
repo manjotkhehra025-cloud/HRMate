@@ -1,9 +1,9 @@
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getPermissions } from "@/lib/permissions";
 import { getFactoryConfig } from "@/lib/geo";
 import { dateKey } from "@/lib/api";
 import db from "@/lib/db";
-import PunchWidget from "@/components/PunchWidget";
 import AttendanceClient from "./AttendanceClient";
 
 export const metadata = { title: "Attendance — HRMate" };
@@ -11,31 +11,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default function AttendancePage() {
-  const user = getSessionUser()!;
+  const user = getSessionUser();
+  if (!user) redirect("/login");
   const perms = getPermissions(user.id);
   const has = (p: any) => perms.isSuperAdmin || perms.has(p);
 
-  const today = dateKey();
-  const record = db
-    .prepare(
-      `SELECT a.*, s.name AS shift_name, s.start_time AS shift_start, s.hours AS shift_hours
-       FROM attendance a LEFT JOIN shifts s ON s.id = a.shift_id
-       WHERE a.user_id = ? AND a.date = ?`
-    )
-    .get(user.id, today) as any;
-  const factory = getFactoryConfig();
-
   return (
-    <div className="space-y-6">
-      <div className="hidden lg:block">
-        <h1 className="page-title">Attendance</h1>
-        <p className="page-sub">
-          GPS punch, calendar and history. You must be within {factory.radius}m of {factory.name}.
-        </p>
-      </div>
-
-      <PunchWidget canPunch={has("attendance.punch")} today={record} factory={factory} />
-      <AttendanceClient canManual={has("attendance.manual")} canView={has("attendance.view")} />
-    </div>
+    <AttendanceClient canManual={has("attendance.manual")} canView={has("attendance.view")} />
   );
 }

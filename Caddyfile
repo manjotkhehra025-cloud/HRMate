@@ -1,5 +1,7 @@
 # HRMate — reverse proxy with automatic HTTPS (Let's Encrypt)
-gdfoods.duckdns.org {
+# Supports both the primary professional domain and duckdns fallback
+
+hr.flavorflow.co.in, gdfoods.duckdns.org {
 	tls {
 		issuer acme {
 			# Let's Encrypt's new "Generation Y" chain (root ISRG Root YE) is not
@@ -27,7 +29,7 @@ gdfoods.duckdns.org {
 		reverse_proxy hrmate:3000
 	}
 
-	# WebSocket support (for future live features)
+	# WebSocket support (for live features)
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff

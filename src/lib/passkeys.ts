@@ -8,23 +8,50 @@ import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
 } from "@simplewebauthn/server";
+import { NextRequest } from "next/server";
 import db from "./db";
 import { randomId } from "./crypto";
 import { getSessionUser, createSession } from "./auth";
 
-export const RP_ID = process.env.HRMATE_RP_ID || "localhost";
 export const RP_NAME = "HRMate";
-export const EXPECTED_ORIGIN = process.env.HRMATE_ORIGIN || "http://localhost:3000";
 
-export function getUserPasskeys(userId: string) {
-  return db
-    .prepare("SELECT id, credential_id, device_name, created_at FROM passkey_credentials WHERE user_id = ?")
-    .all(userId);
+export function getRpIdAndOrigin(req?: NextRequest) {
+  if (req) {
+    const hostHeader = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+    const proto = req.headers.get("x-forwarded-proto") || (req.url.startsWith("https") ? "https" : "http");
+    const hostname = hostHeader.split(":")[0].trim();
+    if (hostname) {
+      const origin = `${proto}://${hostHeader.trim()}`;
+      return { rpId: hostname, origin };
+    }
+  }
+  const rpId = process.env.HRMATE_RP_ID || "gdfoods.duckdns.org";
+  const origin = process.env.HRMATE_ORIGIN || `https://${rpId}`;
+  return { rpId, origin };
 }
 
-export async function registrationOptions(userId: string) {
+export function getUserPasskeys(userId: string) {
+  const passkeys = db
+    .prepare("SELECT id, credential_id, device_name, created_at FROM passkey_credentials WHERE user_id = ?")
+    .all(userId) as any[];
+
+  try {
+    const bioTokens = db
+      .prepare(
+        "SELECT token as id, token as credential_id, 'Android Biometric / Mobile Device' as device_name, created_at FROM device_biometrics WHERE user_id = ?"
+      )
+      .all(userId) as any[];
+    return [...passkeys, ...bioTokens];
+  } catch {
+    return passkeys;
+  }
+}
+
+export async function registrationOptions(userId: string, req?: NextRequest) {
   const user = db.prepare("SELECT email, name FROM users WHERE id = ?").get(userId) as any;
   if (!user) throw new Error("User not found");
+
+  const { rpId } = getRpIdAndOrigin(req);
 
   const existing = db
     .prepare("SELECT credential_id FROM passkey_credentials WHERE user_id = ?")
@@ -32,7 +59,7 @@ export async function registrationOptions(userId: string) {
 
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
-    rpID: RP_ID,
+    rpID: rpId,
     userID: new TextEncoder().encode(userId),
     userName: user.email,
     userDisplayName: user.name,
@@ -51,17 +78,19 @@ export async function registrationOptions(userId: string) {
   return options;
 }
 
-export async function verifyRegistration(userId: string, body: RegistrationResponseJSON) {
+export async function verifyRegistration(userId: string, body: RegistrationResponseJSON, req?: NextRequest) {
   const challenge = db
     .prepare("SELECT value FROM settings WHERE key = 'passkey_challenge'")
     .get() as { value: string } | undefined;
   if (!challenge) throw new Error("No registration in progress");
 
+  const { rpId, origin } = getRpIdAndOrigin(req);
+
   const verification = await verifyRegistrationResponse({
     response: body,
     expectedChallenge: challenge.value,
-    expectedOrigin: EXPECTED_ORIGIN,
-    expectedRPID: RP_ID,
+    expectedOrigin: origin,
+    expectedRPID: rpId,
   });
 
   if (!verification.verified || !verification.registrationInfo) {
@@ -87,15 +116,16 @@ export async function verifyRegistration(userId: string, body: RegistrationRespo
   return true;
 }
 
-export async function authenticationOptions() {
+export async function authenticationOptions(req?: NextRequest) {
+  const { rpId } = getRpIdAndOrigin(req);
   const options = await generateAuthenticationOptions({
-    rpID: RP_ID,
+    rpID: rpId,
     userVerification: "preferred",
   });
   return options;
 }
 
-export async function verifyAuthentication(body: AuthenticationResponseJSON) {
+export async function verifyAuthentication(body: AuthenticationResponseJSON, req?: NextRequest) {
   const challenge = db
     .prepare("SELECT value FROM settings WHERE key = 'passkey_challenge'")
     .get() as { value: string } | undefined;
@@ -106,11 +136,13 @@ export async function verifyAuthentication(body: AuthenticationResponseJSON) {
     .get(body.id) as any;
   if (!cred) throw new Error("Passkey not registered");
 
+  const { rpId, origin } = getRpIdAndOrigin(req);
+
   const verification = await verifyAuthenticationResponse({
     response: body,
     expectedChallenge: challenge.value,
-    expectedOrigin: EXPECTED_ORIGIN,
-    expectedRPID: RP_ID,
+    expectedOrigin: origin,
+    expectedRPID: rpId,
     credential: {
       id: cred.credential_id,
       publicKey: new Uint8Array(Buffer.from(cred.public_key, "base64")),
@@ -144,4 +176,12 @@ export function removePasskey(userId: string, passkeyId: string) {
     passkeyId,
     userId
   );
+  try {
+    db.prepare("DELETE FROM device_biometrics WHERE token = ? AND user_id = ?").run(
+      passkeyId,
+      userId
+    );
+  } catch {
+    // ignore
+  }
 }

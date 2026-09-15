@@ -67,7 +67,6 @@ function designatedApprovers(excludeUserId: string): ApproverRow[] {
   return loadActivePeople(excludeUserId).filter((r) => isApproverDesignation(r.designation));
 }
 
-/** Only Senior Manager Production + AGM. If those IDs do not exist yet, Super Admin. */
 export function listApproverOptions(excludeUserId: string): ApproverOption[] {
   const designated = designatedApprovers(excludeUserId);
   if (designated.length) {
@@ -78,14 +77,32 @@ export function listApproverOptions(excludeUserId: string): ApproverOption[] {
       label: approverLabel(r),
     }));
   }
-  return loadActivePeople(excludeUserId)
-    .filter((r) => r.role === "super_admin")
-    .map((r) => ({
+  const leadership = loadActivePeople(excludeUserId).filter(
+    (r) => r.role === "super_admin" || r.role === "admin" || r.role === "manager"
+  );
+  if (leadership.length) {
+    return leadership.map((r) => ({
       id: r.id,
       name: r.name,
       role: r.role,
       label: approverLabel(r),
     }));
+  }
+  // Self-fallback if requester is the sole account
+  const self = db
+    .prepare("SELECT id, name, role, designation, manager_scope, active FROM users WHERE id = ?")
+    .get(excludeUserId) as ApproverRow | undefined;
+  if (self) {
+    return [
+      {
+        id: self.id,
+        name: self.name,
+        role: self.role,
+        label: approverLabel(self),
+      },
+    ];
+  }
+  return [];
 }
 
 export function approverFallback(excludeUserId: string): boolean {
@@ -95,16 +112,28 @@ export function approverFallback(excludeUserId: string): boolean {
 export function getApprover(id: string, requesterId: string) {
   const designated = designatedApprovers(requesterId);
   if (designated.length) {
-    return designated.find((d) => d.id === id) || null;
+    if (id) {
+      const match = designated.find((d) => d.id === id);
+      if (match) return match;
+    }
+    return designated[0];
   }
-  const fallbackId = id || superAdminIds().find((x) => x !== requesterId) || superAdminIds()[0];
-  if (!fallbackId || fallbackId === requesterId) return null;
+  if (id) {
+    const u = db
+      .prepare(
+        `SELECT id, name, role, designation, manager_scope, active FROM users WHERE id = ? AND active = 1`
+      )
+      .get(id) as ApproverRow | undefined;
+    if (u) return u;
+  }
+  const fallbackId = superAdminIds().find((x) => x !== requesterId) || superAdminIds()[0] || requesterId;
+  if (!fallbackId) return null;
   const u = db
     .prepare(
       `SELECT id, name, role, designation, manager_scope, active FROM users WHERE id = ?`
     )
     .get(fallbackId) as ApproverRow | undefined;
-  if (!u || !u.active || u.role !== "super_admin") return null;
+  if (!u || !u.active) return null;
   return u;
 }
 

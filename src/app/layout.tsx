@@ -3,6 +3,7 @@ import "./globals.css";
 import PrefsProvider from "@/components/PrefsProvider";
 import PwaRegister from "@/components/PwaRegister";
 import ScrollRoot from "@/components/ScrollRoot";
+import ApkInstallBanner from "@/components/ApkInstallBanner";
 
 export const metadata: Metadata = {
   title: "HRMate — Smart HRMS",
@@ -13,7 +14,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "HRMate",
   },
-  icons: { apple: "/icon.png" },
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -23,7 +28,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const PREFS_BOOT = `(function(){try{var t=localStorage.getItem("hrmate_appearance")||"system";var s=localStorage.getItem("hrmate_text_size")||"medium";var l=localStorage.getItem("hrmate_language")||"en";var theme=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",theme);document.documentElement.setAttribute("data-text",s);document.documentElement.lang=l==="pa"?"pa":"en";}catch(e){}})();`;
+const PREFS_BOOT = `(function(){try{var t=localStorage.getItem("hrmate_appearance")||"system";var s=localStorage.getItem("hrmate_text_size")||"medium";var l=localStorage.getItem("hrmate_language")||"en";var theme=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;document.documentElement.setAttribute("data-theme",theme);document.documentElement.setAttribute("data-text",s);document.documentElement.lang=(l==="pa"||l==="hi")?l:"en";}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -35,6 +40,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} />
         <PwaRegister />
+        <ApkInstallBanner />
         <ScrollRoot>
           <PrefsProvider>{children}</PrefsProvider>
         </ScrollRoot>

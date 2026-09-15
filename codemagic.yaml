@@ -1,0 +1,90 @@
+workflows:
+  flutter-android:
+    name: HRMate WebView Shell Android (Release APK & AAB)
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      flutter: default
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.gdfoods.hrmate"
+        CM_KEYSTORE_PASSWORD: "hrmatepassword123"
+        CM_KEY_ALIAS: "hrmate"
+        CM_KEY_PASSWORD: "hrmatepassword123"
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+    scripts:
+      - name: Flutter Pub Get
+        script: |
+          cd mobile
+          flutter pub get
+
+      - name: Build Signed Release APK
+        script: |
+          cd mobile
+          flutter build apk --release
+
+      - name: Build Signed Google Play AAB
+        script: |
+          cd mobile
+          flutter build appbundle --release
+
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk
+      - mobile/build/app/outputs/bundle/release/*.aab
+
+    publishing:
+      email:
+        recipients:
+          - manjotkhehra025@gmail.com
+        notify:
+          failure: true
+          success: true
+
+  native-android:
+    name: HRMate Native Android Gradle Build (Release APK & AAB)
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.gdfoods.hrmate"
+        CM_KEYSTORE_PASSWORD: "hrmatepassword123"
+        CM_KEY_ALIAS: "hrmate"
+        CM_KEY_PASSWORD: "hrmatepassword123"
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Build Android Release APK & AAB
+        script: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
+
+    publishing:
+      email:
+        recipients:
+          - manjotkhehra025@gmail.com
+        notify:
+          failure: true
+          success: true

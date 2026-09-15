@@ -23,8 +23,10 @@ const DEFAULTS: PrefsState = {
 function readLocal(): PrefsState {
   if (typeof window === "undefined") return DEFAULTS;
   try {
+    const rawLang = localStorage.getItem("hrmate_language");
+    const validLang: Lang = rawLang === "pa" || rawLang === "hi" ? rawLang : "en";
     return {
-      language: localStorage.getItem("hrmate_language") === "pa" ? "pa" : "en",
+      language: validLang,
       appearance: (localStorage.getItem("hrmate_appearance") as Appearance) || "system",
       text_size: (localStorage.getItem("hrmate_text_size") as TextSize) || "medium",
       notify_enabled: localStorage.getItem("hrmate_notify") === "0" ? 0 : 1,
@@ -47,7 +49,7 @@ export function applyPrefsDom(prefs: PrefsState) {
   const root = document.documentElement;
   root.setAttribute("data-theme", resolvedTheme(prefs.appearance));
   root.setAttribute("data-text", prefs.text_size);
-  root.lang = prefs.language === "pa" ? "pa" : "en";
+  root.lang = prefs.language;
   try {
     localStorage.setItem("hrmate_language", prefs.language);
     localStorage.setItem("hrmate_appearance", prefs.appearance);
@@ -86,8 +88,9 @@ export default function PrefsProvider({ children }: { children: React.ReactNode 
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (cancelled || !d?.prefs) return;
+        const serverLang: Lang = d.prefs.language === "pa" || d.prefs.language === "hi" ? d.prefs.language : "en";
         const next: PrefsState = {
-          language: d.prefs.language === "pa" ? "pa" : "en",
+          language: serverLang,
           appearance:
             d.prefs.appearance === "dark" || d.prefs.appearance === "light" ? d.prefs.appearance : "system",
           text_size:

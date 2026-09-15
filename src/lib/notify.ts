@@ -18,6 +18,8 @@ export function notify(
   }
 }
 
+export const notifyUser = notify;
+
 export function notifyMany(
   userIds: string[],
   title: string,
@@ -32,4 +34,14 @@ export function notifyMany(
     stmt.run(randomId("n_"), id, title, body, opts.type || "info", opts.link || "", Date.now());
   }
   sendPushToMany(userIds, { title, body, link: opts.link });
+}
+
+export function notifyAll(
+  title: string,
+  body: string,
+  opts: { type?: string; link?: string } = {}
+) {
+  const rows = db.prepare(`SELECT id FROM users WHERE active = 1`).all() as { id: string }[];
+  const userIds = rows.map((r) => r.id);
+  notifyMany(userIds, title, body, opts);
 }

@@ -1,44 +1,32 @@
 #!/usr/bin/env bash
 # ============================================================
-# HRMate — one-shot VPS deploy script
-# Does everything:
-#   1. Remove the old Nginx site (port 80/443)
-#   2. Install Docker + Compose
-#   3. Clone the repo
-#   4. Build & launch HRMate behind Caddy (auto HTTPS)
-#
-# Usage (on the VPS):
-#   curl -fsSL https://raw.githubusercontent.com/manjotkhehra025-cloud/HRMate/arena/01a04984-hrmate/deploy.sh | sudo bash
+# HRMate — One-Shot VPS Deployment Script
+# GD Foods Mfg. (I) Pvt. Ltd. · Khadur Sahib Unit
 # ============================================================
 set -euo pipefail
 
-DOMAIN="gdfoods.duckdns.org"
-BRANCH="arena/01a04984-hrmate"
+DOMAIN="hr.flavorflow.co.in"
+FALLBACK_DOMAIN="gdfoods.duckdns.org"
+BRANCH="arena/01a056d6-hrmate"
 REPO="https://github.com/manjotkhehra025-cloud/HRMate.git"
 INSTALL_DIR="/opt/hrmate"
 
-# Colors
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+# Terminal Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
 info()  { echo -e "${GREEN}[HRMate]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 fail()  { echo -e "${RED}[X]${NC} $1"; exit 1; }
 
+# Check root privilege
 if [ "$(id -u)" -ne 0 ]; then
-  fail "Please run as root (use: sudo bash deploy.sh)"
+  fail "Please run as root (e.g. sudo bash deploy.sh or curl | sudo bash)"
 fi
 
-info "Step 1/4 — Removing old Nginx site"
-if systemctl is-active --quiet nginx 2>/dev/null; then
-  systemctl stop nginx
-fi
-systemctl disable nginx 2>/dev/null || true
-apt-get purge -y nginx nginx-common nginx-full nginx-core 2>/dev/null || true
-rm -rf /etc/nginx /var/www/html /var/www/* 2>/dev/null || true
-apt-get autoremove -y >/dev/null 2>&1 || true
-apt-get autoclean -y >/dev/null 2>&1 || true
-info "Nginx removed."
-
-info "Step 1b/4 — Ensuring swap memory (build needs RAM)"
+info "Step 1/5 — Checking and allocating swap memory for safe compilation"
 SWAP_SIZE="${SWAP_SIZE:-2G}"
 if ! swapon --show | grep -q swap; then
   if [ ! -f /swapfile ]; then
@@ -50,48 +38,56 @@ if ! swapon --show | grep -q swap; then
   grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
   info "Swap enabled ($SWAP_SIZE)."
 else
-  info "Swap already enabled."
+  info "Swap already active."
 fi
 
-info "Step 2/4 — Installing Docker + Compose"
-if ! command -v docker >/dev/null 2>&1; then
-  apt-get update -y
-  apt-get install -y docker.io docker-compose-v2
-  systemctl enable --now docker
+info "Step 2/5 — Preparing codebase in ${INSTALL_DIR}"
+if [ ! -d "$INSTALL_DIR/.git" ]; then
+  info "Cloning fresh repository..."
+  mkdir -p "$INSTALL_DIR"
+  git clone -b "$BRANCH" "$REPO" "$INSTALL_DIR"
 else
-  info "Docker already installed."
-fi
-if ! docker compose version >/dev/null 2>&1; then
-  fail "docker compose plugin missing — install with: apt-get install -y docker-compose-v2"
-fi
-info "Docker ready: $(docker --version)"
-
-info "Step 3/4 — Cloning HRMate"
-if [ -d "$INSTALL_DIR/.git" ]; then
-  info "Existing checkout found — pulling latest."
+  info "Updating existing repository..."
   cd "$INSTALL_DIR"
-  git fetch origin
-  git checkout "$BRANCH"
-  git pull origin "$BRANCH"
-else
-  rm -rf "$INSTALL_DIR"
-  git clone "$REPO" "$INSTALL_DIR"
-  cd "$INSTALL_DIR"
-  git checkout "$BRANCH"
+  git config --global --add safe.directory "$INSTALL_DIR"
+  git fetch origin "$BRANCH"
+  git reset --hard "origin/$BRANCH"
 fi
 
-info "Step 4/4 — Building & launching"
-docker compose up -d --build
+cd "$INSTALL_DIR"
 
-info "Waiting for containers to start..."
+# Ensure .env file exists
+if [ ! -f .env ]; then
+  info "Creating default .env file..."
+  cat << 'EOF' > .env
+NODE_ENV=production
+PORT=3000
+HRMATE_DB=/app/data/hrmate.db
+PRIMARY_DOMAIN=hr.flavorflow.co.in
+FALLBACK_DOMAIN=gdfoods.duckdns.org
+EOF
+fi
+
+# Ensure data directory permissions
+mkdir -p data
+chmod 777 data
+
+info "Step 3/5 — Building and restarting Docker containers"
+docker compose down || true
+docker compose up -d --build --remove-orphans
+
+info "Step 4/5 — Verifying container health"
 sleep 5
 docker compose ps
 
+info "Step 5/5 — Verifying Caddy HTTPS reverse proxy"
+if command -v systemctl &>/dev/null && systemctl is-active --quiet caddy; then
+  systemctl reload caddy || true
+fi
+
 echo ""
-echo -e "${GREEN}================================================${NC}"
-echo -e "${GREEN}  HRMate deployed! 🎉${NC}"
-echo -e "${GREEN}  URL: https://${DOMAIN}${NC}"
-echo ""
-echo -e "  Logs:  cd ${INSTALL_DIR} && docker compose logs -f"
-echo -e "  NOTE:  It can take 1-2 min for Caddy to get the SSL cert."
-echo -e "${GREEN}================================================${NC}"
+echo -e "${GREEN}==============================================================${NC}"
+echo -e "${GREEN}  🎉 HRMate deployed successfully on VPS!${NC}"
+echo -e "${GREEN}  🌐 Primary URL:  https://${DOMAIN}${NC}"
+echo -e "${GREEN}  🌐 Fallback URL: https://${FALLBACK_DOMAIN}${NC}"
+echo -e "${GREEN}==============================================================${NC}"

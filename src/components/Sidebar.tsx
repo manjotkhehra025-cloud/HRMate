@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X, Fingerprint } from "lucide-react";
+import { X, ChevronRight, Download, Smartphone } from "lucide-react";
 import { classNames } from "@/lib/utils";
-import Avatar from "./Avatar";
+import Avatar, { avatarSrc } from "./Avatar";
+import HRMateLogo from "./HRMateLogo";
+import { useIsNativeApp } from "@/lib/native";
 
 export interface NavItem {
   href: string;
@@ -39,56 +41,58 @@ export default function Sidebar({
   onDismiss?: () => void;
 }) {
   const pathname = usePathname();
+  const isNative = useIsNativeApp();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
+  const photo = avatarSrc(user.id, user.avatar);
+
   return (
     <>
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-navy/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-[#081C33]/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
+      {/* Desktop Permanent / Retractable Sidebar (Hidden strictly on Mobile devices) */}
       <aside
         className={classNames(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#1A3A55] transition-transform duration-300",
-          open ? "translate-x-0" : "pointer-events-none -translate-x-full"
+          "hidden lg:flex fixed inset-y-0 left-0 z-40 w-72 flex-col border-r border-[#153452] transition-transform duration-300 ease-in-out",
+          open ? "lg:translate-x-0" : "pointer-events-none lg:-translate-x-full"
         )}
-        style={{ background: "linear-gradient(180deg, #0B2743 0%, #081C31 100%)" }}
+        style={{
+          background: "linear-gradient(180deg, #09213B 0%, #06182B 60%, #041220 100%)",
+          boxShadow: "4px 0 24px rgba(4, 18, 32, 0.4)",
+        }}
       >
-        <div className="flex h-[62px] items-center justify-between px-5">
-          <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-            <div className="flow-gradient flex h-9 w-9 items-center justify-center rounded-[11px] shadow-flow">
-              <Fingerprint className="h-5 w-5 text-white" />
-            </div>
-            <div className="leading-tight">
-              <span className="block text-[15px] font-bold tracking-tight text-white">
-                HRMate
-              </span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7892AA]">
-                Smart HRMS
-              </span>
-            </div>
+        {/* Brand Header */}
+        <div className="flex h-[68px] items-center justify-between border-b border-[#153452]/70 px-5">
+          <Link href="/dashboard" className="flex items-center gap-3 group" onClick={onClose}>
+            <HRMateLogo size={40} textColor="white" withText={true} subtitle="Smart HRMS" />
           </Link>
           <button
             onClick={onDismiss || onClose}
-            className="rounded-lg p-1.5 text-[#7892AA] hover:bg-white/10"
+            className="rounded-lg p-1.5 text-[#7892AA] transition hover:bg-white/10 hover:text-white"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="px-5 pb-2 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.85px] text-[#7892AA]">
-          Modules
-        </p>
+        {/* Modules Label */}
+        <div className="px-5 pb-2 pt-4">
+          <p className="text-[11px] font-bold uppercase tracking-[1px] text-[#7892AA]/90">
+            Navigation
+          </p>
+        </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-3">
+        {/* Nav Links */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
           {nav.map((item) => {
             const active = isActive(item.href);
             return (
@@ -97,35 +101,76 @@ export default function Sidebar({
                 href={item.href}
                 onClick={onClose}
                 className={classNames(
-                  "group relative flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-medium transition-all",
+                  "group relative flex items-center gap-3 rounded-[12px] px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-150",
                   active
-                    ? "bg-[#173D64] text-white shadow-[0_8px_18px_rgba(22,184,120,0.16)]"
-                    : "text-[#C6D5E3] hover:bg-white/[0.07]"
+                    ? "bg-gradient-to-r from-[#174678] to-[#12365D] text-white shadow-[0_4px_16px_rgba(30,111,224,0.25)] ring-1 ring-white/15"
+                    : "text-[#C6D5E3] hover:bg-white/[0.07] hover:text-white"
                 )}
               >
                 {active && (
-                  <span className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r bg-flow" />
+                  <span className="absolute bottom-2 left-0 top-2 w-[3.5px] rounded-r bg-gradient-to-b from-[#1E6FE0] to-[#16B878]" />
                 )}
-                <span className={active ? "text-flow" : "text-[#7892AA] group-hover:text-[#C6D5E3]"}>
+                <span
+                  className={classNames(
+                    "flex h-8 w-8 items-center justify-center rounded-[9px] transition-colors",
+                    active
+                      ? "bg-white/15 text-[#16B878]"
+                      : "bg-[#0E2C4B]/60 text-[#7892AA] group-hover:bg-[#153B64] group-hover:text-[#B4D4FF]"
+                  )}
+                >
                   {item.icon}
                 </span>
-                {item.label}
+                <span className="flex-1 truncate">{item.label}</span>
+                {active && <ChevronRight className="h-4 w-4 text-white/50" />}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-[#1A3A55] p-4">
+        {/* Download Android App Button (Web Browser only, hidden in native app) */}
+        {!isNative && (
+          <div className="space-y-1.5 px-3 pb-2">
+            <Link
+              href="/download"
+              onClick={onClose}
+              className="flex items-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#174678]/80 to-[#10B981]/30 p-2.5 text-[12.5px] font-bold text-white ring-1 ring-white/10 transition hover:brightness-110"
+            >
+              <Smartphone className="h-4 w-4 text-[#38BDF8]" />
+              <span className="flex-1">Get Android App</span>
+              <Download className="h-3.5 w-3.5 text-emerald-400" />
+            </Link>
+            
+            <a
+              href="https://flavorflow.co.in"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-between rounded-[12px] bg-white/5 px-3 py-2 text-[11.5px] font-bold text-slate-300 ring-1 ring-white/10 hover:bg-white/10 transition"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" /> Factory ERP
+              </span>
+              <span className="text-emerald-400 font-extrabold flex items-center gap-0.5">
+                FlavorFlow <ChevronRight className="h-3 w-3" />
+              </span>
+            </a>
+          </div>
+        )}
+
+        {/* User Card at bottom */}
+        <div className="border-t border-[#153452] p-3.5">
           <Link
             href="/profile"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-tile bg-[#071827] p-3 transition hover:bg-white/[0.06]"
+            className="flex items-center gap-3 rounded-[14px] bg-[#07192C]/90 p-3 ring-1 ring-white/5 transition hover:bg-[#0E2C4B] hover:ring-white/10"
           >
-            <Avatar name={user.name} color={user.color} size={40} src={user.avatar ? `/api/avatar/${user.id}?v=${user.avatar}` : undefined} />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
-              <p className="truncate text-[11.5px] text-[#7892AA]">{user.designation || user.role}</p>
+            <Avatar name={user.name} color={user.color} size={42} src={photo} className="ring-2 ring-white/20" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13.5px] font-bold text-white">{user.name}</p>
+              <p className="truncate text-[11.5px] text-[#7892AA]">
+                {user.designation || user.role.replace("_", " ")}
+              </p>
             </div>
+            <ChevronRight className="h-4 w-4 text-[#7892AA]" />
           </Link>
         </div>
       </aside>

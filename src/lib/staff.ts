@@ -5,7 +5,7 @@ export const STAFF_CAPS = {
 } as const;
 
 export type StaffType = "official" | "yellow_card";
-export type ManagerScope = "engineering" | "operations" | "";
+export type ManagerScope = "engineering" | "operations" | "administration" | "";
 
 export const WEEKDAYS = [
   { value: 0, label: "Sunday" },
@@ -17,6 +17,54 @@ export const WEEKDAYS = [
   { value: 6, label: "Saturday" },
 ] as const;
 
+export interface DepartmentConfig {
+  name: string;
+  subDepartments?: string[];
+  allowedStaffTypes: ("official" | "yellow_card")[];
+  scope: "engineering" | "operations" | "administration";
+}
+
+export const FACTORY_DEPARTMENTS: DepartmentConfig[] = [
+  {
+    name: "Production",
+    allowedStaffTypes: ["official", "yellow_card"],
+    scope: "operations",
+  },
+  {
+    name: "Agriculture",
+    allowedStaffTypes: ["official"],
+    scope: "operations",
+  },
+  {
+    name: "Security",
+    allowedStaffTypes: ["official", "yellow_card"],
+    scope: "operations",
+  },
+  {
+    name: "Engineering",
+    subDepartments: ["Electrical", "Mechanical / Maintenance"],
+    allowedStaffTypes: ["official", "yellow_card"],
+    scope: "engineering",
+  },
+  {
+    name: "Accounts",
+    allowedStaffTypes: ["official"],
+    scope: "administration",
+  },
+  {
+    name: "Quality",
+    subDepartments: ["Quality Control (QC)", "Microbiology", "Lab"],
+    allowedStaffTypes: ["official", "yellow_card"],
+    scope: "operations",
+  },
+];
+
+export const DEPARTMENTS: { name: string; scope: "engineering" | "operations" | "administration" }[] =
+  FACTORY_DEPARTMENTS.map((d) => ({
+    name: d.name,
+    scope: d.scope,
+  }));
+
 export const APPROVER_DESIGNATIONS = [
   "Senior Manager Production",
   "Assistant General Manager",
@@ -26,24 +74,13 @@ export const MANAGER_SCOPES: { value: "operations" | "engineering"; label: strin
   {
     value: "operations",
     label: "Senior Manager Production",
-    hint: "Production, Lab, Store, Quality",
+    hint: "Production, Quality, Lab, Security, Agriculture",
   },
   {
     value: "engineering",
     label: "Assistant General Manager",
-    hint: "Electric, Maintenance, Instrument",
+    hint: "Electrical, Mechanical / Maintenance",
   },
-];
-
-export const DEPARTMENTS: { name: string; scope: "engineering" | "operations" }[] = [
-  { name: "Production", scope: "operations" },
-  { name: "Store", scope: "operations" },
-  { name: "Lab", scope: "operations" },
-  { name: "Quality", scope: "operations" },
-  { name: "Production & Quality", scope: "operations" },
-  { name: "Maintenance", scope: "engineering" },
-  { name: "Instrument", scope: "engineering" },
-  { name: "Electric", scope: "engineering" },
 ];
 
 export function isApproverDesignation(designation: string | null | undefined): boolean {
@@ -62,17 +99,18 @@ export function scopeFromDesignation(designation: string): ManagerScope {
   return "";
 }
 
-export function departmentScope(department: string): "engineering" | "operations" | "" {
+export function departmentScope(department: string): "engineering" | "operations" | "administration" | "" {
   const d = (department || "").trim().toLowerCase();
-  const hit = DEPARTMENTS.find((x) => x.name.toLowerCase() === d);
+  const hit = FACTORY_DEPARTMENTS.find((x) => x.name.toLowerCase() === d);
   if (hit) return hit.scope;
-  if (/mainten|instrument|electric/.test(d)) return "engineering";
-  if (/product|store|lab|quality/.test(d)) return "operations";
+  if (/mainten|instrument|electric|engineer/.test(d)) return "engineering";
+  if (/product|store|lab|quality|agri|security/.test(d)) return "operations";
+  if (/account|finance|hr|admin/.test(d)) return "administration";
   return "";
 }
 
 export function staffTypeLabel(t: string) {
-  return t === "yellow_card" ? "Yellow card / Third party" : "Official G.D. Foods Staff";
+  return t === "yellow_card" ? "🟡 Yellow Card Staff (15 EL Only)" : "Official G.D. Foods Staff";
 }
 
 export function parseWeeklyOff(v: unknown, fallback = 6) {
