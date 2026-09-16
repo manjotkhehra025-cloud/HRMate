@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { fail, handle, ok, requireMobileUser } from '../_lib/mobileAuth';
+import { listLeaveTypes, matchLeaveType, publicType, LeaveType } from '../_lib/leaveTypes';
 import db from '@/lib/db';
 import { randomId } from '@/lib/crypto';
 import { businessDays, istParts } from '@/lib/utils';
@@ -10,45 +11,10 @@ import { hasPermission } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
-function extractTypeCode(name: string, id: string): string {
-  const match = (name || '').match(/\(([^)]+)\)/);
-  if (match) return match[1].toUpperCase();
-  if (id && id.startsWith('lt_')) return id.replace('lt_', '').toUpperCase();
-  return (name || '').slice(0, 3).toUpperCase();
-}
-
-function resolveLeaveType(input: string): any | null {
-  const clean = input.trim();
-  if (!clean) return null;
-
-  const allTypes = db.prepare('SELECT * FROM leave_types ORDER BY sort').all() as any[];
-  if (!allTypes || allTypes.length === 0) return null;
-
-  // 1. Exact ID match (case-insensitive)
-  const byId = allTypes.find((t) => t.id.toLowerCase() === clean.toLowerCase());
-  if (byId) return byId;
-
-  // 2. Short code match (e.g. "EL" vs extractTypeCode)
-  const byCode = allTypes.find((t) => extractTypeCode(t.name, t.id).toLowerCase() === clean.toLowerCase());
-  if (byCode) return byCode;
-
-  // 3. Name substring match
-  const byName = allTypes.find(
-    (t) => t.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(t.name.toLowerCase())
-  );
-  if (byName) return byName;
-
-  // 4. Prefix match (e.g. lt_ + clean)
-  const byPrefixedId = allTypes.find((t) => t.id.toLowerCase() === `lt_${clean.toLowerCase()}`);
-  if (byPrefixedId) return byPrefixedId;
-
-  return null;
-}
-
-function formatMobileLeave(r: any) {
-  const typeName = r.leave_type_name || r.typeName || 'Leave';
-  const typeId = r.leave_type_id || r.type || '';
-  const typeCode = extractTypeCode(typeName, typeId);
+function formatMobileLeave(r: any, types: LeaveType[]) {
+  const pub = publicType(r.leave_type_id || r.type || r.leave_type_name || '', types);
+  const typeName = pub.typeName || r.leave_type_name || 'Leave';
+  const typeCode = pub.type;
 
   let decidedBy = null;
   if (r.reviewed_by) {
@@ -91,6 +57,7 @@ async function canApproveLeaves(userId: string): Promise<boolean> {
 }
 
 async function listMyLeaves(userId: string, status?: string): Promise<unknown[]> {
+  const types = await listLeaveTypes();
   let query = `
     SELECT lr.*, lt.name AS leave_type_name
     FROM leave_requests lr
@@ -105,10 +72,11 @@ async function listMyLeaves(userId: string, status?: string): Promise<unknown[]>
   query += ` ORDER BY lr.created_at DESC LIMIT 50`;
 
   const rows = db.prepare(query).all(...params) as any[];
-  return rows.map(formatMobileLeave);
+  return rows.map((r) => formatMobileLeave(r, types));
 }
 
 async function listTeamLeaves(approverId: string, status?: string): Promise<unknown[]> {
+  const types = await listLeaveTypes();
   const actor = db.prepare('SELECT id, role, manager_scope FROM users WHERE id = ?').get(approverId) as any;
   if (!actor) return [];
 
@@ -133,7 +101,7 @@ async function listTeamLeaves(approverId: string, status?: string): Promise<unkn
     return r.reviewed_by === approverId;
   });
 
-  return visible.map(formatMobileLeave);
+  return visible.map((r) => formatMobileLeave(r, types));
 }
 
 type NewLeave = { userId: string; type: string; from: string; to: string; halfDay: boolean; reason: string };
@@ -142,9 +110,9 @@ async function createLeave(l: NewLeave): Promise<{ ok: boolean; status?: number;
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(l.userId) as any;
   if (!userRow) return { ok: false, status: 404, code: 'VALIDATION', error: 'User not found.' };
 
-  const lt = resolveLeaveType(l.type);
+  const lt = db.prepare('SELECT * FROM leave_types WHERE id = ?').get(l.type) as any;
   if (!lt) {
-    return { ok: false, status: 400, code: 'VALIDATION', error: `Unknown leave type "${l.type}".` };
+    return { ok: false, status: 400, code: 'VALIDATION', error: 'Invalid leave type.' };
   }
 
   const isYellowCard = userRow.staff_type === 'yellow_card';
@@ -243,7 +211,8 @@ async function createLeave(l: NewLeave): Promise<{ ok: boolean; status?: number;
     )
     .get(leaveId) as any;
 
-  return { ok: true, leave: formatMobileLeave(newRow) };
+  const types = await listLeaveTypes();
+  return { ok: true, leave: formatMobileLeave(newRow, types) };
 }
 
 // GET /api/v1/mobile/leaves?status=&scope=  (Bearer)
@@ -283,7 +252,13 @@ export const POST = handle(async (req: NextRequest) => {
     return fail(400, 'VALIDATION', 'Please enter a reason.');
   }
 
-  const r = await createLeave({ userId: user.id, type, from, to, halfDay, reason });
+  const types = await listLeaveTypes();
+  const lt = matchLeaveType(type, types); // "EL" | "EARNED" | "Earned Leave (EL)" → the webapp type
+  if (!lt) {
+    return fail(400, 'VALIDATION', `Unknown leave type "${type}". Known: ${types.map((t) => t.key).join(', ')}`);
+  }
+
+  const r = await createLeave({ userId: user.id, type: lt.key, from, to, halfDay, reason });
   if (!r.ok) {
     return fail(r.status || 400, r.code || 'VALIDATION', r.error || 'Leave request was not accepted.');
   }

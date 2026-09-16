@@ -1,22 +1,16 @@
 import { NextRequest } from 'next/server';
 import { fail, handle, ok, requireMobileUser } from '../../../_lib/mobileAuth';
+import { listLeaveTypes, publicType, LeaveType } from '../../../_lib/leaveTypes';
 import db from '@/lib/db';
 import { canActOnLeave } from '@/lib/workflow';
 import { notify } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
-function extractTypeCode(name: string, id: string): string {
-  const match = (name || '').match(/\(([^)]+)\)/);
-  if (match) return match[1].toUpperCase();
-  if (id && id.startsWith('lt_')) return id.replace('lt_', '').toUpperCase();
-  return (name || '').slice(0, 3).toUpperCase();
-}
-
-function formatMobileLeave(r: any) {
-  const typeName = r.leave_type_name || r.typeName || 'Leave';
-  const typeId = r.leave_type_id || r.type || '';
-  const typeCode = extractTypeCode(typeName, typeId);
+function formatMobileLeave(r: any, types: LeaveType[]) {
+  const pub = publicType(r.leave_type_id || r.type || r.leave_type_name || '', types);
+  const typeName = pub.typeName || r.leave_type_name || 'Leave';
+  const typeCode = pub.type;
 
   let decidedBy = null;
   if (r.reviewed_by) {
@@ -92,5 +86,6 @@ export const POST = handle(async (req: NextRequest, ctx: { params: { id: string 
     )
     .get(leaveId) as any;
 
-  return ok({ leave: formatMobileLeave(updated) });
+  const types = await listLeaveTypes();
+  return ok({ leave: formatMobileLeave(updated, types) });
 });

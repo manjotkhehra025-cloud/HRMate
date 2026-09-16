@@ -1,31 +1,38 @@
 import { NextRequest } from 'next/server';
 import { handle, ok, requireMobileUser } from '../../_lib/mobileAuth';
+import { listLeaveTypes, shortCode } from '../../_lib/leaveTypes';
 import db from '@/lib/db';
 import { balancesForUser } from '@/lib/leave';
 
 export const dynamic = 'force-dynamic';
 
-function extractTypeCode(name: string, id: string): string {
-  const match = name.match(/\(([^)]+)\)/);
-  if (match) return match[1].toUpperCase();
-  if (id.startsWith('lt_')) return id.replace('lt_', '').toUpperCase();
-  return name.slice(0, 3).toUpperCase();
-}
-
-// GET /api/v1/mobile/leaves/balance (Bearer)
+// GET /api/v1/mobile/leaves/balance  (Bearer)
 // → { ok:true, available: number, pending: number,
 //     balances:[{ type:"CL"|"SL"|"EL"|…, name, total, used, available }] }
 export const GET = handle(async (req: NextRequest) => {
   const { user } = await requireMobileUser(req);
+  const types = await listLeaveTypes();
 
   const rawBalances = balancesForUser(user.id);
-  const balances = rawBalances.map((b: any) => ({
-    type: extractTypeCode(b.name, b.id),
-    name: b.name,
-    total: Number(b.days_per_year || b.accrued_days || 0),
-    used: Number(b.used || 0),
-    available: Math.max(0, Number(b.balance || 0)),
-  }));
+  const balances = rawBalances.map((b: any) => {
+    const t = types.find(
+      (x) =>
+        x.key === b.id ||
+        x.key === b.leave_type_id ||
+        shortCode(x) === b.id ||
+        shortCode(x) === b.type ||
+        x.name.toLowerCase() === (b.name || '').toLowerCase()
+    );
+    const code = t ? shortCode(t) : shortCode({ key: b.id, name: b.name });
+
+    return {
+      type: code,
+      name: t ? t.name : b.name,
+      total: Number(b.days_per_year || b.accrued_days || 0),
+      used: Number(b.used || 0),
+      available: Math.max(0, Number(b.balance || 0)),
+    };
+  });
 
   const available = balances.reduce((acc, b) => acc + b.available, 0);
 
