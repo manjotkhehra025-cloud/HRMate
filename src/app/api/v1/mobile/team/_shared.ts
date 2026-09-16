@@ -34,7 +34,7 @@ export type MemberRow = {
 export async function canViewTeam(userId: string): Promise<boolean> {
   const u = db.prepare('SELECT id, role, designation FROM users WHERE id = ?').get(userId) as any;
   if (!u) return false;
-  if (u.role === 'super_admin' || u.role === 'admin' || u.role === 'manager') return true;
+  if (u.role === 'super_admin' || u.role === 'admin' || u.role === 'manager' || u.role === 'hr') return true;
   if (isApproverDesignation(u.designation)) return true;
   return hasPermission(userId, 'attendance.team') || hasPermission(userId, 'leaves.team') || hasPermission(userId, 'approvals.manage');
 }
@@ -50,7 +50,7 @@ export async function teamMemberIds(userId: string): Promise<string[]> {
   const actor = db.prepare('SELECT id, role, manager_scope FROM users WHERE id = ?').get(userId) as any;
   if (!actor) return [];
 
-  const isAll = actor.role === 'super_admin' || actor.role === 'admin' || !actor.manager_scope;
+  const isAll = actor.role === 'super_admin' || actor.role === 'admin' || actor.role === 'hr' || !actor.manager_scope;
   const rows = db.prepare('SELECT id, department FROM users WHERE active = 1 AND id != ? ORDER BY name').all(userId) as any[];
 
   if (isAll) {
@@ -206,7 +206,7 @@ export async function memberDay(
     name: user.name,
     department: user.department || 'General',
     designation: user.designation || null,
-    avatarUrl: user.avatar || null,
+    avatarUrl: user.avatar ? `/api/avatar/${user.id}` : null,
     status,
     firstIn,
     lastOut,
