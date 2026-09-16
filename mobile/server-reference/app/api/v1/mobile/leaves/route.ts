@@ -1,8 +1,16 @@
 import { NextRequest } from 'next/server';
 import { fail, handle, ok, requireMobileUser } from '../_lib/mobileAuth';
+import { assignCodes, matchLeaveType } from '../_lib/leaveCodes';
+import { listLeaveTypes } from '../_lib/leaveTypes';
 
 export const dynamic = 'force-dynamic';
 
+// LEAVE TYPE CODES: `type` in every payload (balance, list, create, approve, reject) is the SAME short
+// code that leaves/balance returns (e.g. "EL"), plus `typeName` ("Earned Leave (EL)"). The webapp's
+// internal key differs (e.g. "lt_earned") — _lib/leaveCodes.ts owns the mapping: assignCodes() gives every
+// type a unique code, matchLeaveType() resolves incoming values, publicType() formats responses.
+// GET items must use publicType(record.leaveTypeKey, types) → {type:"EL", typeName:"Earned Leave"}.
+//
 // Shared leave shape (list, create, approve, reject all return it):
 // { id, type:"EL", typeName:"Earned Leave (EL)", from:"YYYY-MM-DD", to:"YYYY-MM-DD", days:1.5, halfDay:false,
 //   reason, status:"pending"|"approved"|"rejected"|"cancelled", appliedAt:ISO, decidedAt:ISO|null,
@@ -42,7 +50,10 @@ export const POST = handle(async (req: NextRequest) => {
   if (to < from) return fail(400, 'VALIDATION', 'End date is before start date.');
   if (halfDay && from !== to) return fail(400, 'VALIDATION', 'Half day is only for a single day.');
   if (!reason) return fail(400, 'VALIDATION', 'Please enter a reason.');
-  const r = await createLeave({ userId: user.id, type, from, to, halfDay, reason }); // TODO wire
+  const types = assignCodes(await listLeaveTypes());
+  const lt = matchLeaveType(type, types); // "EL" | "lt_earned" | "Earned Leave" → the webapp type
+  if (!lt) return fail(400, 'VALIDATION', `Unknown leave type "${type}". Known: ${types.map((t) => t.code).join(', ')}`);
+  const r = await createLeave({ userId: user.id, type: lt.key, from, to, halfDay, reason }); // TODO wire (internal key!)
   if (!r.ok) return fail(r.status || 400, r.code || 'VALIDATION', r.error || 'Leave request was not accepted.');
   return ok({ leave: r.leave });
 });

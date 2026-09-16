@@ -29,6 +29,24 @@ export type MemberRow = {
   leaveType: string | null;
 };
 
+export function getEmployeeCode(u: any): string {
+  if (u.emp_code && u.emp_code.trim() && !u.emp_code.startsWith('u_')) {
+    return u.emp_code.trim().toUpperCase();
+  }
+  if (u.code && u.code.trim() && !u.code.startsWith('u_')) {
+    return u.code.trim().toUpperCase();
+  }
+  if (u.email && u.email.includes('@')) {
+    const prefix = u.email.split('@')[0].trim();
+    if (prefix && !prefix.toLowerCase().includes('admin')) {
+      return prefix.toUpperCase();
+    }
+  } else if (u.email && u.email.trim() && !u.email.toLowerCase().includes('admin')) {
+    return u.email.trim().toUpperCase();
+  }
+  return u.emp_code || '';
+}
+
 // Who may see a team: the SAME rule the webapp uses for its Team / attendance dashboard
 // (manager of a department / reporting line, HR, admin, super_admin). Everyone else → 403 FORBIDDEN.
 export async function canViewTeam(userId: string): Promise<boolean> {
@@ -45,13 +63,26 @@ export async function requireTeamAccess(userId: string): Promise<void> {
 }
 
 // The people this user manages (webapp reporting line / department rule). For super_admin / HR
-// this is everyone active. Never include the caller themself.
+// this is everyone active. Never include the caller themself. Exclude system / service accounts
+// (e.g. the seeded "Super Admin" login) and inactive / exited employees — only real staff who are
+// expected to punch. `code` MUST be the employee code (e.g. WKH00418), never the internal user id.
 export async function teamMemberIds(userId: string): Promise<string[]> {
   const actor = db.prepare('SELECT id, role, manager_scope FROM users WHERE id = ?').get(userId) as any;
   if (!actor) return [];
 
   const isAll = actor.role === 'super_admin' || actor.role === 'admin' || actor.role === 'hr' || !actor.manager_scope;
-  const rows = db.prepare('SELECT id, department FROM users WHERE active = 1 AND id != ? ORDER BY name').all(userId) as any[];
+
+  // Exclude inactive employees, system/service accounts (role = 'super_admin', name = 'Super Admin', emp_code = 'NS000001'), and caller
+  const rows = db.prepare(`
+    SELECT id, department, role, name, emp_code
+    FROM users 
+    WHERE active = 1 
+      AND id != ?
+      AND role != 'super_admin'
+      AND name != 'Super Admin'
+      AND emp_code != 'NS000001'
+    ORDER BY name
+  `).all(userId) as any[];
 
   if (isAll) {
     return rows.map((r) => r.id);
@@ -75,7 +106,7 @@ export async function memberDay(
   date: string
 ): Promise<MemberRow & { punches: unknown[]; shift: { name: string; start: string; end: string } | null }> {
   const user = db
-    .prepare('SELECT id, emp_code, name, department, designation, avatar, weekly_off, shift_id FROM users WHERE id = ?')
+    .prepare('SELECT id, email, emp_code, name, department, designation, avatar, weekly_off, shift_id FROM users WHERE id = ?')
     .get(memberId) as any;
 
   if (!user) {
@@ -202,7 +233,7 @@ export async function memberDay(
 
   const memberRow: MemberRow = {
     id: user.id,
-    code: user.emp_code || user.id,
+    code: getEmployeeCode(user),
     name: user.name,
     department: user.department || 'General',
     designation: user.designation || null,
