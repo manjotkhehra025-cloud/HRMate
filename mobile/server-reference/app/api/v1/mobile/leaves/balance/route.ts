@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
 import { handle, ok, requireMobileUser } from '../../_lib/mobileAuth';
-import { assignCodes, matchLeaveType } from '../../_lib/leaveCodes';
-import { listLeaveTypes } from '../../_lib/leaveTypes';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +10,7 @@ export const dynamic = 'force-dynamic';
 export const GET = handle(async (req: NextRequest) => {
   const { user } = await requireMobileUser(req);
   const balance = await loadLeaveBalance(user.id); // TODO wire
-  // `type` MUST be the unique code from _lib/leaveCodes.ts ("EL") — the app sends it back on POST leaves.
-  const types = assignCodes(await listLeaveTypes());
-  const balances = (balance.balances as Array<Record<string, unknown>>).map((row) => {
-    const t = matchLeaveType(String(row.key ?? row.type ?? ''), types);
-    return { ...row, type: t ? t.code : String(row.type || '').toUpperCase(), name: t?.name ?? row.name };
-  });
-  return ok({ ...balance, balances });
+  return ok(balance);
 });
 
 async function loadLeaveBalance(userId: string): Promise<Record<string, unknown>> {
