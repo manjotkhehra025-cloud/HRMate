@@ -1,6 +1,6 @@
 # 📱 HRMate 100% Native Android App & Google Play Store Guide
 
-HRMate Android is built as a **100% Native Full-Screen Android Application** (`com.gdfoods.hrmate`), without any Chrome URL bar, browser controls, or external tab redirects.
+HRMate Android is built as a **100% Native Full-Screen Android Application** (`in.flavorflow.hrmate`), without any Chrome URL bar, browser controls, or external tab redirects.
 
 ---
 
@@ -22,13 +22,10 @@ HRMate Android is built as a **100% Native Full-Screen Android Application** (`c
 
 | Field | Value |
 |---|---|
-| **Package Name / Application ID** | `com.gdfoods.hrmate` |
-| **Keystore File** | `hrmate-release.keystore` (in root & `android/app/`) |
-| **Keystore Download URL** | `https://gdfoods.duckdns.org/hrmate-release.keystore` |
-| **Key Alias** | `hrmate` |
-| **Keystore Password** | `hrmatepassword123` |
-| **Key Password** | `hrmatepassword123` |
-| **SHA-256 Fingerprint** | `6F:60:81:B7:30:2E:37:6A:3F:A8:D7:A2:21:C4:C4:79:8E:E9:F5:26:B3:3E:F5:AC:B4:47:C6:DA:FA:7A:07:DF` |
+| **Package Name / Application ID** | `in.flavorflow.hrmate` |
+| **Keystore Management** | Codemagic Environment Group `hrmate_release` |
+| **Key Alias** | `hrmate3` |
+| **Status** | Managed securely in CI/CD environment (never committed to git) |
 
 ---
 
@@ -37,19 +34,10 @@ HRMate Android is built as a **100% Native Full-Screen Android Application** (`c
 ### Method 1: 1-Click Codemagic CI/CD Build (Recommended)
 1. Open your **[Codemagic Dashboard](https://codemagic.io/apps)**.
 2. Select **HRMate**.
-3. Click **Start new build** on the `arena/01a056d6-hrmate` branch.
+3. Run workflow **HRMate Native Android Prod (Release APK & AAB)**.
 4. Download your artifacts:
-   - `app-release.apk` *(Install directly on your Android phone - 100% native!)*
-   - `app-release.aab` *(Upload to Google Play Console)*
-
-### Method 2: Local Build
-```bash
-cd android
-gradle bundleRelease assembleRelease
-```
-Outputs:
-- Bundle: `android/app/build/outputs/bundle/release/app-release.aab`
-- APK: `android/app/build/outputs/apk/release/app-release.apk`
+   - `app-prod-release.apk` *(Install directly on your Android phone)*
+   - `app-prod-release.aab` *(Upload to Google Play Console)*
 
 ---
 
@@ -58,5 +46,5 @@ Outputs:
 2. Click **Create App** → App Name: **HRMate**, Free.
 3. Complete Store Listing & Content Rating questionnaires.
 4. Go to **Production** (or **Testing → Internal Testing**) → **Create new release**.
-5. Upload `app-release.aab`.
+5. Upload `app-prod-release.aab`.
 6. Submit for Google Review!

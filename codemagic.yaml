@@ -55,37 +55,43 @@ workflows:
     max_build_duration: 30
     instance_type: linux_x2
     environment:
+      groups:
+        - hrmate_release
       flutter: default
       java: 17
       vars:
         PACKAGE_NAME: "in.flavorflow.hrmate"
     triggering:
-      events:
-        - push
-        - tag
-      branch_patterns:
-        - pattern: '*'
-          include: true
-          source: true
+      events: []
     scripts:
       - name: Flutter Pub Get
         script: |
           cd mobile
           flutter pub get
 
+      - name: Flutter Analyze
+        script: |
+          cd mobile
+          flutter analyze
+
+      - name: Flutter Test
+        script: |
+          cd mobile
+          flutter test
+
       - name: Set up release keystore
         script: |
-          cd mobile/android
-          if [ -n "$HRMATE_KEYSTORE_BASE64" ]; then
-            echo "$HRMATE_KEYSTORE_BASE64" | base64 --decode > app/upload.keystore
-          elif [ -f "../../hrmate-release.keystore" ]; then
-            cp "../../hrmate-release.keystore" app/upload.keystore
+          set -e
+          if [ -z "$HRMATE_KEYSTORE_BASE64" ]; then
+            echo "hrmate_release env group missing" >&2
+            exit 1
           fi
-          cat > key.properties <<EOF
+          echo "$HRMATE_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/mobile/android/app/upload.keystore"
+          cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF
           storeFile=upload.keystore
-          storePassword=${HRMATE_KEYSTORE_PASSWORD:-hrmatepassword123}
-          keyAlias=${HRMATE_KEY_ALIAS:-hrmate}
-          keyPassword=${HRMATE_KEY_PASSWORD:-hrmatepassword123}
+          storePassword=$HRMATE_KEYSTORE_PASSWORD
+          keyAlias=$HRMATE_KEY_ALIAS
+          keyPassword=$HRMATE_KEY_PASSWORD
           EOF
 
       - name: Build Native Prod Release APK
