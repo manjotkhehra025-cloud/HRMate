@@ -106,7 +106,7 @@ export async function revokeDevice(tokenId: string): Promise<void> {
 }
 
 // ---- JWT (HS256, no external dependency) ----------------------------------
-const SECRET = process.env.MOBILE_JWT_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'hrmate_mobile_jwt_fallback_secret_key_2026';
+const SECRET = process.env.MOBILE_JWT_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib';
 const TTL_SECONDS = 30 * 24 * 3600;
 const b64u = (b: Buffer | string) => Buffer.from(b).toString('base64url');
 
@@ -160,10 +160,11 @@ export async function requireMobileUser(req: NextRequest): Promise<{ user: Mobil
   return { user, tokenId: v.jti };
 }
 
-/** Wrap a handler so MobileError → JSON error, anything else → 500 JSON. */
-export function handle(fn: (req: NextRequest) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
-    try { return await fn(req); }
+/** Wrap a handler so MobileError → JSON error, anything else → 500 JSON.
+ *  The second argument (route context with `params`, e.g. `[id]` routes) is passed through. */
+export function handle<C = unknown>(fn: (req: NextRequest, ctx: C) => Promise<NextResponse>) {
+  return async (req: NextRequest, ctx: C) => {
+    try { return await fn(req, ctx); }
     catch (e: unknown) {
       if (e instanceof MobileError) return fail(e.status, e.code, e.message, e.extra);
       console.error('[mobile-api]', e);
