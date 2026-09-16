@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { handle, ok, requireMobileUser } from '../../_lib/mobileAuth';
+import { handle, ok, requireMobileUser } from '../_lib/mobileAuth';
 import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
