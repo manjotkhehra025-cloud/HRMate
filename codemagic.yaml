@@ -82,17 +82,15 @@ workflows:
       - name: Set up release keystore
         script: |
           set -e
-          if [ -z "$HRMATE_KEYSTORE_BASE64" ]; then
-            echo "hrmate_release env group missing" >&2
-            exit 1
-          fi
+          [ -n "$HRMATE_KEYSTORE_BASE64" ] || { echo "hrmate_release env group missing"; exit 1; }
+          [ -n "$HRMATE_KEYSTORE_PASSWORD" ] || { echo "HRMATE_KEYSTORE_PASSWORD missing"; exit 1; }
           echo "$HRMATE_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/mobile/android/app/upload.keystore"
-          cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF
+          cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF2
           storeFile=upload.keystore
           storePassword=$HRMATE_KEYSTORE_PASSWORD
-          keyAlias=$HRMATE_KEY_ALIAS
-          keyPassword=$HRMATE_KEY_PASSWORD
-          EOF
+          keyAlias=${HRMATE_KEY_ALIAS:-hrmate3}
+          keyPassword=${HRMATE_KEY_PASSWORD:-$HRMATE_KEYSTORE_PASSWORD}
+          EOF2
 
       - name: Build Native Prod Release APK
         script: |
