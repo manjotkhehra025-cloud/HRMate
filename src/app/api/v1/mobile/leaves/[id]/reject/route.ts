@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server';
 import { fail, handle, ok, requireMobileUser } from '../../../_lib/mobileAuth';
-import { listLeaveTypes, publicType, LeaveType } from '../../../_lib/leaveTypes';
+import { assignCodes, publicType, CodedLeaveType } from '../../../_lib/leaveCodes';
+import { listLeaveTypes } from '../../../_lib/leaveTypes';
 import db from '@/lib/db';
 import { canActOnLeave } from '@/lib/workflow';
 import { notify } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
-function formatMobileLeave(r: any, types: LeaveType[]) {
+function formatMobileLeave(r: any, types: CodedLeaveType[]) {
   const pub = publicType(r.leave_type_id || r.type || r.leave_type_name || '', types);
   const typeName = pub.typeName || r.leave_type_name || 'Leave';
   const typeCode = pub.type;
@@ -86,6 +87,6 @@ export const POST = handle(async (req: NextRequest, ctx: { params: { id: string 
     )
     .get(leaveId) as any;
 
-  const types = await listLeaveTypes();
+  const types = assignCodes(await listLeaveTypes());
   return ok({ leave: formatMobileLeave(updated, types) });
 });

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { fail, handle, ok, requireMobileUser } from '../_lib/mobileAuth';
-import { listLeaveTypes, matchLeaveType, publicType, LeaveType } from '../_lib/leaveTypes';
+import { assignCodes, matchLeaveType, publicType, CodedLeaveType } from '../_lib/leaveCodes';
+import { listLeaveTypes } from '../_lib/leaveTypes';
 import db from '@/lib/db';
 import { randomId } from '@/lib/crypto';
 import { businessDays, istParts } from '@/lib/utils';
@@ -11,7 +12,7 @@ import { hasPermission } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
-function formatMobileLeave(r: any, types: LeaveType[]) {
+function formatMobileLeave(r: any, types: CodedLeaveType[]) {
   const pub = publicType(r.leave_type_id || r.type || r.leave_type_name || '', types);
   const typeName = pub.typeName || r.leave_type_name || 'Leave';
   const typeCode = pub.type;
@@ -57,7 +58,7 @@ async function canApproveLeaves(userId: string): Promise<boolean> {
 }
 
 async function listMyLeaves(userId: string, status?: string): Promise<unknown[]> {
-  const types = await listLeaveTypes();
+  const types = assignCodes(await listLeaveTypes());
   let query = `
     SELECT lr.*, lt.name AS leave_type_name
     FROM leave_requests lr
@@ -76,7 +77,7 @@ async function listMyLeaves(userId: string, status?: string): Promise<unknown[]>
 }
 
 async function listTeamLeaves(approverId: string, status?: string): Promise<unknown[]> {
-  const types = await listLeaveTypes();
+  const types = assignCodes(await listLeaveTypes());
   const actor = db.prepare('SELECT id, role, manager_scope FROM users WHERE id = ?').get(approverId) as any;
   if (!actor) return [];
 
@@ -211,7 +212,7 @@ async function createLeave(l: NewLeave): Promise<{ ok: boolean; status?: number;
     )
     .get(leaveId) as any;
 
-  const types = await listLeaveTypes();
+  const types = assignCodes(await listLeaveTypes());
   return { ok: true, leave: formatMobileLeave(newRow, types) };
 }
 
@@ -252,10 +253,10 @@ export const POST = handle(async (req: NextRequest) => {
     return fail(400, 'VALIDATION', 'Please enter a reason.');
   }
 
-  const types = await listLeaveTypes();
-  const lt = matchLeaveType(type, types); // "EL" | "EARNED" | "Earned Leave (EL)" → the webapp type
+  const types = assignCodes(await listLeaveTypes());
+  const lt = matchLeaveType(type, types); // "EL" | "lt_earned" | "Earned Leave" → the webapp type
   if (!lt) {
-    return fail(400, 'VALIDATION', `Unknown leave type "${type}". Known: ${types.map((t) => t.key).join(', ')}`);
+    return fail(400, 'VALIDATION', `Unknown leave type "${type}". Known: ${types.map((t) => t.code).join(', ')}`);
   }
 
   const r = await createLeave({ userId: user.id, type: lt.key, from, to, halfDay, reason });

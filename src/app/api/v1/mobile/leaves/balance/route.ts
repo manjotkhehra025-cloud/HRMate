@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { handle, ok, requireMobileUser } from '../../_lib/mobileAuth';
-import { listLeaveTypes, shortCode } from '../../_lib/leaveTypes';
+import { assignCodes, matchLeaveType } from '../../_lib/leaveCodes';
+import { listLeaveTypes } from '../../_lib/leaveTypes';
 import db from '@/lib/db';
 import { balancesForUser } from '@/lib/leave';
 
@@ -9,21 +10,15 @@ export const dynamic = 'force-dynamic';
 // GET /api/v1/mobile/leaves/balance  (Bearer)
 // → { ok:true, available: number, pending: number,
 //     balances:[{ type:"CL"|"SL"|"EL"|…, name, total, used, available }] }
+// `available` = sum of all types (the Home tile shows it); Phase 3 uses `balances` per type.
 export const GET = handle(async (req: NextRequest) => {
   const { user } = await requireMobileUser(req);
-  const types = await listLeaveTypes();
+  const types = assignCodes(await listLeaveTypes());
 
   const rawBalances = balancesForUser(user.id);
   const balances = rawBalances.map((b: any) => {
-    const t = types.find(
-      (x) =>
-        x.key === b.id ||
-        x.key === b.leave_type_id ||
-        shortCode(x) === b.id ||
-        shortCode(x) === b.type ||
-        x.name.toLowerCase() === (b.name || '').toLowerCase()
-    );
-    const code = t ? shortCode(t) : shortCode({ key: b.id, name: b.name });
+    const t = matchLeaveType(String(b.id || b.leave_type_id || b.name || ''), types);
+    const code = t ? t.code : String(b.type || '').toUpperCase();
 
     return {
       type: code,
