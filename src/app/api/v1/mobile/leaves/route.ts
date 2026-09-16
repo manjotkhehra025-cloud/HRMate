@@ -17,6 +17,34 @@ function extractTypeCode(name: string, id: string): string {
   return (name || '').slice(0, 3).toUpperCase();
 }
 
+function resolveLeaveType(input: string): any | null {
+  const clean = input.trim();
+  if (!clean) return null;
+
+  const allTypes = db.prepare('SELECT * FROM leave_types ORDER BY sort').all() as any[];
+  if (!allTypes || allTypes.length === 0) return null;
+
+  // 1. Exact ID match (case-insensitive)
+  const byId = allTypes.find((t) => t.id.toLowerCase() === clean.toLowerCase());
+  if (byId) return byId;
+
+  // 2. Short code match (e.g. "EL" vs extractTypeCode)
+  const byCode = allTypes.find((t) => extractTypeCode(t.name, t.id).toLowerCase() === clean.toLowerCase());
+  if (byCode) return byCode;
+
+  // 3. Name substring match
+  const byName = allTypes.find(
+    (t) => t.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(t.name.toLowerCase())
+  );
+  if (byName) return byName;
+
+  // 4. Prefix match (e.g. lt_ + clean)
+  const byPrefixedId = allTypes.find((t) => t.id.toLowerCase() === `lt_${clean.toLowerCase()}`);
+  if (byPrefixedId) return byPrefixedId;
+
+  return null;
+}
+
 function formatMobileLeave(r: any) {
   const typeName = r.leave_type_name || r.typeName || 'Leave';
   const typeId = r.leave_type_id || r.type || '';
@@ -114,22 +142,9 @@ async function createLeave(l: NewLeave): Promise<{ ok: boolean; status?: number;
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(l.userId) as any;
   if (!userRow) return { ok: false, status: 404, code: 'VALIDATION', error: 'User not found.' };
 
-  // Match leave type
-  let lt = db
-    .prepare(
-      `SELECT * FROM leave_types
-       WHERE UPPER(id) = UPPER(?) OR UPPER(id) = UPPER(?) OR UPPER(name) LIKE ?`
-    )
-    .get(l.type, `lt_${l.type.toLowerCase()}`, `%(${l.type.toUpperCase()})%`) as any;
-
+  const lt = resolveLeaveType(l.type);
   if (!lt) {
-    lt = db.prepare(`SELECT * FROM leave_types WHERE UPPER(name) LIKE ?`).get(`%${l.type}%`) as any;
-  }
-  if (!lt) {
-    lt = db.prepare(`SELECT * FROM leave_types ORDER BY sort LIMIT 1`).get() as any;
-  }
-  if (!lt) {
-    return { ok: false, status: 400, code: 'VALIDATION', error: 'Invalid leave type.' };
+    return { ok: false, status: 400, code: 'VALIDATION', error: `Unknown leave type "${l.type}".` };
   }
 
   const isYellowCard = userRow.staff_type === 'yellow_card';
