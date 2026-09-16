@@ -73,6 +73,21 @@ workflows:
           cd mobile
           flutter pub get
 
+      - name: Set up release keystore
+        script: |
+          cd mobile/android
+          if [ -n "$HRMATE_KEYSTORE_BASE64" ]; then
+            echo "$HRMATE_KEYSTORE_BASE64" | base64 --decode > app/upload.keystore
+          elif [ -f "../../hrmate-release.keystore" ]; then
+            cp "../../hrmate-release.keystore" app/upload.keystore
+          fi
+          cat > key.properties <<EOF
+          storeFile=upload.keystore
+          storePassword=${HRMATE_KEYSTORE_PASSWORD:-hrmatepassword123}
+          keyAlias=${HRMATE_KEY_ALIAS:-hrmate}
+          keyPassword=${HRMATE_KEY_PASSWORD:-hrmatepassword123}
+          EOF
+
       - name: Build Native Prod Release APK
         script: |
           cd mobile
