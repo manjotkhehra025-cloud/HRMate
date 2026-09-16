@@ -1,0 +1,228 @@
+// Shared for the three team routes. Wire the TODOs to the webapp's EXISTING team/reporting-line logic.
+//
+// Team member shape (team/today.members[], team/members.items[], team/members/:id/day.member):
+// { id, code, name, department, designation, avatarUrl,
+//   status:"present"|"absent"|"leave"|"holiday"|"weekoff"|"half"|"notyet",
+//   firstIn:ISO|null, lastOut:ISO|null, workedMinutes, late:boolean, leaveType:"EL"|null }
+import { MobileError } from '../_lib/mobileAuth';
+import { assignCodes, publicType } from '../_lib/leaveCodes';
+import { listLeaveTypes } from '../_lib/leaveTypes';
+import db from '@/lib/db';
+import { hasPermission } from '@/lib/permissions';
+import { departmentScope, isApproverDesignation, parseWeeklyOff } from '@/lib/staff';
+import { pickShiftForNow } from '@/lib/shifts';
+import { getFactoryConfig } from '@/lib/geo';
+import { istTimestamp } from '@/lib/attendance';
+
+export type MemberRow = {
+  id: string;
+  code: string;
+  name: string;
+  department: string;
+  designation: string | null;
+  avatarUrl: string | null;
+  status: string;
+  firstIn: string | null;
+  lastOut: string | null;
+  workedMinutes: number;
+  late: boolean;
+  leaveType: string | null;
+};
+
+// Who may see a team: the SAME rule the webapp uses for its Team / attendance dashboard
+// (manager of a department / reporting line, HR, admin, super_admin). Everyone else → 403 FORBIDDEN.
+export async function canViewTeam(userId: string): Promise<boolean> {
+  const u = db.prepare('SELECT id, role, designation FROM users WHERE id = ?').get(userId) as any;
+  if (!u) return false;
+  if (u.role === 'super_admin' || u.role === 'admin' || u.role === 'manager') return true;
+  if (isApproverDesignation(u.designation)) return true;
+  return hasPermission(userId, 'attendance.team') || hasPermission(userId, 'leaves.team') || hasPermission(userId, 'approvals.manage');
+}
+
+export async function requireTeamAccess(userId: string): Promise<void> {
+  const allowed = await canViewTeam(userId);
+  if (!allowed) throw new MobileError(403, 'FORBIDDEN', 'You do not manage a team.');
+}
+
+// The people this user manages (webapp reporting line / department rule). For super_admin / HR
+// this is everyone active. Never include the caller themself.
+export async function teamMemberIds(userId: string): Promise<string[]> {
+  const actor = db.prepare('SELECT id, role, manager_scope FROM users WHERE id = ?').get(userId) as any;
+  if (!actor) return [];
+
+  const isAll = actor.role === 'super_admin' || actor.role === 'admin' || !actor.manager_scope;
+  const rows = db.prepare('SELECT id, department FROM users WHERE active = 1 AND id != ? ORDER BY name').all(userId) as any[];
+
+  if (isAll) {
+    return rows.map((r) => r.id);
+  }
+
+  const visible = rows.filter((r) => departmentScope(r.department) === actor.manager_scope);
+  return visible.map((r) => r.id);
+}
+
+function calculateShiftEnd(startTime: string, hours: number): string {
+  const [h, m] = (startTime || '08:00').split(':').map(Number);
+  const totalMins = (h * 60 + (m || 0)) + Math.round((hours || 8) * 60);
+  const endH = Math.floor((totalMins / 60) % 24);
+  const endM = Math.floor(totalMins % 60);
+  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+}
+
+// Attendance of one member for one day, using the same computation as attendance/today + history.
+export async function memberDay(
+  memberId: string,
+  date: string
+): Promise<MemberRow & { punches: unknown[]; shift: { name: string; start: string; end: string } | null }> {
+  const user = db
+    .prepare('SELECT id, emp_code, name, department, designation, avatar, weekly_off, shift_id FROM users WHERE id = ?')
+    .get(memberId) as any;
+
+  if (!user) {
+    throw new MobileError(404, 'NOT_FOUND', `User ${memberId} not found`);
+  }
+
+  const todayStr = isoToday();
+  const now = Date.now();
+
+  const record = db
+    .prepare('SELECT * FROM attendance WHERE user_id = ? AND date = ?')
+    .get(memberId, date) as any;
+
+  const leaveRow = db
+    .prepare(
+      `SELECT lr.*, lt.name AS leave_type_name
+       FROM leave_requests lr
+       JOIN leave_types lt ON lt.id = lr.leave_type_id
+       WHERE lr.user_id = ? AND lr.status = 'approved' AND ? >= lr.start_date AND ? <= lr.end_date`
+    )
+    .get(memberId, date, date) as any;
+
+  const holidayRow = db
+    .prepare('SELECT title FROM holidays WHERE date = ? AND is_off = 1')
+    .get(date) as any;
+
+  // Determine Shift
+  let activeShift: any = null;
+  if (record?.shift_id) {
+    activeShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(record.shift_id) as any;
+  }
+  if (!activeShift && record?.punch_in_at) {
+    activeShift = pickShiftForNow(record.punch_in_at, memberId);
+  }
+  if (!activeShift) {
+    activeShift = pickShiftForNow(now, memberId);
+  }
+  if (!activeShift) {
+    activeShift = db.prepare('SELECT * FROM shifts ORDER BY sort LIMIT 1').get() as any;
+  }
+
+  const shift = activeShift
+    ? {
+        name: activeShift.name || 'General Day Shift',
+        start: activeShift.start_time || '08:00',
+        end: calculateShiftEnd(activeShift.start_time || '08:00', activeShift.hours || 9),
+      }
+    : null;
+
+  const punches: any[] = [];
+  let firstIn: string | null = null;
+  let lastOut: string | null = null;
+  let workedMinutes = 0;
+  let late = false;
+  let status = 'notyet';
+  let leaveType: string | null = null;
+
+  if (leaveRow) {
+    const types = assignCodes(await listLeaveTypes());
+    leaveType = publicType(leaveRow.leave_type_id || leaveRow.leave_type_name || '', types).type;
+  }
+
+  const factory = getFactoryConfig();
+  const shiftStart = shift?.start || factory.workStart || '09:00';
+
+  if (record && record.punch_in_at) {
+    firstIn = new Date(record.punch_in_at).toISOString();
+    punches.push({
+      id: record.id,
+      type: 'in',
+      at: firstIn,
+      method: 'biometric',
+      distanceM: 0,
+      insideGeofence: !!record.punch_in_geofence,
+    });
+
+    try {
+      const shiftStartTs = istTimestamp(date, shiftStart);
+      if (record.punch_in_at > shiftStartTs) {
+        late = true;
+      }
+    } catch {
+      // Ignore timestamp parsing errors
+    }
+
+    if (record.punch_out_at) {
+      lastOut = new Date(record.punch_out_at).toISOString();
+      punches.push({
+        id: `${record.id}_out`,
+        type: 'out',
+        at: lastOut,
+        method: 'biometric',
+        distanceM: 0,
+        insideGeofence: !!record.punch_out_geofence,
+      });
+      workedMinutes = Math.max(0, Math.floor((record.punch_out_at - record.punch_in_at) / 60000));
+    } else if (date === todayStr) {
+      workedMinutes = Math.max(0, Math.floor((now - record.punch_in_at) / 60000));
+    }
+
+    if (workedMinutes >= 240 && workedMinutes < 420 && record.punch_out_at) {
+      status = 'half';
+    } else {
+      status = 'present';
+    }
+  } else {
+    // No punch
+    if (leaveRow) {
+      status = 'leave';
+    } else if (holidayRow) {
+      status = 'holiday';
+    } else {
+      const dayOfWeek = new Date(date + 'T00:00:00Z').getUTCDay();
+      const weeklyOff = parseWeeklyOff(user.weekly_off, 6);
+      if (dayOfWeek === weeklyOff) {
+        status = 'weekoff';
+      } else if (date <= todayStr) {
+        status = 'absent';
+      } else {
+        status = 'notyet';
+      }
+    }
+  }
+
+  const memberRow: MemberRow = {
+    id: user.id,
+    code: user.emp_code || user.id,
+    name: user.name,
+    department: user.department || 'General',
+    designation: user.designation || null,
+    avatarUrl: user.avatar || null,
+    status,
+    firstIn,
+    lastOut,
+    workedMinutes,
+    late,
+    leaveType,
+  };
+
+  return {
+    ...memberRow,
+    punches,
+    shift,
+  };
+}
+
+export function isoToday(): string {
+  // Site-local date (Asia/Kolkata), not UTC — a punch at 01:00 IST belongs to that IST day.
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+}
