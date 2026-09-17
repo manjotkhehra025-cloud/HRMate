@@ -144,11 +144,11 @@ permission model — no second user table, no duplicated business rules.
 | `GET attendance/today` | `{status:"in"\|"out"\|"none", firstIn, lastOut, workedMinutes, shift{name,start,end}, geofence{lat,lng,radiusM}}` |
 | `POST attendance/punch {type:"in"\|"out", lat, lng, accuracyM, method:"biometric"\|"password", deviceId}` | 200 record · 409 `GEOFENCE` with `distanceM` |
 | `GET attendance/history?from&to` | day rows for calendar / list |
-| `GET leaves/balance` · `GET leaves?status=` · `POST leaves {type, from, to, halfDay, reason}` | employee leaves |
+| `GET leaves/balance` · `GET leaves?status=&scope=mine\|team` · `POST leaves {type, from, to, halfDay, reason}` | employee leaves (`scope=team` = requests the caller may approve) |
 | `POST leaves/:id/approve` · `POST leaves/:id/reject {reason}` | manager actions |
 | `GET team/today` · `GET team/members?q=` · `GET team/members/:id/day?date=` | manager views |
-| `GET holidays` · `GET announcements` · `GET payslips` (only if the webapp has payslips) | More tab |
-| `POST devices/push-token {token, platform}` | Phase 6 |
+| `GET me` (+`profile{designation,joinedOn,phone,manager,shift,site}`) · `GET holidays?year=` · `GET announcements` · `GET payslips` (create ONLY if the webapp has payroll; 404 hides the tile) | More tab |
+| `POST devices/push-token {token, platform, deviceId}` · `DELETE devices/push-token?token=` · `POST devices/push-test` · `GET/PUT prefs/notify {enabled}` | Phase 6 (push) |
 
 Rule: **build the endpoint on the webapp first** (reply includes a working `curl` example
 against `https://hr.flavorflow.co.in`), then build the screen that uses it.
@@ -168,11 +168,12 @@ against `https://hr.flavorflow.co.in`), then build the screen that uses it.
   built once.
 - Android: `minSdk 26`, latest stable `targetSdk`; permissions declared only for features
   that exist (internet, fine location, biometric, notifications from Phase 6).
-- **Versioning & identity:** native app = `2.0.0+20`, build number +1 per phase (the
-  WebView shell was 1.x). Phases 0–4 ship as a **beta** with `applicationIdSuffix ".beta"`
-  and label "HRMate Beta" so it installs next to the live app. Phase 5 removes the suffix
-  and signs with the v1.0.4 keystore so it installs as an update. If that keystore is not
-  available, say so in Phase 0 — users will then uninstall the shell once at 2.0.0.
+- **Versioning & identity:** native app started at `2.0.0+20`, build number +1 per phase
+  (the WebView shell was 1.x). Phases 0–4 shipped as a **beta** with `applicationIdSuffix
+  ".beta"` and label "HRMate Beta" next to the live app. Phase 5 builds `--flavor prod`
+  (no suffix) as **3.0.0+28** with a **new private release key** held only in Codemagic
+  (env group `hrmate_release`). The shell (`com.gdfoods.hrmate`, key committed in the public
+  repo → compromised) is retired; users uninstall it once. See `mobile/RELEASE.md`.
 - Secrets (keystore, passwords, server secret) are never committed.
 
 ---
@@ -184,15 +185,20 @@ built by the pipeline and installed on a real phone · screenshots of every new/
 screen · `git log -1` hash in the reply (pushed) · no files outside the phase's scope
 changed · **Deviations: none**.
 
+**Order inside a phase (fixed):** ① server routes → commit → deploy → curls pass ② app
+files → **commit + push** (`git status` clean) ③ Codemagic build **from that pushed commit**
+④ install + screenshots. An APK built from uncommitted files is invalid — the pipeline must
+show the commit hash the APK was built from, and that hash must contain the phase's files.
+
 | Phase | Scope | Done when |
 |---|---|---|
 | **P0 Foundation** | `mobile/` project, this file, `RELEASE.md`, theme (§4), `ApiClient`, `AuthController`, `secure.dart`, router + shell with 5 placeholder tabs, login screen, splash, Mobile API `auth/login` + `me` + `auth/logout` | real login against `hr.flavorflow.co.in` works; Home placeholder shows the logged-in user's name and role; fingerprint unlock toggle works; beta APK installs beside the live app |
-| **P1 Home** | today card (status, first in / last out, worked), quick tiles, announcements, pull-to-refresh | API `attendance/today`, `announcements` live; offline chip works |
-| **P2 Punch** | location + geofence check with distance, native biometric confirm, punch in/out, result sheet, today's punches | API `attendance/punch`, `attendance/history`; 409 GEOFENCE shown clearly |
-| **P3 Leaves** | balance chips, list with status filters, apply form (type, dates, half-day, reason), manager approve / reject | leaves endpoints live |
-| **P4 Team** | manager today view (present / absent / on leave), member search, member day detail | team endpoints live; tab hidden for non-managers |
-| **P5 More + Release 2.0.0** | profile, holidays, attendance calendar, payslips (if any), language, biometric setting, about (version), logout · remove `.beta`, sign with v1.0.4 keystore, publish on `/download`, update download page copy | native app replaces the WebView shell |
-| **P6 Push** | FCM: punch reminders, leave decisions, announcements; `devices/push-token` | notifications arrive with the app closed |
+| **P1 Home** | today card (status, first in / last out, worked), quick tiles, announcements, pull-to-refresh — **app code already written upstream** (`hrmate-mobile/lib/features/home/`, `core/cache.dart`); server routes in `server-reference/…/attendance/today`, `announcements`, `leaves/balance` | API `attendance/today`, `announcements`, `leaves/balance` live; offline chip works |
+| **P2 Punch** | location + geofence check with distance, native biometric confirm, punch in/out, result sheet, today's punches — **app code already written upstream** (`hrmate-mobile/lib/features/punch/`, `core/geo.dart`); server routes in `server-reference/…/attendance/punch`, `attendance/history` | API `attendance/punch`, `attendance/history`; 409 GEOFENCE shown clearly; a mobile punch shows up in the webapp attendance page |
+| **P3 Leaves** | balance chips, list with status filters, apply form (type, dates, half-day, reason), manager approve / reject — **app code already written upstream** (`hrmate-mobile/lib/features/leaves/`); server routes in `server-reference/…/leaves/`, `leaves/[id]/approve`, `leaves/[id]/reject` | leaves endpoints live; a request applied from the app appears on the webapp Leaves page and approving it changes `leaves/balance` |
+| **P4 Team** | manager today view (present / absent / on leave / late counts as filters), member search, member day detail with date switcher — **app code already written upstream** (`hrmate-mobile/lib/features/team/`); server routes in `server-reference/…/team/` | team endpoints live; tab hidden for non-managers and 403 on the server; counts match the webapp dashboard for the same day |
+| **P5 More + Release 3.0.0** ✅ *(accepted 2026-09-17; 3.0.0+30 live on `/download`, sha256 972f3445…5514f)* | profile, holidays, attendance calendar (month grid on `attendance/history`), payslips (if any), language, biometric setting, about (version), logout — **app code already written upstream** (`hrmate-mobile/lib/features/more/`); server routes in `server-reference/…/me` (profile block), `holidays`, `payslips` · build `--flavor prod` (no `.beta`), sign with the v1.0.4 keystore, `3.0.0+28`, publish on `/download`, update download page copy | native app replaces the WebView shell (different package + new private key → the shell is uninstalled once); `apksigner` fingerprint recorded in RELEASE.md |
+| **P6 Push** | FCM: punch reminders, leave decisions, announcements; `devices/push-token` — **app code already written upstream** (`hrmate-mobile/lib/state/push.dart`, More → Notifications switch + *Send test notification*, `android/` Firebase wiring); server: `server-reference/lib/fcm.ts` → `src/lib/fcm.ts`, routes `devices/push-token`, `devices/push-test`, `prefs/notify`, re-copied `auth/logout`, and the two `webapp-patches` (`src/lib/push.ts` FCM fan-out inside `sendPushToUser`, wall POST announcement) · owner: Firebase project `HRMate`, `google-services.json` committed at `mobile/android/app/`, service-account key ONLY at `/app/data/fcm-service-account.json` on the VPS · version `3.1.0+31` | notifications arrive with the app closed (test push from More; a leave approved on the webapp reaches the employee's phone); `google-services.json missing` must not appear in the build log |
 | **P7 Polish** | dark theme, tablet layout, accessibility, crash reporting | — |
 
 Never merge two phases into one prompt. Never begin phase N+1 with phase N unaccepted.
