@@ -4,6 +4,17 @@
 // { id, code, name, department, designation, avatarUrl,
 //   status:"present"|"absent"|"leave"|"holiday"|"weekoff"|"half"|"notyet",
 //   firstIn:ISO|null, lastOut:ISO|null, workedMinutes, late:boolean, leaveType:"EL"|null }
+//
+// STATUS RULE for a day with NO punch (same rule as the webapp dashboard):
+//   leave → "leave"; holiday → "holiday"; weekly off → "weekoff";
+//   date < today → "absent";
+//   date == today → "absent" ONLY once the member's shift end (+ grace) has passed, else "notyet"
+//   (at 01:00 nobody on the 07:00 day shift is "absent" yet — they are "notyet");
+//   date > today → "notyet".
+// SHIFT RULE: shift = the member's ASSIGNED shift (users.shift_id); if none, the webapp's default
+// shift. Never pick a shift from the CURRENT clock time (pickShiftForNow(now)) — that labels every
+// day-shift worker "Night Shift" when the manager looks at night. Only a real punch time may be
+// used to auto-detect a shift, and only for that punched day.
 import { MobileError } from '../_lib/mobileAuth';
 import { assignCodes, publicType } from '../_lib/leaveCodes';
 import { listLeaveTypes } from '../_lib/leaveTypes';
@@ -133,7 +144,8 @@ export async function memberDay(
     .prepare('SELECT title FROM holidays WHERE date = ? AND is_off = 1')
     .get(date) as any;
 
-  // Determine Shift
+  // Determine Shift:
+  // Punch time may auto-detect shift for this day only; otherwise ASSIGNED shift (users.shift_id -> shifts row); if none, webapp default shift.
   let activeShift: any = null;
   if (record?.shift_id) {
     activeShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(record.shift_id) as any;
@@ -141,18 +153,22 @@ export async function memberDay(
   if (!activeShift && record?.punch_in_at) {
     activeShift = pickShiftForNow(record.punch_in_at, memberId);
   }
-  if (!activeShift) {
-    activeShift = pickShiftForNow(now, memberId);
+  if (!activeShift && user.shift_id && user.shift_id !== 'auto' && user.shift_id !== 'none') {
+    activeShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(user.shift_id) as any;
   }
   if (!activeShift) {
-    activeShift = db.prepare('SELECT * FROM shifts ORDER BY sort LIMIT 1').get() as any;
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = 'sh_general_day' OR id = 'sh_general'").get() as any
+      || db.prepare("SELECT * FROM shifts WHERE auto_pick = 'morning'").get() as any
+      || db.prepare("SELECT * FROM shifts ORDER BY sort ASC LIMIT 1").get() as any
+      || { name: 'General Day Shift', start_time: '08:00', hours: 9 };
   }
 
+  const shiftHours = activeShift?.hours || 9;
   const shift = activeShift
     ? {
         name: activeShift.name || 'General Day Shift',
         start: activeShift.start_time || '08:00',
-        end: calculateShiftEnd(activeShift.start_time || '08:00', activeShift.hours || 9),
+        end: calculateShiftEnd(activeShift.start_time || '08:00', shiftHours),
       }
     : null;
 
@@ -223,10 +239,26 @@ export async function memberDay(
       const weeklyOff = parseWeeklyOff(user.weekly_off, 6);
       if (dayOfWeek === weeklyOff) {
         status = 'weekoff';
-      } else if (date <= todayStr) {
+      } else if (date < todayStr) {
         status = 'absent';
-      } else {
+      } else if (date > todayStr) {
         status = 'notyet';
+      } else {
+        // date === todayStr: absent ONLY once member's shift end (+ grace) has passed, otherwise notyet
+        let shiftEndPassed = false;
+        try {
+          const shiftStartTs = istTimestamp(date, shiftStart);
+          const shiftEndTs = shiftStartTs + (shiftHours * 3600 * 1000) + (15 * 60 * 1000); // 15 mins grace
+          shiftEndPassed = now > shiftEndTs;
+        } catch {
+          shiftEndPassed = false;
+        }
+
+        if (shiftEndPassed) {
+          status = 'absent';
+        } else {
+          status = 'notyet';
+        }
       }
     }
   }

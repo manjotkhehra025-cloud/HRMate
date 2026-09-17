@@ -16,17 +16,6 @@ function calculateShiftEnd(startTime: string, hours: number): string {
 }
 
 // GET /api/v1/mobile/attendance/today (Bearer)
-// Response contract (ARCHITECTURE.md §5):
-// {
-//   ok: true,
-//   status: "in" | "out" | "none",
-//   firstIn: ISO string | null,
-//   lastOut: ISO string | null,
-//   workedMinutes: number,
-//   shift: { name, start: "09:00", end: "18:00" } | null,
-//   onLeave: boolean, holiday: boolean, holidayName: string | null,
-//   geofence: { lat, lng, radiusM }
-// }
 export const GET = handle(async (req: NextRequest) => {
   const { user } = await requireMobileUser(req);
   const today = dateKey();
@@ -54,7 +43,9 @@ export const GET = handle(async (req: NextRequest) => {
     }
   }
 
-  // Determine shift
+  // Determine shift:
+  // Punch time may auto-detect shift for this day only; otherwise ASSIGNED shift (users.shift_id -> shifts row); if none, webapp default shift.
+  const userRow = db.prepare('SELECT shift_id FROM users WHERE id = ?').get(user.id) as any;
   let activeShift: any = null;
   if (record?.shift_id) {
     activeShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(record.shift_id) as any;
@@ -62,11 +53,14 @@ export const GET = handle(async (req: NextRequest) => {
   if (!activeShift && record?.punch_in_at) {
     activeShift = pickShiftForNow(record.punch_in_at, user.id);
   }
-  if (!activeShift) {
-    activeShift = pickShiftForNow(now, user.id);
+  if (!activeShift && userRow?.shift_id && userRow.shift_id !== 'auto' && userRow.shift_id !== 'none') {
+    activeShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(userRow.shift_id) as any;
   }
   if (!activeShift) {
-    activeShift = db.prepare('SELECT * FROM shifts ORDER BY sort LIMIT 1').get() as any;
+    activeShift = db.prepare("SELECT * FROM shifts WHERE id = 'sh_general_day' OR id = 'sh_general'").get() as any
+      || db.prepare("SELECT * FROM shifts WHERE auto_pick = 'morning'").get() as any
+      || db.prepare("SELECT * FROM shifts ORDER BY sort ASC LIMIT 1").get() as any
+      || { name: 'General Day Shift', start_time: '08:00', hours: 9 };
   }
 
   const shift = activeShift
