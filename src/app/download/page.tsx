@@ -17,16 +17,33 @@ import {
   MapPin,
   Lock,
   Check,
+  Info,
 } from "lucide-react";
 import HRMateLogo from "@/components/HRMateLogo";
 import { classNames } from "@/lib/utils";
 import { useIsNativeApp } from "@/lib/native";
+
+interface ApkInfo {
+  ok: boolean;
+  package?: string;
+  minAndroid?: string;
+  version?: string;
+  build?: number;
+  file?: string;
+  sizeBytes?: number;
+  sha256?: string;
+  publishedAt?: string;
+  available?: boolean;
+  url?: string;
+}
 
 export default function DownloadPage() {
   const isNative = useIsNativeApp();
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
+  const [apkInfo, setApkInfo] = useState<ApkInfo | null>(null);
+  const [loadingInfo, setLoadingInfo] = useState(true);
 
   useEffect(() => {
     if (isNative) {
@@ -34,11 +51,32 @@ export default function DownloadPage() {
     }
   }, [isNative, router]);
 
+  useEffect(() => {
+    fetch("/api/download/apk-info")
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.ok) {
+          setApkInfo(data);
+        } else {
+          setApkInfo(null);
+        }
+      })
+      .catch(() => {
+        setApkInfo(null);
+      })
+      .finally(() => {
+        setLoadingInfo(false);
+      });
+  }, []);
+
   const handleDownload = () => {
     setDownloading(true);
     const link = document.createElement("a");
     link.href = "/api/download/apk";
-    link.download = "HRMate.apk";
+    link.download = apkInfo?.file || "HRMate.apk";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -49,10 +87,12 @@ export default function DownloadPage() {
     }, 1200);
   };
 
-  const currentUrl = typeof window !== "undefined" ? window.location.origin : "https://gdfoods.duckdns.org";
+  const downloadEndpoint = "https://hr.flavorflow.co.in/api/download/apk";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    `${currentUrl}/api/download/apk`
+    downloadEndpoint
   )}&margin=8`;
+
+  const sizeMb = apkInfo?.sizeBytes ? (apkInfo.sizeBytes / (1024 * 1024)).toFixed(1) + " MB" : null;
 
   return (
     <div
@@ -63,7 +103,7 @@ export default function DownloadPage() {
       <header className="sticky top-0 z-30 shrink-0 border-b border-[#E2E8F0] bg-white/95 px-4 py-3.5 backdrop-blur-md sm:px-8 dark:border-[#1E293B] dark:bg-[#0F172A]/95">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <HRMateLogo size={36} withText={true} subtitle="GD Foods Mfg. (I) Pvt. Ltd." />
+            <HRMateLogo size={36} withText={true} subtitle="Workforce Management Portal" />
           </Link>
           <Link
             href="/dashboard"
@@ -86,7 +126,7 @@ export default function DownloadPage() {
               HRMate Native App Active
             </h1>
             <p className="mx-auto mt-2 max-w-md text-[14px] text-slate-300">
-              You are currently running the official native Android APK (v1.0.4). All features, offline caching, and biometric hardware sensors are active.
+              You are currently running the official native Android app. All features, offline caching, and biometric hardware sensors are active.
             </p>
             <div className="mt-6 flex justify-center">
               <Link
@@ -107,21 +147,38 @@ export default function DownloadPage() {
             <div className="relative z-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
               {/* Left Content */}
               <div className="lg:col-span-7 space-y-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11.5px] font-extrabold text-emerald-300 ring-1 ring-emerald-500/40">
                     <Sparkles className="h-3.5 w-3.5" /> Official Android Release
                   </span>
-                  <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-slate-300">
-                    v1.0.4 · APK
+                  {apkInfo ? (
+                    <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-slate-300">
+                      v{apkInfo.version} ({apkInfo.build}) {sizeMb ? `· ${sizeMb}` : ""}
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 ring-1 ring-amber-500/40">
+                      Coming soon
+                    </span>
+                  )}
+                  <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-mono text-blue-300 ring-1 ring-blue-500/30">
+                    in.flavorflow.hrmate
                   </span>
                 </div>
 
-                <h1 className="text-[28px] sm:text-[40px] font-black leading-tight tracking-tight text-white">
-                  HRMate for Android
+                <h1 className="text-[28px] sm:text-[36px] font-black leading-tight tracking-tight text-white">
+                  HRMate 3.0.0 — native Android app: fingerprint punch, leaves, team, holidays
                 </h1>
                 <p className="text-[14px] sm:text-[16px] text-slate-300 leading-relaxed font-medium">
                   Supercharge your factory workday with 1-tap Biometric Selfie Punch, instant Push Reminders, Offline Mode, and seamless Holiday & Leave Tracking.
                 </p>
+
+                {/* Upgrade Notice Box */}
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-start gap-3">
+                  <Info className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[13px] text-amber-200 font-medium leading-relaxed">
+                    <strong>Using HRMate 1.x?</strong> Uninstall it first, then install 3.0.0 (one time). Your data stays on the server.
+                  </p>
+                </div>
 
                 {/* Download Button */}
                 <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -141,12 +198,14 @@ export default function DownloadPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-4 text-[12px] text-slate-400 pt-1">
+                <div className="flex flex-wrap items-center gap-3 text-[12px] text-slate-400 pt-1">
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" /> 100% Virus Free & Signed
                   </span>
                   <span>•</span>
-                  <span>Android 8.0 to 15+</span>
+                  <span>Android 8.0+</span>
+                  <span>•</span>
+                  <span>Package: <code className="text-slate-300 font-mono">in.flavorflow.hrmate</code></span>
                 </div>
               </div>
 
