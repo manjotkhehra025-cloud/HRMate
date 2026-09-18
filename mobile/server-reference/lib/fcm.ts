@@ -17,7 +17,7 @@
 // Lives at `src/lib/fcm.ts` in the webapp (next to push.ts / prefs.ts / notify.ts).
 import fs from 'fs';
 import { createSign } from 'crypto';
-import db from './db';
+import db from '@/lib/db';
 
 // Table is created on first use (not at import) so `next build` never touches the DB.
 let schemaReady = false;
