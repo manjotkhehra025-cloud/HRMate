@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "74339254787",
+    "project_id": "hrmate-8865e",
+    "storage_bucket": "hrmate-8865e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74339254787:android:b12fef47ee62e8c7948436",
+        "android_client_info": {
+          "package_name": "in.flavorflow.hrmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgBPnHHt_A8b7qks43D6fnMHtbfgc-_SY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74339254787:android:614c06126e521c23948436",
+        "android_client_info": {
+          "package_name": "in.flavorflow.hrmate.beta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgBPnHHt_A8b7qks43D6fnMHtbfgc-_SY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
