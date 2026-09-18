@@ -104,26 +104,40 @@ for approval. `webview_*` / `*inappwebview*` are never allowed.
 | Token | Value |
 |---|---|
 | Primary blue | `#1E6FE0` (deep `#1556B8`, container `#E7F1FF`) |
-| Success green | `#16B878` · Danger `#E5484D` · Warning `#F5A524` |
-| Page background | `#F4F7FB` · Card `#FFFFFF` · Border `#DDE6EF` |
-| Ink | `#172334` · Sub-ink `#617083` · Navy (splash, dark bars) `#0B1633` |
-| Radius | 16 cards · 12 inputs & buttons · pill chips |
-| Shadow | `0 2 8 rgba(16,24,40,0.06)` |
-| Type | system font (Roboto); sizes 12 / 14 / 16 / 20 / 24; weights 400 / 600 / 700 |
+| Success green | `#16B878` (deep `#07945D`, badge `#E1F8EF`/`#06613E`) · Emerald `#10B981`/`#059669` · Danger `#EF4444` (error text `#C52B35`) · Warning `#F59E0B` (text `#D98200`) |
+| Page background | `#F4F7FB` · Card `#FFFFFF` · Border `#DDE6EF` · Soft line `#E2E8F0` · Input border `#C9D5E2` |
+| Ink | `#172334` (headings `#0F172A`) · Sub-ink `#617083` · Faint `#94A3B8` · Navy (splash) `#0B1633` · Punch/login navy `#0B132B → #0F172A → #1C2541` |
+| Radius | 16 cards · 12 inputs & buttons · 24 KPI · 28 punch card · 32 login card · pill chips |
+| Shadow | card `0 1.2 8 rgba(18,58,99,0.10)` · pop `0 7 24 rgba(11,37,69,0.14)` · blue glow `0 10 24 rgba(30,111,224,0.28)` |
+| Type | **Inter** (v4, OFL, `assets/fonts/`, weights 400–900) — the webapp's typeface; tabular numerals on clocks/timers; sizes 10.5–26; weights 400–900 |
 | Icons | Material rounded icons |
+
+- **Phase 7 (2026-09-18):** the app is restyled to be recognisably the webapp:
+  Inter bundled in `assets/fonts/` (`HrBrand` gains the webapp palette — emerald,
+  navy gradient, badge tones, radii 24/28/32, webapp shadows), white top header
+  (36 px logo rounded-11 + "HR"+"Mate" + company subline + avatar user pill),
+  custom bottom nav (active icon in a blue/10 rounded box, raised 56 px emerald
+  Punch circle with white ring), navy punch card (gradient + ambient glows,
+  facility pill + live clock, shift progress ring, emerald action button,
+  translucent location/error alert rows), navy gradient login page with white
+  rounded-32 card, and the Home dashboard (greeting + welcome subline,
+  ID Card / Apply Leave actions, compact navy punch summary, 3-col quick tiles,
+  rounded-24 KPI cards). Dark theme is deferred to **Phase 7b**.
 
 - **Text scale is clamped in `main.dart`:**
   `MediaQuery.of(context).textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3)`.
   Never derive a text scale from a preference value; never multiply font sizes by a stored
   number. (This exact mistake produced the 1-px text build.)
-- **Bottom nav:** 5 items — Home, Leaves, **Punch** (centre, elevated blue circle), Team,
-  More; labels always visible; Team hidden for roles without a team.
+- **Bottom nav:** 5 items — Home, Leaves, **Punch** (centre, elevated emerald gradient
+  circle with white ring), Team, More; labels always visible; Team hidden for roles
+  without a team. The top header bar (logo + wordmark + company subline + user pill)
+  lives in `AppShell`; the five tab pages do not render their own app bar.
 - **Splash:** opaque navy `#0B1633`, centred app icon + white spinner, **no text**. The
   router replaces it as soon as `AuthController.ready` is true (hard cap 3 s).
 - **Login:** logo, title "HRMate", company line "GD Foods Mfg. (I) Pvt. Ltd. · Workforce
   Portal", employee-code-or-email + password, "Unlock with fingerprint" once a token
   exists, language selector (English / ਪੰਜਾਬੀ / हिन्दी).
-- Light theme only for Phases 0–5; dark theme is Phase 7.
+- Light theme (webapp-faithful, Phase 7); dark theme deferred to Phase 7b.
 
 ---
 
@@ -199,7 +213,7 @@ show the commit hash the APK was built from, and that hash must contain the phas
 | **P4 Team** | manager today view (present / absent / on leave / late counts as filters), member search, member day detail with date switcher — **app code already written upstream** (`hrmate-mobile/lib/features/team/`); server routes in `server-reference/…/team/` | team endpoints live; tab hidden for non-managers and 403 on the server; counts match the webapp dashboard for the same day |
 | **P5 More + Release 3.0.0** ✅ *(accepted 2026-09-17; 3.0.0+30 live on `/download`, sha256 972f3445…5514f)* | profile, holidays, attendance calendar (month grid on `attendance/history`), payslips (if any), language, biometric setting, about (version), logout — **app code already written upstream** (`hrmate-mobile/lib/features/more/`); server routes in `server-reference/…/me` (profile block), `holidays`, `payslips` · build `--flavor prod` (no `.beta`), sign with the v1.0.4 keystore, `3.0.0+28`, publish on `/download`, update download page copy | native app replaces the WebView shell (different package + new private key → the shell is uninstalled once); `apksigner` fingerprint recorded in RELEASE.md |
 | **P6 Push** | FCM: punch reminders, leave decisions, announcements; `devices/push-token` — **app code already written upstream** (`hrmate-mobile/lib/state/push.dart`, More → Notifications switch + *Send test notification*, `android/` Firebase wiring); server: `server-reference/lib/fcm.ts` → `src/lib/fcm.ts`, routes `devices/push-token`, `devices/push-test`, `prefs/notify`, re-copied `auth/logout`, and the two `webapp-patches` (`src/lib/push.ts` FCM fan-out inside `sendPushToUser`, wall POST announcement) · owner: Firebase project `HRMate`, `google-services.json` committed at `mobile/android/app/`, service-account key ONLY at `/app/data/fcm-service-account.json` on the VPS · version `3.1.0+31` | notifications arrive with the app closed (test push from More; a leave approved on the webapp reaches the employee's phone); `google-services.json missing` must not appear in the build log |
-| **P7 Polish** | dark theme, tablet layout, accessibility, crash reporting | — |
+| **P7 Polish** | webapp-faithful theme: Inter font, webapp tokens (emerald/navy/badges/radii/shadows), white header (logo + HR/Mate + company + user pill), custom bottom nav (raised emerald punch), navy punch card (glows, facility pill, live clock, shift ring, emerald action, alert rows), navy login (white rounded-32 card, dark submit, biometric button), Home dashboard (greeting, ID Card / Apply Leave, compact navy punch summary, 3-col quick tiles, rounded-24 KPIs), light restyle of leaves / team / more · app `3.2.0+32` · dark theme → P7b | screenshots of Home · Punch · Leaves · Team · More · Login look like the webapp |
 
 Never merge two phases into one prompt. Never begin phase N+1 with phase N unaccepted.
 

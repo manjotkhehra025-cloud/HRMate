@@ -45,7 +45,8 @@ release of the native app (the WebView shell was 1.x, so 3.0.0 is guaranteed hig
 installed `versionCode`/`versionName`). After P5: 3.0.x for fixes, 3.1.0 P6 push, 3.2.0 P7.
 The About row in More shows `version (build)` from `package_info_plus`, so a screenshot
 proves which build runs. Actual history: 2.0.0+20 P0 · 2.1.0+21 P1 · 2.2.0+22 P2 ·
-2.3.0+24 P3 · 2.4.0+27 P4 · **3.0.0+30 P5 (prod, published 2026-09-17)** · 3.1.0+31 P6 push.
+2.3.0+24 P3 · 2.4.0+27 P4 · **3.0.0+30 P5 (prod, published 2026-09-17)** · 3.1.0+31 P6
+push · **3.2.0+32 P7 polish (webapp-faithful theme, published 2026-09-18)**.
 
 ## Phase 6 (push notifications) — Firebase setup, once
 
@@ -79,6 +80,27 @@ Android 13+ asks for the notification permission at first sign-in; the switch's 
 "Allow notifications for HRMate in phone settings" if it was denied. Notification channel:
 `hrmate_default` ("HRMate", high importance) — created by the app, referenced by the manifest and by
 `src/lib/fcm.ts` on the server; renaming it anywhere breaks background display.
+
+## Phase 7 (polish) — webapp-faithful theme, app 3.2.0+32
+
+The app is restyled to look like the webapp (same palette, Inter typography, cards,
+header, bottom nav, navy punch card, navy login). No business-rule or API changes —
+only `lib/` visuals + `assets/fonts/` (Inter v4, OFL-licensed).
+
+- Server: **no change** (reuses the existing `holidays?year=`, `team/today`,
+  `attendance/history` endpoints).
+- Build: Codemagic prod (group `hrmate_release`) from the commit that applied the patch —
+  `--flavor prod` → `app-prod-release.apk`.
+- Publish: upload the APK and run the **v3 publish script** (it verifies the
+  `versionName` inside the APK + the sha history — v2 re-published stale bytes as a new
+  version once, so never use it again):
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/manjotkhehra74-cloud/FlavorFlow/693d3bb398baab4337c3971cc440a5b30ac4f19d/hrmate-mobile/server-reference/scripts/publish-apk.sh | sudo bash -s -- ~/app-prod-release.apk 3.2.0 32
+  ```
+  Success = `version inside APK: 3.2.0 ✓` and a NEW sha256 in `apk-info.json`.
+- Acceptance: More → About shows `3.2.0 (32)`; screenshots of Home · Punch · Leaves ·
+  Team · More · Login look like the webapp (white header, raised emerald punch nav,
+  navy punch card, Inter typeface).
 
 ## Phase 5 (release track) checklist
 
