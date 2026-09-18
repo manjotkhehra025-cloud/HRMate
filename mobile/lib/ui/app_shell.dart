@@ -34,7 +34,10 @@ class AppShell extends StatelessWidget {
       body: SafeArea(top: false, child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (i) => context.go(tabs[i].path),
+        onDestinationSelected: (i) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          context.go(tabs[i].path);
+        },
         destinations: [
           for (final t in tabs)
             if (t.path == '/punch')
