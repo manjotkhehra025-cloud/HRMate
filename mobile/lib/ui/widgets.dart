@@ -291,7 +291,13 @@ class Avatar extends StatelessWidget {
             child: Container(
               width: size * 0.32,
               height: size * 0.32,
-              decoration: const BoxDecoration(color: HrBrand.green, shape: BoxShape.circle, border: Border.all(width: 2, color: Colors.white)),
+              // Border.all is a factory (not const) — Border.fromBorderSide is
+              // its const-constructible equivalent (same result).
+              decoration: const BoxDecoration(
+                color: HrBrand.green,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(BorderSide(width: 2, color: Colors.white)),
+              ),
             ),
           ),
       ]),
