@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# publish-apk.sh — put a TESTED native HRMate APK on https://hr.flavorflow.co.in/download
+# publish-apk.sh — put a TESTED native HRMate APK on https://gdfoods.duckdns.org/download
 #
 # Runs ON the VPS (hrmate-prod). No git, no image rebuild: the file is copied into the
 # persistent data volume that /api/download/apk serves from.
@@ -51,5 +51,5 @@ docker exec -u 0 "$CONTAINER" chmod -R a+rX /app/data/releases
 rm -rf "$TMP"
 echo "PUBLISHED $NAME  ($SIZE bytes, sha256 $SHA)"
 echo "--- verify"
-curl -s https://hr.flavorflow.co.in/api/download/apk-info; echo
-curl -s -o /dev/null -w 'download: HTTP %{http_code}, %{size_download} bytes\n' https://hr.flavorflow.co.in/api/download/apk
+curl -s https://gdfoods.duckdns.org/api/download/apk-info; echo
+curl -s -o /dev/null -w 'download: HTTP %{http_code}, %{size_download} bytes\n' https://gdfoods.duckdns.org/api/download/apk

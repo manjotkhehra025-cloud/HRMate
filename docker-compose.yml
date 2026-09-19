@@ -7,9 +7,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      HRMATE_DOMAIN: ${HRMATE_DOMAIN:-hr.flavorflow.co.in}
-      HRMATE_RP_ID: ${HRMATE_RP_ID:-hr.flavorflow.co.in}
-      HRMATE_ORIGIN: ${HRMATE_ORIGIN:-https://hr.flavorflow.co.in}
+      # Public domain HRMate is served from (also the WebAuthn / passkey RP ID).
+      HRMATE_DOMAIN: ${HRMATE_DOMAIN:-gdfoods.duckdns.org}
+      HRMATE_RP_ID: ${HRMATE_RP_ID:-gdfoods.duckdns.org}
+      HRMATE_ORIGIN: ${HRMATE_ORIGIN:-https://gdfoods.duckdns.org}
       HRMATE_DB: /app/data/hrmate.db
       MOBILE_JWT_SECRET: ${MOBILE_JWT_SECRET:-hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib}
       # Optional custom VAPID keys for Web Push. Leave empty to use demo keys.

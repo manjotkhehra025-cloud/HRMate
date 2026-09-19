@@ -87,7 +87,7 @@ export default function DownloadPage() {
     }, 1200);
   };
 
-  const downloadEndpoint = "https://hr.flavorflow.co.in/api/download/apk";
+  const downloadEndpoint = "https://gdfoods.duckdns.org/api/download/apk";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
     downloadEndpoint
   )}&margin=8`;

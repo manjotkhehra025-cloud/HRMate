@@ -38,7 +38,7 @@ workflows:
         script: |
           cd mobile
           flutter build apk --release --flavor beta \
-            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
+            --dart-define=HRMATE_API=https://gdfoods.duckdns.org/api/v1/mobile
 
     artifacts:
       - mobile/build/app/outputs/flutter-apk/*.apk
@@ -100,13 +100,13 @@ workflows:
         script: |
           cd mobile
           flutter build apk --release --flavor prod \
-            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
+            --dart-define=HRMATE_API=https://gdfoods.duckdns.org/api/v1/mobile
 
       - name: Build Native Prod Release AppBundle
         script: |
           cd mobile
           flutter build appbundle --release --flavor prod \
-            --dart-define=HRMATE_API=https://hr.flavorflow.co.in/api/v1/mobile
+            --dart-define=HRMATE_API=https://gdfoods.duckdns.org/api/v1/mobile
 
     artifacts:
       - mobile/build/app/outputs/flutter-apk/*.apk

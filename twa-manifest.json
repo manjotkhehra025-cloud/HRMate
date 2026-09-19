@@ -1,6 +1,6 @@
 {
   "packageId": "com.gdfoods.hrmate",
-  "host": "hr.flavorflow.co.in",
+  "host": "gdfoods.duckdns.org",
   "name": "HRMate — Smart HRMS",
   "launcherName": "HRMate",
   "themeColor": "#1E6FE0",
@@ -8,8 +8,8 @@
   "backgroundColor": "#F4F7FB",
   "enableNotifications": true,
   "startUrl": "/dashboard",
-  "iconUrl": "https://hr.flavorflow.co.in/icon.png",
-  "maskableIconUrl": "https://hr.flavorflow.co.in/icon.png",
+  "iconUrl": "https://gdfoods.duckdns.org/icon.png",
+  "maskableIconUrl": "https://gdfoods.duckdns.org/icon.png",
   "appVersionCode": 2,
   "appVersionName": "1.1.0",
   "minSdkVersion": 21,
@@ -19,7 +19,7 @@
     "alias": "hrmate"
   },
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://hr.flavorflow.co.in/manifest.json",
+  "webManifestUrl": "https://gdfoods.duckdns.org/manifest.json",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {

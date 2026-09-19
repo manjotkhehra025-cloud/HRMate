@@ -1,7 +1,10 @@
 # HRMate — reverse proxy with automatic HTTPS (Let's Encrypt)
-# Supports both the primary professional domain and duckdns fallback
+#
+# HRMate is served ONLY on gdfoods.duckdns.org.
+# hr.flavorflow.co.in no longer hosts HRMate — that domain is reserved for the
+# upcoming new app (see the transitional block at the bottom of this file).
 
-hr.flavorflow.co.in, gdfoods.duckdns.org {
+gdfoods.duckdns.org {
 	tls {
 		issuer acme {
 			# Let's Encrypt's new "Generation Y" chain (root ISRG Root YE) is not
@@ -35,4 +38,22 @@ hr.flavorflow.co.in, gdfoods.duckdns.org {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 	}
+}
+
+# ------------------------------------------------------------------------------
+# hr.flavorflow.co.in — HRMate has MOVED OFF this domain.
+#
+# Until the new app is deployed here, anyone still arriving on the old address
+# (old bookmarks, the installed PWA, older APK builds that were compiled with
+# hr.flavorflow.co.in) is sent to HRMate's new home. The redirect is TEMPORARY
+# (HTTP 302) on purpose: browsers do not cache it, so the new app can take over
+# this domain cleanly later.
+#
+# When the new app is ready:
+#   * same VPS   → replace this block with the new app's config
+#                  (e.g. `reverse_proxy newapp:PORT`).
+#   * other host → delete this block and repoint the DNS record.
+# ------------------------------------------------------------------------------
+hr.flavorflow.co.in {
+	redir https://gdfoods.duckdns.org{uri} temporary
 }

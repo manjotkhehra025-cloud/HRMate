@@ -71,8 +71,9 @@ import java.util.concurrent.Executor;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String APP_URL = "https://hr.flavorflow.co.in";
-    public static final String FALLBACK_URL = "https://gdfoods.duckdns.org";
+    // HRMate web app home. hr.flavorflow.co.in is NOT HRMate any more (it is
+    // reserved for a different, new app) — never point the WebView there.
+    public static final String APP_URL = "https://gdfoods.duckdns.org";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_REQUEST_CODE = 2001;
     private static final int STORAGE_PERMISSION_CODE = 3001;
@@ -642,8 +643,10 @@ public class MainActivity extends AppCompatActivity {
         private boolean handleUri(String url) {
             if (url == null) return false;
 
-            if (url.startsWith("https://hr.flavorflow.co.in") || url.startsWith("http://hr.flavorflow.co.in") ||
-                url.startsWith("https://gdfoods.duckdns.org") || url.startsWith("http://gdfoods.duckdns.org") ||
+            // Only HRMate's own domain stays inside the WebView; everything else
+            // (including hr.flavorflow.co.in, which now belongs to another app)
+            // opens in the system browser.
+            if (url.startsWith("https://gdfoods.duckdns.org") || url.startsWith("http://gdfoods.duckdns.org") ||
                 url.startsWith("about:")) {
                 return false;
             }

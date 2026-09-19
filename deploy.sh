@@ -5,9 +5,11 @@
 # ============================================================
 set -euo pipefail
 
-DOMAIN="hr.flavorflow.co.in"
-FALLBACK_DOMAIN="gdfoods.duckdns.org"
-BRANCH="arena/01a056d6-hrmate"
+# HRMate lives ONLY on this domain. (hr.flavorflow.co.in is reserved for the
+# upcoming new app — see Caddyfile.)
+DOMAIN="gdfoods.duckdns.org"
+OLD_DOMAIN="hr.flavorflow.co.in"
+BRANCH="arena/01a0b810-hrmate"
 REPO="https://github.com/manjotkhehra025-cloud/HRMate.git"
 INSTALL_DIR="/opt/hrmate"
 
@@ -59,17 +61,25 @@ cd "$INSTALL_DIR"
 # Ensure .env file exists and has MOBILE_JWT_SECRET
 if [ ! -f .env ]; then
   info "Creating default .env file..."
-  cat << 'EOF' > .env
+  cat << EOF > .env
 NODE_ENV=production
 PORT=3000
 HRMATE_DB=/app/data/hrmate.db
-PRIMARY_DOMAIN=hr.flavorflow.co.in
-FALLBACK_DOMAIN=gdfoods.duckdns.org
+HRMATE_DOMAIN=${DOMAIN}
+HRMATE_RP_ID=${DOMAIN}
+HRMATE_ORIGIN=https://${DOMAIN}
 MOBILE_JWT_SECRET=hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib
 EOF
 else
   if ! grep -q "MOBILE_JWT_SECRET" .env; then
     echo "MOBILE_JWT_SECRET=hrmate_mobile_jwt_production_secret_2026_gdfoods_khadur_sahib" >> .env
+  fi
+  # Domain migration: an .env written by an older deploy still points at the
+  # old domain. Rewrite it so passkeys / cookies / origin checks use ${DOMAIN}.
+  if grep -q "$OLD_DOMAIN" .env; then
+    warn "Migrating .env from ${OLD_DOMAIN} to ${DOMAIN}"
+    cp .env ".env.bak.$(date +%Y%m%d%H%M%S)"
+    sed -i "s/${OLD_DOMAIN//./\\.}/${DOMAIN}/g" .env
   fi
 fi
 
@@ -86,13 +96,23 @@ sleep 5
 docker compose ps
 
 info "Step 5/5 — Verifying Caddy HTTPS reverse proxy"
+# Caddy runs inside docker compose and re-reads ./Caddyfile on (re)start, so it
+# already picked up the new config above. Ask it to re-validate anyway so a
+# typo in the Caddyfile shows up here instead of as a silent outage.
+if docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile >/dev/null 2>&1; then
+  info "Caddyfile OK — serving https://${DOMAIN}"
+else
+  warn "Caddy could not validate the Caddyfile — check: docker compose logs caddy"
+fi
 if command -v systemctl &>/dev/null && systemctl is-active --quiet caddy; then
-  systemctl reload caddy || true
+  # A host-level Caddy (from an older setup) would fight for ports 80/443.
+  warn "A host-level caddy service is also running — HRMate's Caddy is the docker one."
 fi
 
 echo ""
 echo -e "${GREEN}==============================================================${NC}"
 echo -e "${GREEN}  🎉 HRMate deployed successfully on VPS!${NC}"
-echo -e "${GREEN}  🌐 Primary URL:  https://${DOMAIN}${NC}"
-echo -e "${GREEN}  🌐 Fallback URL: https://${FALLBACK_DOMAIN}${NC}"
+echo -e "${GREEN}  🌐 URL: https://${DOMAIN}${NC}"
+echo -e "${YELLOW}  ℹ  ${OLD_DOMAIN} no longer serves HRMate (temporary 302 → ${DOMAIN})${NC}"
+echo -e "${YELLOW}     It is free for the new app — see the last block in Caddyfile.${NC}"
 echo -e "${GREEN}==============================================================${NC}"

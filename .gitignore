@@ -30,6 +30,9 @@ yarn-error.log*
 
 # local env files
 .env*.local
+# production env on the VPS (+ backups written by deploy.sh's domain migration)
+.env
+.env.bak.*
 
 # vercel
 .vercel

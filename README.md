@@ -64,7 +64,11 @@ npm run dev
 
 The repo ships with a ready-to-run Docker + Caddy setup that serves the app over
 **HTTPS** with automatic Let's Encrypt certificates. It's pre-configured for the
-domain **`gdfoods.duckdns.org`**.
+domain **`gdfoods.duckdns.org`** — HRMate's only address.
+
+> `hr.flavorflow.co.in` is **not** HRMate any more: the app was moved off it and
+> that domain is reserved for a new, separate app. See
+> [DEPLOY.md → Domain move](./DEPLOY.md#6-domain-move-hrflavorflowcoin--gdfoodsduckdnsorg).
 
 See **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step guide to deploy on your
 Google Cloud VPS (Docker install, firewall, launch, updates and backups).
