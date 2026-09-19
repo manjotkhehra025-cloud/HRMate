@@ -221,7 +221,10 @@ class _HomePageState extends State<HomePage> {
             Row(children: [
               const Icon(Icons.campaign_rounded, size: 16, color: HrBrand.subInk),
               const SizedBox(width: 6),
-              Text(tr('Announcements'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: HrBrand.ink)),
+              Expanded(
+                child: Text(tr('Announcements'), maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: HrBrand.ink)),
+              ),
             ]),
             const SizedBox(height: 8),
             if (_news == null && _loading)

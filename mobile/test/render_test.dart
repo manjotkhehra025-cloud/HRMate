@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hrmate/core/api.dart';
 import 'package:hrmate/features/auth/login_page.dart';
@@ -63,6 +64,12 @@ void _sizePhone(WidgetTester tester) {
 }
 
 Future<void> _pump(WidgetTester tester, AuthController auth) async {
+  // In-memory prefs. The offline fallback (cachedFetch → ApiCache →
+  // SharedPreferences) would otherwise go to the real platform channel /
+  // file system, which never answers inside flutter_test's FakeAsync zone —
+  // Home would sit on its loading skeleton forever instead of reaching the
+  // error card + "No announcements" states this gate asserts.
+  SharedPreferences.setMockInitialValues(<String, Object>{});
   await tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -103,16 +110,29 @@ void main() {
     for (final label in ['Home', 'Leaves', 'Punch', 'Team', 'More']) {
       expect(find.text(label), findsWidgets, reason: 'nav label $label');
     }
-    // Home body — offline: error card with real retry + announcements block
+    // Home body, first fold — greeting/welcome line must be PAINTED (finders
+    // skip list items outside the viewport, so a 0-px body fails here).
     expect(find.textContaining('Welcome to HRMate'), findsOneWidget);
-    expect(find.text('Announcements'), findsOneWidget);
-    expect(find.text('No announcements right now'), findsOneWidget);
     // Offline fetch of attendance/today → the navy slot becomes an error
     // card with a working Retry.
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(find.text('Retry'), findsWidgets);
     // Header wordmark is rich text — verify via the company subline instead.
     expect(find.text(HrBrand.company), findsOneWidget);
+    // Announcements block sits below the first fold on a 393×852 phone
+    // (actions + navy card + tiles + KPI grid come first). Scroll its
+    // heading into view (dragUntilVisible ends with ensureVisible, which
+    // aligns the heading to the top, so the empty-state card right under it
+    // is on screen too) — this also proves the body is a real, scrollable
+    // viewport.
+    await tester.dragUntilVisible(
+      find.text('Announcements'),
+      find.byType(ListView),
+      const Offset(0, -240),
+    );
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.text('Announcements'), findsOneWidget);
+    expect(find.text('No announcements right now'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

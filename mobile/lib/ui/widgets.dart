@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../core/format.dart';
 import '../core/i18n.dart';
 import '../core/theme.dart';
 
@@ -72,7 +73,18 @@ class HrGradientButton extends StatelessWidget {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (icon != null) Icon(icon, size: 19, color: Colors.white),
                 if (icon != null) const SizedBox(width: 8),
-                Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                // Flexible + scaleDown: a long label (Punjabi/Hindi, large
+                // text scale, half-width buttons) shrinks instead of
+                // overflowing the row (RenderFlex overflow = red error box).
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(label,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                  ),
+                ),
               ]),
             ),
           ),
@@ -268,9 +280,9 @@ class Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials = name.trim().isEmpty
-        ? '?'
-        : (name.trim().split(RegExp(r'\s+')).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join('')).substring(0, 2);
+    // Fmt.initials is safe for one-word names ("Gurpreet" → "G"); the old
+    // `.substring(0, 2)` threw a RangeError for them and blanked the header.
+    final initials = Fmt.initials(name);
     return SizedBox(
       width: size,
       height: size,

@@ -111,6 +111,17 @@ for state changes, `HrBrand.slow` (320 ms) for layout changes.
    shimmer mean the tree never settles.
 7. One `ApiClient` per `AuthController`; screens read `auth.api` (tests
    inject an offline fake — §8).
+8. **The blank-body bug (root cause, fixed 8.0.1):** `Scaffold` gives
+   `bottomNavigationBar` a *loose* height (0…screen) and `Column` defaults to
+   `MainAxisSize.max`, so a tab column inside the nav grows to the FULL
+   screen, the nav swallows the screen and the body gets 0 px — silently
+   (a 0-px `RenderFlex` never reports its overflow). Every `Column`/`Row`
+   inside a Scaffold slot (nav, header, app bar, bottom sheet) is
+   `mainAxisSize: MainAxisSize.min` or has an explicit height.
+9. Text that sits in a `Row` must be able to shrink: `Expanded`/`Flexible`
+   + `maxLines`/`ellipsis`, `FittedBox(scaleDown)` for button labels, `Wrap`
+   for chip rows. The test font renders every glyph 1 em wide, so a row that
+   "fits" with Inter overflows in the gate — that is the point of the gate.
 
 ## 8. The render gate (non-negotiable)
 
@@ -120,6 +131,17 @@ exist on screen. **Codemagic blocks the build when `flutter test` fails —
 this stays that way.** Every phase adds the tabs/screens it ships to this
 test in the SAME commit. A build that passes analysis+tests+build is the
 only build the user runs.
+
+Gate mechanics to remember (each one cost a red build):
+
+* Finders skip list items that are not painted (`skipOffstage`), so a
+  0-px body makes `find.text` fail even though the widget is built — and
+  content below the first fold must be scrolled into view
+  (`tester.dragUntilVisible`) before asserting on it.
+* `SharedPreferences.setMockInitialValues({})` before every pump: the
+  offline cache fallback otherwise waits on a platform channel / file system
+  that never answers inside the FakeAsync zone, and Home never leaves its
+  loading skeleton.
 
 ## 9. Build & release
 
@@ -137,3 +159,4 @@ only build the user runs.
 | Date     | Phase | Note                                                        |
 | -------- | ----- | ----------------------------------------------------------- |
 | 2026-09-19 | 8.0 | Tree created: foundation, real login+home, shell, i18n, render gate. |
+| 2026-09-19 | 8.0.1 | Render gate green: nav columns `MainAxisSize.min` (blank-body root cause), login language chips → `Wrap`, gradient-button label shrinks, header wordmark/pill bounded, safe initials; gate scrolls to below-the-fold blocks + in-memory prefs. |

@@ -98,6 +98,8 @@ class _Header extends StatelessWidget {
                 TextSpan(text: 'HR', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: HrBrand.heading, height: 1)),
                 TextSpan(text: 'Mate', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: HrBrand.blue, height: 1)),
               ]),
+              maxLines: 1,
+              softWrap: false,
             ),
             SizedBox(height: 1.5),
             Text(HrBrand.company,
@@ -107,7 +109,12 @@ class _Header extends StatelessWidget {
           ]),
         ),
         const SizedBox(width: 8),
-        _UserPill(user: user, onTap: onProfile),
+        // Capped so a long name ellipsizes inside the pill instead of
+        // squeezing the wordmark / overflowing the header row.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 190),
+          child: _UserPill(user: user, onTap: onProfile),
+        ),
       ]),
     );
   }
@@ -161,7 +168,15 @@ class _BottomNav extends StatelessWidget {
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 12, 10, 6),
+            // LAYOUT TRUTH (the P7 "blank body" bug, root-caused in 8.0.1):
+            // Scaffold hands bottomNavigationBar a LOOSE height (0..screen).
+            // A `Column` defaults to MainAxisSize.max, so every tab column
+            // grew to the full screen height, the nav swallowed the whole
+            // screen and the body got 0 px. Each tab column is therefore
+            // MainAxisSize.min and the row shrink-wraps its tallest child
+            // (the raised punch button) — ~78 px, text-scale safe.
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 for (var i = 0; i < tabs.length; i++)
                   Expanded(
@@ -188,7 +203,7 @@ class _NavItem extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
             Container(
               width: 34,
               height: 28,
@@ -230,7 +245,7 @@ class _NavPunch extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(32),
           onTap: onTap,
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
             SizedBox(
               width: 60,
               height: 42,

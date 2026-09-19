@@ -63,17 +63,22 @@ class _LoginPageState extends State<LoginPage> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   // --- brand ---
-                  Container(
-                    width: 84,
-                    height: 84,
-                    margin: const EdgeInsets.only(bottom: 18),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: HrBrand.shadowPop),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      'assets/icon/app_icon.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.badge_rounded, color: HrBrand.blue, size: 44),
+                  // Align keeps the tile 84×84: under the stretched Column a
+                  // bare Container(width: 84) is forced to the full width.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 84,
+                      height: 84,
+                      margin: const EdgeInsets.only(bottom: 18),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: HrBrand.shadowPop),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.badge_rounded, color: HrBrand.blue, size: 44),
+                      ),
                     ),
                   ),
                   const Text.rich(
@@ -141,6 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                         const SizedBox(height: 18),
                         SizedBox(
+                          width: double.infinity, // webapp: w-full
                           height: 50,
                           child: ElevatedButton(
                             onPressed: auth.busy ? null : _submit,
@@ -162,21 +168,23 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 18),
                   // --- language switch (webapp footer control) ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  // Wrap, not Row: three chips + checkmark can exceed a narrow
+                  // phone (or large text scale) — a Row would overflow, a Wrap
+                  // moves the last chip to a second line.
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
                     children: [
                       for (var i = 0; i < L10n.languages.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ChoiceChip(
-                            label: Text(L10n.languages[i][1], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            selected: l10n.code == L10n.languages[i][0],
-                            selectedColor: HrBrand.blue,
-                            labelStyle: TextStyle(color: l10n.code == L10n.languages[i][0] ? Colors.white : HrBrand.slateOnNavy),
-                            backgroundColor: Colors.white.withValues(alpha: 0.08),
-                            side: BorderSide.none,
-                            onSelected: (_) => l10n.set(L10n.languages[i][0]),
-                          ),
+                        ChoiceChip(
+                          label: Text(L10n.languages[i][1], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          selected: l10n.code == L10n.languages[i][0],
+                          selectedColor: HrBrand.blue,
+                          labelStyle: TextStyle(color: l10n.code == L10n.languages[i][0] ? Colors.white : HrBrand.slateOnNavy),
+                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                          side: BorderSide.none,
+                          onSelected: (_) => l10n.set(L10n.languages[i][0]),
                         ),
                     ],
                   ),
