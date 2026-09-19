@@ -27,12 +27,12 @@ workflows:
           cd mobile
           flutter analyze
 
-      - name: Flutter Test (non-blocking during P7 blank-body investigation)
+      - name: Flutter Test (render gate — must pass)
         script: |
           cd mobile
-          # The blank-screen regression test is EXPECTED to fail until the
-          # blank-body bug is fixed — it must not block the diagnostic APK.
-          flutter test || echo "TEST FAILED — BLANK-SCREEN REPORT is in the log above; continuing to build"
+          # Phase 8 constitution §8: the render gate is a real gate.
+          # A build that passes analyze + test + build is the only build shipped.
+          flutter test
 
       - name: Build Native Beta Release APK
         script: |
@@ -76,12 +76,12 @@ workflows:
           cd mobile
           flutter analyze
 
-      - name: Flutter Test (non-blocking during P7 blank-body investigation)
+      - name: Flutter Test (render gate — must pass)
         script: |
           cd mobile
-          # The blank-screen regression test is EXPECTED to fail until the
-          # blank-body bug is fixed — it must not block the diagnostic APK.
-          flutter test || echo "TEST FAILED — BLANK-SCREEN REPORT is in the log above; continuing to build"
+          # Phase 8 constitution §8: the render gate is a real gate.
+          # A build that passes analyze + test + build is the only build shipped.
+          flutter test
 
       - name: Set up release keystore
         script: |
